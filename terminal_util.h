@@ -6,6 +6,7 @@
 
 #include <cerrno>
 #include <cstdio>
+#include <cstring>
 #include <utility>
 
 #include "utility.h"
@@ -44,6 +45,13 @@ void preserveTermiosOriginalState() {
 }
 
 void resetCursorLocation() { write(STDOUT_FILENO, "\x1b[H", 3); }
+
+void setCursorLocation(int row, int col) {
+  char buf[32];
+
+  snprintf(buf, sizeof(buf), "\x1b[%d;%dH", row + 1, col + 1);
+  write(STDOUT_FILENO, buf, strlen(buf));
+}
 
 void clearScreen() { write(STDOUT_FILENO, "\x1b[2J", 4); }
 
@@ -98,3 +106,7 @@ char readKey() {
 
   return c;
 }
+
+void hideCursor() { write(STDOUT_FILENO, "\x1b[?25l", 6); }
+
+void showCursor() { write(STDOUT_FILENO, "\x1b[?25h", 6); }

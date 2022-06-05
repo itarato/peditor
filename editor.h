@@ -10,6 +10,9 @@
 #include "utility.h"
 
 struct Editor {
+  int cursorX{0};
+  int cursorY{0};
+
   Editor() {}
 
   void init() {
@@ -21,9 +24,7 @@ struct Editor {
     char c;
 
     for (;;) {
-      clearScreen();
-      drawLineDecoration();
-      resetCursorLocation();
+      refreshScreen();
 
       c = readKey();
 
@@ -39,6 +40,11 @@ struct Editor {
         break;
       }
 
+      if (c == ctrlKey('s')) cursorY++;
+      if (c == ctrlKey('w')) cursorY--;
+      if (c == ctrlKey('a')) cursorX--;
+      if (c == ctrlKey('d')) cursorX++;
+
       fflush(STDIN_FILENO);
     }
   }
@@ -53,5 +59,13 @@ struct Editor {
         write(STDOUT_FILENO, "\n\r", 2);
       }
     }
+  }
+
+  void refreshScreen() {
+    hideCursor();
+    clearScreen();
+    drawLineDecoration();
+    setCursorLocation(cursorY, cursorX);
+    showCursor();
   }
 };
