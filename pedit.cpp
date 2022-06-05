@@ -1,23 +1,18 @@
-#include <sys/ioctl.h>
-#include <termios.h>
-#include <unistd.h>
-
-#include <cctype>
-#include <cerrno>
-#include <cstdio>
 #include <cstdlib>
-#include <utility>
 
+#include "debug.h"
 #include "editor.h"
-#include "terminal_util.h"
-#include "utility.h"
 
 using namespace std;
 
 int main() {
+  dlog("peditor start");
+
   Editor editor{};
   editor.init();
   editor.runLoop();
+
+  dlog("peditor end");
 
   return EXIT_SUCCESS;
 }
