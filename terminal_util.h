@@ -94,7 +94,7 @@ pair<int, int> terminalDimension() {
 
 inline char ctrlKey(char c) { return c & 0x1f; }
 
-char readKey() {
+TypedChar readKey() {
   char c;
   int result;
 
@@ -104,7 +104,20 @@ char readKey() {
     }
   }
 
-  return c;
+  if (c == '\x1b') {
+    char c1, c2;
+    if (read(STDIN_FILENO, &c1, 1) != 1 || c1 != '[') return c;
+    if (read(STDIN_FILENO, &c2, 1) != 1) return c;
+
+    if (c2 == 'A') return TypedChar(EscapeChar::Up);
+    if (c2 == 'B') return TypedChar(EscapeChar::Down);
+    if (c2 == 'C') return TypedChar(EscapeChar::Right);
+    if (c2 == 'D') return TypedChar(EscapeChar::Left);
+
+    dlog("Uncaught escape char: %c", c2);
+  }
+
+  return TypedChar{c};
 }
 
 void hideCursor() { write(STDOUT_FILENO, "\x1b[?25l", 6); }

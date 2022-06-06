@@ -21,29 +21,35 @@ struct Editor {
   }
 
   void runLoop() {
-    char c;
+    TypedChar tc;
 
     for (;;) {
       refreshScreen();
 
-      c = readKey();
+      tc = readKey();
 
-      if (iscntrl(c)) {
-        // Ignore for now.
-        dlog("ctrl char: %d", uint(c));
-      } else {
-        printf("%c", c);
-        dlog("char: %c", c);
+      if (tc.is_simple()) {
+        if (iscntrl(tc.simple())) {
+          // Ignore for now.
+          dlog("ctrl char: %d", uint(tc.simple()));
+        } else {
+          printf("%c", tc.simple());
+          dlog("char: %c", tc.simple());
+        }
+
+        if (tc.simple() == ctrlKey('q')) {
+          break;
+        }
+      } else if (tc.is_escape()) {
+        auto dim = terminalDimension();
+
+        if (tc.escape() == EscapeChar::Down && cursorY < dim.first - 1)
+          cursorY++;
+        if (tc.escape() == EscapeChar::Up && cursorY > 0) cursorY--;
+        if (tc.escape() == EscapeChar::Left && cursorX > 0) cursorX--;
+        if (tc.escape() == EscapeChar::Right && cursorX < dim.second - 1)
+          cursorX++;
       }
-
-      if (c == ctrlKey('q')) {
-        break;
-      }
-
-      if (c == ctrlKey('s')) cursorY++;
-      if (c == ctrlKey('w')) cursorY--;
-      if (c == ctrlKey('a')) cursorX--;
-      if (c == ctrlKey('d')) cursorX++;
 
       fflush(STDIN_FILENO);
     }
