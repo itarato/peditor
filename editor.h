@@ -4,20 +4,47 @@
 #include <unistd.h>
 
 #include <cctype>
+#include <fstream>
+#include <optional>
+#include <string>
+#include <vector>
 
 #include "debug.h"
 #include "terminal_util.h"
 #include "utility.h"
 
+using namespace std;
+
 struct Editor {
   int cursorX{0};
   int cursorY{0};
+  int verticalScroll{0};
+
+  optional<string> fileName{nullopt};
+  vector<string> lines{};
 
   Editor() {}
 
   void init() {
     preserveTermiosOriginalState();
     enableRawMode();
+  }
+
+  void loadFile(const char *fileName) {
+    dlog("Loading file: %s", fileName);
+    this->fileName = fileName;
+
+    ifstream f(fileName);
+
+    if (!f.is_open()) {
+      reportAndExit("Failed opening file");
+    }
+
+    lines.clear();
+    for (string line; getline(f, line);) {
+      lines.emplace_back(line);
+    }
+    f.close();
   }
 
   void runLoop() {
@@ -55,13 +82,19 @@ struct Editor {
     }
   }
 
-  void drawLineDecoration() {
+  void drawLines() {
     pair<int, int> dim = terminalDimension();
     resetCursorLocation();
 
-    for (int i = 0; i < dim.first; i++) {
-      write(STDOUT_FILENO, "~", 1);
-      if (i < dim.first - 1) {
+    for (int lineNo = verticalScroll; lineNo < verticalScroll + dim.first;
+         lineNo++) {
+      if (size_t(lineNo) < lines.size()) {
+        write(STDOUT_FILENO, lines[lineNo].c_str(), lines[lineNo].size());
+      } else {
+        write(STDOUT_FILENO, "~", 1);
+      }
+
+      if (lineNo < verticalScroll + dim.first - 1) {
         write(STDOUT_FILENO, "\n\r", 2);
       }
     }
@@ -70,7 +103,7 @@ struct Editor {
   void refreshScreen() {
     hideCursor();
     clearScreen();
-    drawLineDecoration();
+    drawLines();
     setCursorLocation(cursorY, cursorX);
     showCursor();
   }
