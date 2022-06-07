@@ -72,14 +72,20 @@ struct Editor {
           // dlog("char: %c", tc.simple());
 
           if (currentRow < lines.size() &&
-              currentCol < lines[currentRow].size()) {
+              currentCol <= lines[currentRow].size()) {
             lines[currentRow].insert(currentCol, 1, tc.simple());
             cursorRight();
           }
         }
 
-        if (tc.simple() == ctrlKey('q')) {
-          break;
+        if (tc.simple() == ctrlKey('q')) break;
+        if (tc.simple() == BACKSPACE) {
+          if (currentRow < lines.size() &&
+              currentCol <= lines[currentRow].size() && currentCol > 0) {
+            dlog("Erase");
+            lines[currentRow].erase(currentCol - 1, 1);
+            cursorLeft();
+          }
         }
       } else if (tc.is_escape()) {
         if (tc.escape() == EscapeChar::Down) cursorDown();
@@ -119,7 +125,7 @@ struct Editor {
     // Now cursorY is either on a line or on 0 when there are no lines.
 
     if (cursorY < lines.size()) {
-      if (cursorX >= lines[cursorY].size()) cursorX = lines[cursorY].size() - 1;
+      if (cursorX > lines[cursorY].size()) cursorX = lines[cursorY].size();
       if (cursorX > terminalDimension.second)
         cursorX = terminalDimension.second;
       if (cursorX < 0) cursorX = 0;
