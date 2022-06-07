@@ -19,6 +19,9 @@ struct Editor {
   int cursorX{0};
   int cursorY{0};
   int verticalScroll{0};
+  int horizontalScroll{0};
+
+  pair<int, int> terminalDimension{};
 
   optional<string> fileName{nullopt};
   vector<string> lines{};
@@ -28,6 +31,7 @@ struct Editor {
   void init() {
     preserveTermiosOriginalState();
     enableRawMode();
+    refreshTerminalDimension();
   }
 
   void loadFile(const char *fileName) {
@@ -52,49 +56,92 @@ struct Editor {
 
     for (;;) {
       refreshScreen();
+      refreshTerminalDimension();
 
       tc = readKey();
+
+      int currentRow{cursorY + verticalScroll};
+      int currentCol{cursorX + horizontalScroll};
 
       if (tc.is_simple()) {
         if (iscntrl(tc.simple())) {
           // Ignore for now.
           dlog("ctrl char: %d", uint(tc.simple()));
         } else {
-          printf("%c", tc.simple());
-          dlog("char: %c", tc.simple());
+          // printf("%c", tc.simple());
+          // dlog("char: %c", tc.simple());
+
+          if (currentRow < lines.size() &&
+              currentCol < lines[currentRow].size()) {
+            lines[currentRow].insert(currentCol, 1, tc.simple());
+            cursorRight();
+          }
         }
 
         if (tc.simple() == ctrlKey('q')) {
           break;
         }
       } else if (tc.is_escape()) {
-        auto dim = terminalDimension();
-
-        if (tc.escape() == EscapeChar::Down && cursorY < dim.first - 1)
-          cursorY++;
-        if (tc.escape() == EscapeChar::Up && cursorY > 0) cursorY--;
-        if (tc.escape() == EscapeChar::Left && cursorX > 0) cursorX--;
-        if (tc.escape() == EscapeChar::Right && cursorX < dim.second - 1)
-          cursorX++;
+        if (tc.escape() == EscapeChar::Down) cursorDown();
+        if (tc.escape() == EscapeChar::Up) cursorUp();
+        if (tc.escape() == EscapeChar::Left) cursorLeft();
+        if (tc.escape() == EscapeChar::Right) cursorRight();
       }
 
       fflush(STDIN_FILENO);
     }
   }
 
+  void cursorDown() {
+    cursorY++;
+    fixCursorPos();
+  }
+
+  void cursorUp() {
+    cursorY--;
+    fixCursorPos();
+  }
+
+  void cursorLeft() {
+    cursorX--;
+    fixCursorPos();
+  }
+
+  void cursorRight() {
+    cursorX++;
+    fixCursorPos();
+  }
+
+  void fixCursorPos() {
+    if (cursorY >= lines.size()) cursorY = lines.size() - 1;
+    if (cursorY > terminalDimension.first) cursorY = terminalDimension.first;
+    if (cursorY < 0) cursorY = 0;
+    // Now cursorY is either on a line or on 0 when there are no lines.
+
+    if (cursorY < lines.size()) {
+      if (cursorX >= lines[cursorY].size()) cursorX = lines[cursorY].size() - 1;
+      if (cursorX > terminalDimension.second)
+        cursorX = terminalDimension.second;
+      if (cursorX < 0) cursorX = 0;
+    } else {
+      cursorX = 0;
+    }
+    // Now cursorX is either on a char or on 0 when there are no chars.
+  }
+
   void drawLines() {
-    pair<int, int> dim = terminalDimension();
     resetCursorLocation();
 
-    for (int lineNo = verticalScroll; lineNo < verticalScroll + dim.first;
-         lineNo++) {
+    for (int lineNo = verticalScroll;
+         lineNo < verticalScroll + terminalDimension.first; lineNo++) {
       if (size_t(lineNo) < lines.size()) {
+        // TODO: include horizontalScroll
         write(STDOUT_FILENO, lines[lineNo].c_str(), lines[lineNo].size());
       } else {
         write(STDOUT_FILENO, "~", 1);
       }
 
-      if (lineNo < verticalScroll + dim.first - 1) {
+      if (lineNo < verticalScroll + terminalDimension.first - 1) {
         write(STDOUT_FILENO, "\n\r", 2);
       }
     }
@@ -106,5 +153,9 @@ struct Editor {
     drawLines();
     setCursorLocation(cursorY, cursorX);
     showCursor();
+  }
+
+  void refreshTerminalDimension() {
+    terminalDimension = getTerminalDimension();
   }
 };
