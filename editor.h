@@ -68,9 +68,6 @@ struct Editor {
           // Ignore for now.
           dlog("ctrl char: %d", uint(tc.simple()));
         } else {
-          // printf("%c", tc.simple());
-          // dlog("char: %c", tc.simple());
-
           if (currentRow < lines.size() &&
               currentCol <= lines[currentRow].size()) {
             lines[currentRow].insert(currentCol, 1, tc.simple());
@@ -86,6 +83,12 @@ struct Editor {
             lines[currentRow].erase(currentCol - 1, 1);
             cursorLeft();
           }
+        }
+        if (tc.simple() == ENTER) {
+          auto lineIt = lines.begin();
+          advance(lineIt, currentRow + 1);
+          lines.insert(lineIt, "");
+          cursorDown();
         }
       } else if (tc.is_escape()) {
         if (tc.escape() == EscapeChar::Down) cursorDown();
