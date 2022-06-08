@@ -116,6 +116,8 @@ TypedChar readKey() {
     if (c2 == 'B') return TypedChar(EscapeChar::Down);
     if (c2 == 'C') return TypedChar(EscapeChar::Right);
     if (c2 == 'D') return TypedChar(EscapeChar::Left);
+    if (c2 == 'H') return TypedChar(EscapeChar::Home);
+    if (c2 == 'F') return TypedChar(EscapeChar::End);
 
     dlog("Uncaught escape char: %c", c2);
   }

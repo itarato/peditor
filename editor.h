@@ -69,8 +69,8 @@ struct Editor {
           // Ignore for now.
           dlog("ctrl char: %d", uint(tc.simple()));
         } else {
-          if (currentRow < lines.size() &&
-              currentCol <= lines[currentRow].size()) {
+          if (currentRow < (int)lines.size() &&
+              currentCol <= (int)lines[currentRow].size()) {
             lines[currentRow].insert(currentCol, 1, tc.simple());
             cursorRight();
           }
@@ -80,7 +80,7 @@ struct Editor {
 
         if (tc.simple() == BACKSPACE) {
           if (onLineRow(currentRow)) {
-            if (currentCol <= lines[currentRow].size() && currentCol > 0) {
+            if (currentCol <= (int)lines[currentRow].size() && currentCol > 0) {
               dlog("Erase");
               lines[currentRow].erase(currentCol - 1, 1);
               cursorLeft();
@@ -121,13 +121,15 @@ struct Editor {
         if (tc.escape() == EscapeChar::Up) cursorUp();
         if (tc.escape() == EscapeChar::Left) cursorLeft();
         if (tc.escape() == EscapeChar::Right) cursorRight();
+        if (tc.escape() == EscapeChar::Home) cursorHome();
+        if (tc.escape() == EscapeChar::End) cursorEnd();
       }
 
       fflush(STDIN_FILENO);
     }
   }
 
-  bool onLineRow(int row) { return row >= 0 && row < lines.size(); }
+  bool onLineRow(int row) { return row >= 0 && row < (int)lines.size(); }
 
   void cursorDown() {
     cursorY++;
@@ -160,21 +162,23 @@ struct Editor {
   void cursorEnd() { cursorX = lines[cursorY].size(); }
 
   void fixCursorPos() {
-    if (cursorY >= lines.size()) cursorY = lines.size() - 1;
-    if (cursorY > terminalDimension.first) cursorY = terminalDimension.first;
+    if (cursorY >= (int)lines.size()) cursorY = lines.size() - 1;
+    if (cursorY > terminalRows()) cursorY = terminalRows();
     if (cursorY < 0) cursorY = 0;
     // Now cursorY is either on a line or on 0 when there are no lines.
 
-    if (cursorY < lines.size()) {
-      if (cursorX > lines[cursorY].size()) cursorX = lines[cursorY].size();
-      if (cursorX > terminalDimension.second)
-        cursorX = terminalDimension.second;
+    if (cursorY < (int)lines.size()) {
+      if (cursorX > (int)lines[cursorY].size()) cursorX = lines[cursorY].size();
+      if (cursorX > terminalCols()) cursorX = terminalCols();
       if (cursorX < 0) cursorX = 0;
     } else {
       cursorX = 0;
     }
     // Now cursorX is either on a char or on 0 when there are no chars.
   }
+
+  int terminalRows() { return terminalDimension.first; }
+  int terminalCols() { return terminalDimension.second; }
 
   void drawLines() {
     resetCursorLocation();

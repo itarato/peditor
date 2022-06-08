@@ -11,6 +11,8 @@ enum class EscapeChar {
   Down,
   Left,
   Right,
+  Home,
+  End,
 };
 
 struct TypedChar {

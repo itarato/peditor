@@ -1,4 +1,4 @@
-CXXFLAGS=-std=c++2a -Wall -pedantic -Wformat
+CXXFLAGS=-std=c++2a -Wall -pedantic -Wformat -Werror
 BIN=pedit
 SRC=$(wildcard ./*.cpp)
 OBJ=$(addsuffix .o,$(basename $(SRC)))
