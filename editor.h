@@ -5,6 +5,7 @@
 
 #include <cctype>
 #include <fstream>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <vector>
@@ -76,19 +77,44 @@ struct Editor {
         }
 
         if (tc.simple() == ctrlKey('q')) break;
+
         if (tc.simple() == BACKSPACE) {
-          if (currentRow < lines.size() &&
-              currentCol <= lines[currentRow].size() && currentCol > 0) {
-            dlog("Erase");
-            lines[currentRow].erase(currentCol - 1, 1);
-            cursorLeft();
+          if (onLineRow(currentRow)) {
+            if (currentCol <= lines[currentRow].size() && currentCol > 0) {
+              dlog("Erase");
+              lines[currentRow].erase(currentCol - 1, 1);
+              cursorLeft();
+            } else if (currentCol == 0 && currentRow > 0) {
+              int oldLineLen = lines[currentRow - 1].size();
+
+              lines[currentRow - 1].append(lines[currentRow]);
+
+              auto lineIt = lines.begin();
+              advance(lineIt, currentRow);
+              lines.erase(lineIt);
+
+              cursorTo(cursorY - 1, oldLineLen);
+            }
+          } else {
+            dlog("Error: cannot backspace on not line row");
           }
         }
+
         if (tc.simple() == ENTER) {
+          auto rowIt = lines[currentRow].begin();
+          advance(rowIt, cursorX);
+          string newLine(rowIt, lines[currentRow].end());
+
+          auto rowIt2 = lines[currentRow].begin();
+          advance(rowIt2, cursorX);
+          lines[currentRow].erase(rowIt2, lines[currentRow].end());
+
           auto lineIt = lines.begin();
           advance(lineIt, currentRow + 1);
-          lines.insert(lineIt, "");
+          lines.insert(lineIt, newLine);
+
           cursorDown();
+          cursorHome();
         }
       } else if (tc.is_escape()) {
         if (tc.escape() == EscapeChar::Down) cursorDown();
@@ -100,6 +126,8 @@ struct Editor {
       fflush(STDIN_FILENO);
     }
   }
+
+  bool onLineRow(int row) { return row >= 0 && row < lines.size(); }
 
   void cursorDown() {
     cursorY++;
@@ -120,6 +148,16 @@ struct Editor {
     cursorX++;
     fixCursorPos();
   }
+
+  void cursorTo(int row, int col) {
+    cursorX = col;
+    cursorY = row;
+    fixCursorPos();
+  }
+
+  void cursorHome() { cursorX = 0; }
+
+  void cursorEnd() { cursorX = lines[cursorY].size(); }
 
   void fixCursorPos() {
     if (cursorY >= lines.size()) cursorY = lines.size() - 1;
