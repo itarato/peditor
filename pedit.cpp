@@ -1,5 +1,6 @@
 #include <cstdlib>
 
+#include "config.h"
 #include "debug.h"
 #include "editor.h"
 
@@ -8,13 +9,15 @@ using namespace std;
 int main(int argc, char** argv) {
   dlog("peditor start");
 
-  Editor editor{};
-  editor.init();
+  Config config{};
 
   if (argc == 2) {
-    editor.loadFile(argv[1]);
+    config.setFileName(argv[1]);
   }
 
+  Editor editor{config};
+
+  editor.init();
   editor.runLoop();
 
   dlog("peditor end");

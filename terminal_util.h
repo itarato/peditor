@@ -17,6 +17,7 @@ struct termios orig_termios;
 
 #define BACKSPACE char(127)
 #define ENTER char(13)
+#define TAB char(9)
 
 void enableRawMode() {
   struct termios raw = orig_termios;
