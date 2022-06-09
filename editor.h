@@ -208,7 +208,18 @@ struct Editor {
     // Now cursorY is either on a line or on 0 when there are no lines.
 
     if (cursorY < (int)lines.size()) {
-      if (cursorX > (int)currentLine().size()) cursorX = currentLine().size();
+      if (cursorX > (int)currentLine().size()) {
+        if (currentRow() < (int)lines.size() - 1) {
+          if (cursorY >= terminalRows() - 1) {
+            verticalScroll++;
+          } else {
+            cursorY++;
+          }
+          cursorX = 0;
+        } else {
+          cursorX = currentLine().size();
+        }
+      }
       if (cursorX >= terminalCols()) cursorX = terminalCols() - 1;
       if (cursorX < 0) {
         if (currentRow() > 0) {
