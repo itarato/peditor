@@ -90,8 +90,8 @@ struct Editor {
           dlog("ctrl char: %d", uint(tc.simple()));
         } else {
           if (currentRow() < (int)lines.size() &&
-              currentCol() <= (int)lines[currentRow()].size()) {
-            lines[currentRow()].insert(currentCol(), 1, tc.simple());
+              currentCol() <= (int)currentLine().size()) {
+            currentLine().insert(currentCol(), 1, tc.simple());
             cursorRight();
           }
         }
@@ -101,14 +101,13 @@ struct Editor {
 
         if (tc.simple() == BACKSPACE) {
           if (onLineRow()) {
-            if (currentCol() <= (int)lines[currentRow()].size() &&
-                currentCol() > 0) {
-              lines[currentRow()].erase(currentCol() - 1, 1);
+            if (currentCol() <= (int)currentLine().size() && currentCol() > 0) {
+              currentLine().erase(currentCol() - 1, 1);
               cursorLeft();
             } else if (currentCol() == 0 && currentRow() > 0) {
               int oldLineLen = lines[currentRow() - 1].size();
 
-              lines[currentRow() - 1].append(lines[currentRow()]);
+              lines[currentRow() - 1].append(currentLine());
 
               auto lineIt = lines.begin();
               advance(lineIt, currentRow());
@@ -122,13 +121,13 @@ struct Editor {
         }
 
         if (tc.simple() == ENTER) {
-          auto rowIt = lines[currentRow()].begin();
+          auto rowIt = currentLine().begin();
           advance(rowIt, cursorX);
-          string newLine(rowIt, lines[currentRow()].end());
+          string newLine(rowIt, currentLine().end());
 
-          auto rowIt2 = lines[currentRow()].begin();
+          auto rowIt2 = currentLine().begin();
           advance(rowIt2, cursorX);
-          lines[currentRow()].erase(rowIt2, lines[currentRow()].end());
+          currentLine().erase(rowIt2, currentLine().end());
 
           auto lineIt = lines.begin();
           advance(lineIt, currentRow() + 1);
@@ -139,10 +138,10 @@ struct Editor {
         }
 
         if (tc.simple() == TAB) {
-          if (onLineRow() && currentCol() <= (int)lines[currentRow()].size()) {
+          if (onLineRow() && currentCol() <= (int)currentLine().size()) {
             int spacesToFill = config.tabSize - (currentCol() % config.tabSize);
             for (int i = 0; i < spacesToFill; i++) {
-              lines[currentRow()].insert(currentCol(), 1, ' ');
+              currentLine().insert(currentCol(), 1, ' ');
               cursorRight();
             }
           }
@@ -192,7 +191,7 @@ struct Editor {
 
   void cursorHome() { cursorX = 0; }
 
-  void cursorEnd() { cursorX = lines[currentRow()].size(); }
+  void cursorEnd() { cursorX = currentLine().size(); }
 
   void fixCursorPos() {
     if (cursorY >= (int)lines.size()) cursorY = lines.size() - 1;
@@ -209,10 +208,25 @@ struct Editor {
     // Now cursorY is either on a line or on 0 when there are no lines.
 
     if (cursorY < (int)lines.size()) {
-      if (cursorX > (int)lines[currentRow()].size())
-        cursorX = lines[currentRow()].size();
+      if (cursorX > (int)currentLine().size()) cursorX = currentLine().size();
       if (cursorX >= terminalCols()) cursorX = terminalCols() - 1;
-      if (cursorX < 0) cursorX = 0;
+      if (cursorX < 0) {
+        if (currentRow() > 0) {
+          if (cursorY <= 0) {
+            if (verticalScroll > 0) {
+              verticalScroll--;
+              cursorX = currentLine().size();
+            } else {
+              dlog("Error: vscroll not suppose to be 0");
+            }
+          } else {
+            cursorY--;
+            cursorX = currentLine().size();
+          }
+        } else {
+          cursorX = 0;
+        }
+      }
     } else {
       cursorX = 0;
     }
@@ -221,6 +235,8 @@ struct Editor {
 
   int currentRow() { return verticalScroll + cursorY; }
   int currentCol() { return horizontalScroll + cursorX; }
+
+  string& currentLine() { return lines[currentRow()]; }
 
   int terminalRows() { return terminalDimension.first; }
   int terminalCols() { return terminalDimension.second; }
