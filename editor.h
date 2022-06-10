@@ -128,6 +128,8 @@ struct Editor {
 
       fflush(STDIN_FILENO);
     }
+
+    clearScreen();
   }
 
   void executeTextEditInput(TypedChar tc) {
