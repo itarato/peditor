@@ -211,6 +211,7 @@ struct Editor {
       if (iscntrl(tc.simple())) {
         if (tc.simple() == ESCAPE) closePrompt();
         if (tc.simple() == ENTER) finalizeAndClosePrompt();
+        if (tc.simple() == BACKSPACE) prompt.message.pop_back();
       } else {
         prompt.message.push_back(tc.simple());
       }
