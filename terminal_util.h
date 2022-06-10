@@ -16,6 +16,7 @@ using namespace std;
 struct termios orig_termios;
 
 #define BACKSPACE char(127)
+#define ESCAPE char(27)
 #define ENTER char(13)
 #define TAB char(9)
 
