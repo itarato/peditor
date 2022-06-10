@@ -125,8 +125,6 @@ struct Editor {
           executePrompt(tc);
           break;
       }
-
-      fflush(STDIN_FILENO);
     }
 
     clearScreen();
