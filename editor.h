@@ -134,7 +134,7 @@ struct Editor {
     if (tc.is_simple()) {
       if (iscntrl(tc.simple())) {
         // Ignore for now.
-        dlog("ctrl char: %d", uint(tc.simple()));
+        dlog("ctrl char: %d", (u_int8_t)tc.simple());
       } else {
         if (currentRow() < (int)lines.size() &&
             currentCol() <= (int)currentLine().size()) {
@@ -183,8 +183,8 @@ struct Editor {
         advance(lineIt, currentRow() + 1);
         lines.insert(lineIt, newLine);
 
-        cursorDown();
         cursorHome();
+        cursorDown();
       }
 
       if (tc.simple() == TAB) {
