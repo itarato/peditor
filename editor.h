@@ -128,6 +128,7 @@ struct Editor {
     }
 
     clearScreen();
+    resetCursorLocation();
   }
 
   void executeTextEditInput(TypedChar tc) {
@@ -313,6 +314,10 @@ struct Editor {
   int terminalRows() { return terminalDimension.first; }
   int terminalCols() { return terminalDimension.second; }
 
+  string decorateLine(string &line) {
+    return line;
+  }
+
   void drawLines() {
     resetCursorLocation();
 
@@ -320,7 +325,8 @@ struct Editor {
          lineNo++) {
       if (size_t(lineNo) < lines.size()) {
         // TODO: include horizontalScroll
-        write(STDOUT_FILENO, lines[lineNo].c_str(), lines[lineNo].size());
+        string decoratedLine = decorateLine(lines[lineNo]);
+        write(STDOUT_FILENO, decoratedLine.c_str(), decoratedLine.size());
       } else {
         write(STDOUT_FILENO, "~", 1);
       }
