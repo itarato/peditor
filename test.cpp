@@ -113,6 +113,18 @@ void test_find_string_middle() {
   ASSERT_EQ(5, (int)result[0].end);
 }
 
+void test_find_single_quoted_string() {
+  string raw = "--'a'--";
+  SyntaxHighlightConfig conf{};
+
+  TokenAnalyzer ta{conf};
+  auto result = ta.colorizeTokens(raw);
+
+  ASSERT_EQ(1, (int)result.size());
+  ASSERT_EQ(2, (int)result[0].start);
+  ASSERT_EQ(4, (int)result[0].end);
+}
+
 void test_find_word() {
   string raw = "for";
   SyntaxHighlightConfig conf{};
@@ -175,6 +187,8 @@ int main() {
 
   test_find_string();
   test_find_string_middle();
+
+  test_find_single_quoted_string();
 
   test_find_word();
   test_does_not_find_unknown_word();

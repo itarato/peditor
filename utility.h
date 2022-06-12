@@ -5,8 +5,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iterator>
-#include <map>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -18,11 +18,16 @@ using namespace std;
 struct SyntaxHighlightConfig {
   const char *numberColor{"92"};
   const char *stringColor{"93"};
-  vector<const char *> lvl1Words{"struct", "class", "namespace", "include",
-                                 "return"};
+  const char *parenColor{"91"};
   const char *lvl1Color{"96"};
-  vector<const char *> lvl2Words{"if", "for", "while", "switch", "case"};
   const char *lvl2Color{"35"};
+
+  unordered_set<const char *> lvl1Words{
+      "struct", "class",     "namespace", "include", "return",  "default",
+      "public", "protected", "private",   "using",   "typedef", "enum"};
+
+  unordered_set<const char *> lvl2Words{"if",     "for",  "while",
+                                        "switch", "case", "const"};
 };
 
 struct SyntaxColorInfo {
@@ -84,6 +89,7 @@ enum class TokenState {
   Word,
   Number,
   DoubleQuotedString,
+  SingleQuotedString,
 };
 
 struct TokenAnalyzer {
@@ -129,6 +135,17 @@ struct TokenAnalyzer {
             if (!isLast) it++;
           }
           break;
+        case TokenState::SingleQuotedString:
+          current.push_back(*it);
+
+          if (*it == '\'') {
+            tokenDidComplete = true;
+            end = distance(input.begin(), it);
+
+            // We don't want this to be evald in this loop anymore.
+            if (!isLast) it++;
+          }
+          break;
         case TokenState::Nothing:
           state = checkStart(&it, current);
           break;
@@ -155,7 +172,7 @@ struct TokenAnalyzer {
 
  private:
   const char *analyzeToken(TokenState state, string &token) {
-    vector<const char *>::iterator wordIt;
+    unordered_set<const char *>::iterator wordIt;
 
     switch (state) {
       case TokenState::Number:
@@ -171,6 +188,7 @@ struct TokenAnalyzer {
         }
         return nullptr;
       case TokenState::DoubleQuotedString:
+      case TokenState::SingleQuotedString:
         return config.stringColor;
       default:
         return nullptr;
@@ -183,6 +201,11 @@ struct TokenAnalyzer {
 
     if (**it == '"') {
       state = TokenState::DoubleQuotedString;
+      foundNewStart = true;
+    }
+
+    if (**it == '\'') {
+      state = TokenState::SingleQuotedString;
       foundNewStart = true;
     }
 
