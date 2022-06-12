@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iterator>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -12,6 +13,16 @@
 #define TYPED_CHAR_ESCAPE 1
 
 using namespace std;
+
+struct SyntaxHighlightConfig {
+  const char *numberColor{"92"};
+  const char *stringColor{"93"};
+  vector<const char *> lvl1Words{"struct", "class", "namespace", "include",
+                                 "return"};
+  const char *lvl1Color{"96"};
+  vector<const char *> lvl2Words{"if", "for", "while", "switch", "case"};
+  const char *lvl2Color{"35"};
+};
 
 struct SyntaxColorInfo {
   int start;
