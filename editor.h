@@ -212,8 +212,14 @@ struct Editor {
   void executePrompt(TypedChar tc) {
     if (tc.is_simple()) {
       if (iscntrl(tc.simple())) {
-        if (tc.simple() == ESCAPE) closePrompt();
-        if (tc.simple() == ENTER) finalizeAndClosePrompt();
+        if (tc.simple() == ESCAPE) {
+          closePrompt();
+          return;
+        }
+        if (tc.simple() == ENTER) {
+          finalizeAndClosePrompt();
+          return;
+        }
         if (tc.simple() == BACKSPACE) prompt.message.pop_back();
       } else {
         prompt.message.push_back(tc.simple());
@@ -347,7 +353,7 @@ struct Editor {
   }
 
   void drawLines(string& out) {
-    resetCursorLocation();
+    resetCursorLocation(out);
 
     SyntaxHighlightConfig syntaxHighlightConfig;
     TokenAnalyzer ta{syntaxHighlightConfig};
@@ -395,6 +401,8 @@ struct Editor {
   }
 
   void openPrompt(string prefix, Command command) {
+    dlog("prompt open cx: %d", cursorX);
+
     mode = EditorMode::Prompt;
     prompt.reset(prefix, command, cursorX, cursorY);
     cursorX = prompt.prefix.size() + prompt.message.size();
@@ -418,5 +426,7 @@ struct Editor {
     mode = EditorMode::TextEdit;
     cursorX = prompt.previousCursorX;
     cursorY = prompt.previousCursorY;
+
+    dlog("prompt close cx: %d", cursorX);
   }
 };

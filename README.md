@@ -26,3 +26,4 @@ make runtests
 - Open file: `./pedit <FILENAME>`
 - Save: `CTRL` + `s`
 - Save as: `CTRL` + `o`
+- Exit: `CTRL` + `q`

@@ -51,6 +51,7 @@ void preserveTermiosOriginalState() {
 }
 
 void resetCursorLocation() { write(STDOUT_FILENO, "\x1b[H", 3); }
+void resetCursorLocation(string &out) { out.append("\x1b[H"); }
 
 void setCursorLocation(string &out, int row, int col) {
   char buf[32];
