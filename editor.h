@@ -346,8 +346,9 @@ struct Editor {
     return out;
   }
 
-  void drawLines() {
+  void drawLines(string& out) {
     resetCursorLocation();
+
     SyntaxHighlightConfig syntaxHighlightConfig;
     TokenAnalyzer ta{syntaxHighlightConfig};
 
@@ -356,22 +357,21 @@ struct Editor {
       if (size_t(lineNo) < lines.size()) {
         // TODO: include horizontalScroll
         string& line = lines[lineNo];
-
         string decoratedLine = decorateLine(line, ta.colorizeTokens(line));
 
-        write(STDOUT_FILENO, decoratedLine.c_str(), decoratedLine.size());
+        out.append(decoratedLine);
       } else {
-        write(STDOUT_FILENO, "~", 1);
+        out.push_back('~');
       }
 
       if (lineNo < verticalScroll + terminalRows() - 1) {
-        write(STDOUT_FILENO, "\n\r", 2);
+        out.append("\n\r");
       }
 
       if (mode == EditorMode::Prompt) {
         if (lineNo == verticalScroll + terminalRows() - 2) {
-          write(STDOUT_FILENO, prompt.prefix.c_str(), prompt.prefix.size());
-          write(STDOUT_FILENO, prompt.message.c_str(), prompt.message.size());
+          out.append(prompt.prefix);
+          out.append(prompt.message);
           break;
         }
       }
@@ -379,11 +379,15 @@ struct Editor {
   }
 
   void refreshScreen() {
+    string out{};
+
     hideCursor();
-    clearScreen();
-    drawLines();
-    setCursorLocation(cursorY, cursorX);
-    showCursor();
+    clearScreen(out);
+    drawLines(out);
+    setCursorLocation(out, cursorY, cursorX);
+    showCursor(out);
+
+    write(STDOUT_FILENO, out.c_str(), out.size());
   }
 
   void refreshTerminalDimension() {

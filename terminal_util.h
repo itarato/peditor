@@ -52,14 +52,15 @@ void preserveTermiosOriginalState() {
 
 void resetCursorLocation() { write(STDOUT_FILENO, "\x1b[H", 3); }
 
-void setCursorLocation(int row, int col) {
+void setCursorLocation(string &out, int row, int col) {
   char buf[32];
 
   snprintf(buf, sizeof(buf), "\x1b[%d;%dH", row + 1, col + 1);
-  write(STDOUT_FILENO, buf, strlen(buf));
+  out.append(buf, strlen(buf));
 }
 
 void clearScreen() { write(STDOUT_FILENO, "\x1b[2J", 4); }
+void clearScreen(string &out) { out.append("\x1b[2J"); }
 
 int getCursorPosition(int *rows, int *cols) {
   char buf[32];
@@ -130,4 +131,4 @@ TypedChar readKey() {
 
 void hideCursor() { write(STDOUT_FILENO, "\x1b[?25l", 6); }
 
-void showCursor() { write(STDOUT_FILENO, "\x1b[?25h", 6); }
+void showCursor(string &out) { out.append("\x1b[?25h"); }
