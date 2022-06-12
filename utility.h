@@ -84,12 +84,17 @@ void reportAndExit(const char *s) {
   exit(EXIT_FAILURE);
 }
 
+bool isParen(char c) {
+  return c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}';
+}
+
 enum class TokenState {
   Nothing,
   Word,
   Number,
   DoubleQuotedString,
   SingleQuotedString,
+  Paren,
 };
 
 struct TokenAnalyzer {
@@ -146,6 +151,14 @@ struct TokenAnalyzer {
             if (!isLast) it++;
           }
           break;
+        case TokenState::Paren:
+          if (isParen(*it)) {
+            current.push_back(*it);
+          } else {
+            tokenDidComplete = true;
+            end = distance(input.begin(), it) - 1;
+          }
+          break;
         case TokenState::Nothing:
           state = checkStart(&it, current);
           break;
@@ -190,6 +203,8 @@ struct TokenAnalyzer {
       case TokenState::DoubleQuotedString:
       case TokenState::SingleQuotedString:
         return config.stringColor;
+      case TokenState::Paren:
+        return config.parenColor;
       default:
         return nullptr;
     }
@@ -216,6 +231,11 @@ struct TokenAnalyzer {
 
     if (isalpha(**it)) {
       state = TokenState::Word;
+      foundNewStart = true;
+    }
+
+    if (isParen(**it)) {
+      state = TokenState::Paren;
       foundNewStart = true;
     }
 
