@@ -125,6 +125,18 @@ void test_find_word() {
   ASSERT_EQ(2, (int)result[0].end);
 }
 
+void test_does_not_find_unknown_word() {
+  string raw = "hello for ever";
+  SyntaxHighlightConfig conf{};
+
+  TokenAnalyzer ta{conf};
+  auto result = ta.colorizeTokens(raw);
+
+  ASSERT_EQ(1, (int)result.size());
+  ASSERT_EQ(6, (int)result[0].start);
+  ASSERT_EQ(8, (int)result[0].end);
+}
+
 void test_find_complex_examples() {
   string raw = "for 123for x3 \"12'ab\"";
   SyntaxHighlightConfig conf{};
@@ -165,6 +177,7 @@ int main() {
   test_find_string_middle();
 
   test_find_word();
+  test_does_not_find_unknown_word();
 
   test_find_complex_examples();
 
