@@ -348,8 +348,8 @@ struct Editor {
 
   void drawLines() {
     resetCursorLocation();
-    vector<string> fakeTokenInfo;
-    TokenAnalyzer ta{fakeTokenInfo};
+    SyntaxHighlightConfig syntaxHighlightConfig;
+    TokenAnalyzer ta{syntaxHighlightConfig};
 
     for (int lineNo = verticalScroll; lineNo < verticalScroll + terminalRows();
          lineNo++) {

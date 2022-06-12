@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -86,9 +87,9 @@ enum class TokenState {
 };
 
 struct TokenAnalyzer {
-  vector<string> &tokenInfo;
+  SyntaxHighlightConfig &config;
 
-  TokenAnalyzer(vector<string> &tokenInfo) : tokenInfo(tokenInfo) {}
+  TokenAnalyzer(SyntaxHighlightConfig &config) : config(config) {}
 
   vector<SyntaxColorInfo> colorizeTokens(string &input) {
     string current{};
@@ -154,13 +155,23 @@ struct TokenAnalyzer {
 
  private:
   const char *analyzeToken(TokenState state, string &token) {
+    vector<const char *>::iterator wordIt;
+
     switch (state) {
       case TokenState::Number:
-        return "92";
+        return config.numberColor;
       case TokenState::Word:
-        return "93";
+        wordIt = find(config.lvl1Words.begin(), config.lvl1Words.end(), token);
+        if (wordIt != config.lvl1Words.end()) {
+          return config.lvl1Color;
+        }
+        wordIt = find(config.lvl2Words.begin(), config.lvl2Words.end(), token);
+        if (wordIt != config.lvl2Words.end()) {
+          return config.lvl2Color;
+        }
+        return nullptr;
       case TokenState::DoubleQuotedString:
-        return "96";
+        return config.stringColor;
       default:
         return nullptr;
     }
