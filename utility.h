@@ -86,8 +86,8 @@ struct TokenAnalyzer {
 
     for (auto it = input.begin(); it != input.end(); it++) {
       bool tokenDidComplete{false};
-      bool isLast = it + 1 == input.end();
       int end = distance(input.begin(), it);
+      bool isLast = it + 1 == input.end();
 
       switch (state) {
         case TokenState::Word:
@@ -112,6 +112,9 @@ struct TokenAnalyzer {
           if (*it == '"') {
             tokenDidComplete = true;
             end = distance(input.begin(), it);
+
+            // We don't want this to be evald in this loop anymore.
+            if (!isLast) it++;
           }
           break;
         case TokenState::Nothing:
@@ -119,6 +122,8 @@ struct TokenAnalyzer {
           break;
       }
 
+      // Reload flag do to iterator adjustment.
+      isLast = it + 1 == input.end();
       if (tokenDidComplete || isLast) {
         const char *colorResult = analyzeToken(state, current);
         if (colorResult) {
