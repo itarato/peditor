@@ -235,11 +235,21 @@ struct Editor {
 
   void cursorDown() {
     cursorY++;
+
+    if (onLineRow()) {
+      cursorX = min(cursorX, (int)currentLine().size());
+    }
+
     fixCursorPos();
   }
 
   void cursorUp() {
     cursorY--;
+
+    if (onLineRow()) {
+      cursorX = min(cursorX, (int)currentLine().size());
+    }
+
     fixCursorPos();
   }
 
