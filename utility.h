@@ -16,9 +16,9 @@ using namespace std;
 struct SyntaxColorInfo {
   int start;
   int end;
-  int colorCode;
+  const char *colorCode;
 
-  SyntaxColorInfo(int start, int end, int colorCode)
+  SyntaxColorInfo(int start, int end, const char *colorCode)
       : start(start), end(end), colorCode(colorCode) {}
 };
 
@@ -74,76 +74,106 @@ enum class TokenState {
   DoubleQuotedString,
 };
 
-int analyzeToken(TokenState state, string &token) { return -1; }
+struct TokenAnalyzer {
+  vector<string> &tokenInfo;
 
-vector<SyntaxColorInfo> colorizeTokens(string &input, vector<string> &tokens) {
-  string current{};
-  TokenState state;
-  vector<SyntaxColorInfo> out{};
-  bool foundNewStart{false};
+  TokenAnalyzer(vector<string> &tokenInfo) : tokenInfo(tokenInfo) {}
 
-  for (auto it = input.begin(); it != input.end(); it++) {
-    bool tokenDidComplete{false};
+  vector<SyntaxColorInfo> colorizeTokens(string &input) {
+    string current{};
+    TokenState state{TokenState::Nothing};
+    vector<SyntaxColorInfo> out{};
 
+    for (auto it = input.begin(); it != input.end(); it++) {
+      bool tokenDidComplete{false};
+      bool isLast = it + 1 == input.end();
+      int end = distance(input.begin(), it);
+
+      switch (state) {
+        case TokenState::Word:
+          if (isalpha(*it)) {
+            current.push_back(*it);
+          } else {
+            tokenDidComplete = true;
+            end = distance(input.begin(), it) - 1;
+          }
+          break;
+        case TokenState::Number:
+          if (isdigit(*it)) {
+            current.push_back(*it);
+          } else {
+            tokenDidComplete = true;
+            end = distance(input.begin(), it) - 1;
+          }
+          break;
+        case TokenState::DoubleQuotedString:
+          current.push_back(*it);
+
+          if (*it == '"') {
+            tokenDidComplete = true;
+            end = distance(input.begin(), it);
+          }
+          break;
+        case TokenState::Nothing:
+          state = checkStart(&it, current);
+          break;
+      }
+
+      if (tokenDidComplete || isLast) {
+        const char *colorResult = analyzeToken(state, current);
+        if (colorResult) {
+          out.emplace_back(end - current.size() + 1, end, colorResult);
+        }
+
+        state = TokenState::Nothing;
+      }
+
+      if (state == TokenState::Nothing) {
+        state = checkStart(&it, current);
+      }
+    }
+
+    return out;
+  }
+
+ private:
+  const char *analyzeToken(TokenState state, string &token) {
     switch (state) {
-      case TokenState::Word:
-        if (isalpha(*it)) {
-          current.push_back(*it);
-        } else {
-          tokenDidComplete = true;
-        }
-        break;
       case TokenState::Number:
-        if (isdigit(*it)) {
-          current.push_back(*it);
-        } else {
-          tokenDidComplete = true;
-        }
-        break;
+        return "92";
+      case TokenState::Word:
+        return "93";
       case TokenState::DoubleQuotedString:
-        current.push_back(*it);
-
-        if (*it == '"') tokenDidComplete = true;
-        break;
-      case TokenState::Nothing:
-        // Noop.
-        break;
-    }
-
-    if (tokenDidComplete) {
-      int colorResult = analyzeToken(state, current);
-      if (colorResult >= 0) {
-        int end = distance(input.begin(), it);
-        out.emplace_back(end - current.size(), end, colorResult);
-      }
-
-      state = TokenState::Nothing;
-    }
-
-    if (state == TokenState::Nothing) {
-      foundNewStart = false;
-
-      if (*it == '"') {
-        state = TokenState::DoubleQuotedString;
-        foundNewStart = true;
-      }
-
-      if (isdigit(*it)) {
-        state = TokenState::Number;
-        foundNewStart = true;
-      }
-
-      if (isalpha(*it)) {
-        state = TokenState::Word;
-        foundNewStart = true;
-      }
-
-      if (foundNewStart) {
-        current.clear();
-        current.push_back(*it);
-      }
+        return "96";
+      default:
+        return nullptr;
     }
   }
 
-  return out;
-}
+  TokenState checkStart(string::iterator *it, string &current) {
+    bool foundNewStart = false;
+    TokenState state{TokenState::Nothing};
+
+    if (**it == '"') {
+      state = TokenState::DoubleQuotedString;
+      foundNewStart = true;
+    }
+
+    if (isdigit(**it)) {
+      state = TokenState::Number;
+      foundNewStart = true;
+    }
+
+    if (isalpha(**it)) {
+      state = TokenState::Word;
+      foundNewStart = true;
+    }
+
+    if (foundNewStart) {
+      current.clear();
+      current.push_back(**it);
+    }
+
+    return state;
+  }
+};

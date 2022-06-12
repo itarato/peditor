@@ -3,7 +3,9 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <fstream>
 #include <iterator>
 #include <optional>
@@ -314,18 +316,49 @@ struct Editor {
   int terminalRows() { return terminalDimension.first; }
   int terminalCols() { return terminalDimension.second; }
 
-  string decorateLine(string &line) {
-    return line;
+  string decorateLine(string& line, vector<SyntaxColorInfo> colors) {
+    string out{};
+
+    int offset{0};
+    auto lineIt = line.begin();
+
+    for (auto& color : colors) {
+      string prefix = "\x1b[";
+      prefix.append(color.colorCode);
+      prefix.push_back('m');
+
+      string suffix{"\x1b[39m"};
+
+      copy(lineIt, lineIt + (color.start - offset), back_inserter(out));
+      advance(lineIt, color.start - offset);
+      offset = color.end + 1;
+
+      out.append(prefix);
+
+      copy(lineIt, lineIt + (color.end - color.start + 1), back_inserter(out));
+      advance(lineIt, color.end - color.start + 1);
+
+      out.append(suffix);
+    }
+
+    copy(lineIt, line.end(), back_inserter(out));
+
+    return out;
   }
 
   void drawLines() {
     resetCursorLocation();
+    vector<string> fakeTokenInfo;
+    TokenAnalyzer ta{fakeTokenInfo};
 
     for (int lineNo = verticalScroll; lineNo < verticalScroll + terminalRows();
          lineNo++) {
       if (size_t(lineNo) < lines.size()) {
         // TODO: include horizontalScroll
-        string decoratedLine = decorateLine(lines[lineNo]);
+        string& line = lines[lineNo];
+
+        string decoratedLine = decorateLine(line, ta.colorizeTokens(line));
+
         write(STDOUT_FILENO, decoratedLine.c_str(), decoratedLine.size());
       } else {
         write(STDOUT_FILENO, "~", 1);
