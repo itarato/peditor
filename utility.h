@@ -44,6 +44,10 @@ enum class EscapeChar {
   Down,
   Left,
   Right,
+  MetaUp,
+  MetaDown,
+  MetaLeft,
+  MetaRight,
   Home,
   End,
 };

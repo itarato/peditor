@@ -7,7 +7,7 @@
 using namespace std;
 
 int main(int argc, char** argv) {
-  dlog("peditor start");
+  DLOG("peditor start");
 
   Config config{};
 
@@ -20,7 +20,7 @@ int main(int argc, char** argv) {
   editor.init();
   editor.runLoop();
 
-  dlog("peditor end");
+  DLOG("peditor end");
 
   return EXIT_SUCCESS;
 }

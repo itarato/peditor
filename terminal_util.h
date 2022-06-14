@@ -117,33 +117,53 @@ TypedChar readKey() {
     char c2{'\0'};
     char c3{'\0'};
 
-    dlog("Start reading escape");
+    DLOG("Start reading escape");
 
     if (read(STDIN_FILENO, &c1, 1) != 1) {
-      dlog("Failed reading follow up char.");
+      DLOG("Failed reading follow up char.");
       return c;
     }
 
-    if (c1 != '\x1b') {
-    }
+    if (c1 == '[') {
+      if (read(STDIN_FILENO, &c2, 1) != 1) {
+        DLOG("Cannot read char");
+        return c;
+      }
 
-    if (c1 != '[') {
-      dlog("Not special char - second part: %d %c", int(c1));
+      if (c2 == 'A') return TypedChar(EscapeChar::Up);
+      if (c2 == 'B') return TypedChar(EscapeChar::Down);
+      if (c2 == 'C') return TypedChar(EscapeChar::Right);
+      if (c2 == 'D') return TypedChar(EscapeChar::Left);
+      if (c2 == 'H') return TypedChar(EscapeChar::Home);
+      if (c2 == 'F') return TypedChar(EscapeChar::End);
+
+      DLOG("Uncaught escape char: %d %c", int(c2), c2);
+    } else if (c1 == '\x1b') {
+      if (read(STDIN_FILENO, &c2, 1) != 1) {
+        DLOG("Cannot read char");
+        return c;
+      }
+
+      if (c2 == '[') {
+        if (read(STDIN_FILENO, &c3, 1) != 1) {
+          DLOG("Cannot read char");
+          return c;
+        }
+
+        if (c3 == 'A') return TypedChar(EscapeChar::MetaUp);
+        if (c3 == 'B') return TypedChar(EscapeChar::MetaDown);
+        if (c3 == 'C') return TypedChar(EscapeChar::MetaRight);
+        if (c3 == 'D') return TypedChar(EscapeChar::MetaLeft);
+
+        DLOG("Uncaught escape char: %d %c", int(c3), c3);
+      } else {
+        DLOG("Unknown follow up char to <escape>: %d", int(c2));
+        return c;
+      }
+    } else {
+      DLOG("Unknown follow up char to <escape>: %d", int(c1));
       return c;
     }
-    if (read(STDIN_FILENO, &c2, 1) != 1) {
-      dlog("Not special char - third part: %d %c", int(c2));
-      return c;
-    }
-
-    if (c2 == 'A') return TypedChar(EscapeChar::Up);
-    if (c2 == 'B') return TypedChar(EscapeChar::Down);
-    if (c2 == 'C') return TypedChar(EscapeChar::Right);
-    if (c2 == 'D') return TypedChar(EscapeChar::Left);
-    if (c2 == 'H') return TypedChar(EscapeChar::Home);
-    if (c2 == 'F') return TypedChar(EscapeChar::End);
-
-    dlog("Uncaught escape char: %c", c2);
   }
 
   return TypedChar{c};

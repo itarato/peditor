@@ -80,7 +80,7 @@ struct Editor {
   }
 
   void loadFile(string fileName) {
-    dlog("Loading file: %s", fileName.c_str());
+    DLOG("Loading file: %s", fileName.c_str());
 
     ifstream f(fileName);
 
@@ -96,7 +96,7 @@ struct Editor {
   }
 
   void saveFile() {
-    dlog("Save file: %s", config.fileName.value().c_str());
+    DLOG("Save file: %s", config.fileName.value().c_str());
     ofstream f(config.fileName.value(), ios::out | ios::trunc);
 
     for (int i = 0; i < (int)lines.size(); i++) {
@@ -137,7 +137,7 @@ struct Editor {
     if (tc.is_simple()) {
       if (iscntrl(tc.simple())) {
         // Ignore for now.
-        dlog("ctrl char: %d", (u_int8_t)tc.simple());
+        DLOG("ctrl char: %d", (u_int8_t)tc.simple());
       } else {
         if (currentRow() < (int)lines.size() &&
             currentCol() <= (int)currentLine().size()) {
@@ -169,7 +169,7 @@ struct Editor {
             cursorTo(cursorY - 1, oldLineLen);
           }
         } else {
-          dlog("Error: cannot backspace on not line row");
+          DLOG("Error: cannot backspace on not line row");
         }
       }
 
@@ -308,7 +308,7 @@ struct Editor {
               verticalScroll--;
               cursorX = currentLine().size();
             } else {
-              dlog("Error: vscroll not suppose to be 0");
+              DLOG("Error: vscroll not suppose to be 0");
             }
           } else {
             cursorY--;
@@ -411,7 +411,7 @@ struct Editor {
   }
 
   void openPrompt(string prefix, Command command) {
-    dlog("prompt open cx: %d", cursorX);
+    DLOG("prompt open cx: %d", cursorX);
 
     mode = EditorMode::Prompt;
     prompt.reset(prefix, command, cursorX, cursorY);
@@ -437,6 +437,6 @@ struct Editor {
     cursorX = prompt.previousCursorX;
     cursorY = prompt.previousCursorY;
 
-    dlog("prompt close cx: %d", cursorX);
+    DLOG("prompt close cx: %d", cursorX);
   }
 };
