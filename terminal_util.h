@@ -113,9 +113,28 @@ TypedChar readKey() {
   }
 
   if (c == '\x1b') {
-    char c1, c2;
-    if (read(STDIN_FILENO, &c1, 1) != 1 || c1 != '[') return c;
-    if (read(STDIN_FILENO, &c2, 1) != 1) return c;
+    char c1{'\0'};
+    char c2{'\0'};
+    char c3{'\0'};
+
+    dlog("Start reading escape");
+
+    if (read(STDIN_FILENO, &c1, 1) != 1) {
+      dlog("Failed reading follow up char.");
+      return c;
+    }
+
+    if (c1 != '\x1b') {
+    }
+
+    if (c1 != '[') {
+      dlog("Not special char - second part: %d %c", int(c1));
+      return c;
+    }
+    if (read(STDIN_FILENO, &c2, 1) != 1) {
+      dlog("Not special char - third part: %d %c", int(c2));
+      return c;
+    }
 
     if (c2 == 'A') return TypedChar(EscapeChar::Up);
     if (c2 == 'B') return TypedChar(EscapeChar::Down);
