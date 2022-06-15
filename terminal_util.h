@@ -21,6 +21,14 @@ struct termios orig_termios;
 #define ENTER char(13)
 #define TAB char(9)
 
+vector<pair<string, EscapeChar>> escapeCharMap{
+    {"[A", EscapeChar::Up},           {"[B", EscapeChar::Down},
+    {"[C", EscapeChar::Right},        {"[D", EscapeChar::Left},
+    {"[H", EscapeChar::Home},         {"[F", EscapeChar::End},
+    {"[1;5A", EscapeChar::CtrlUp},    {"[1;5B", EscapeChar::CtrlDown},
+    {"[1;5C", EscapeChar::CtrlRight}, {"[1;5D", EscapeChar::CtrlLeft},
+};
+
 void enableRawMode() {
   struct termios raw = orig_termios;
 
@@ -112,61 +120,33 @@ TypedChar readKey() {
     }
   }
 
-  if (c == '\x1b') {
-    char c1{'\0'};
-    char c2{'\0'};
-    char c3{'\0'};
+  if (c != '\x1b') return TypedChar{c};
 
-    DLOG("Start reading escape");
+  string combo{};
 
-    if (read(STDIN_FILENO, &c1, 1) != 1) {
-      DLOG("Failed reading follow up char.");
-      return c;
+  for (;;) {
+    if (read(STDIN_FILENO, &c, 1) != 1) {
+      DLOG("Cannot read follow up combo char");
+      return TYPED_CHAR_FAILURE;
     }
 
-    if (c1 == '[') {
-      if (read(STDIN_FILENO, &c2, 1) != 1) {
-        DLOG("Cannot read char");
-        return c;
+    combo.push_back(c);
+    bool hasMatch{false};
+
+    for (auto &[escapeCombo, escapeEnum] : escapeCharMap) {
+      if (escapeCombo.starts_with(combo)) {
+        if (escapeCombo == combo) return TypedChar{escapeEnum};
+
+        hasMatch = true;
+        break;
       }
+    }
 
-      if (c2 == 'A') return TypedChar(EscapeChar::Up);
-      if (c2 == 'B') return TypedChar(EscapeChar::Down);
-      if (c2 == 'C') return TypedChar(EscapeChar::Right);
-      if (c2 == 'D') return TypedChar(EscapeChar::Left);
-      if (c2 == 'H') return TypedChar(EscapeChar::Home);
-      if (c2 == 'F') return TypedChar(EscapeChar::End);
-
-      DLOG("Uncaught escape char: %d %c", int(c2), c2);
-    } else if (c1 == '\x1b') {
-      if (read(STDIN_FILENO, &c2, 1) != 1) {
-        DLOG("Cannot read char");
-        return c;
-      }
-
-      if (c2 == '[') {
-        if (read(STDIN_FILENO, &c3, 1) != 1) {
-          DLOG("Cannot read char");
-          return c;
-        }
-
-        if (c3 == 'A') return TypedChar(EscapeChar::MetaUp);
-        if (c3 == 'B') return TypedChar(EscapeChar::MetaDown);
-        if (c3 == 'C') return TypedChar(EscapeChar::MetaRight);
-        if (c3 == 'D') return TypedChar(EscapeChar::MetaLeft);
-
-        DLOG("Uncaught escape char: %d %c", int(c3), c3);
-      } else {
-        DLOG("Unknown follow up char to <escape>: %d", int(c2));
-        return c;
-      }
-    } else {
-      DLOG("Unknown follow up char to <escape>: %d", int(c1));
-      return c;
+    if (!hasMatch) {
+      DLOG("Failed detecting key combo. Prefix %s", combo.c_str());
+      return TYPED_CHAR_FAILURE;
     }
   }
-
-  return TypedChar{c};
 }
 
 void hideCursor() { write(STDOUT_FILENO, "\x1b[?25l", 6); }

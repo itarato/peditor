@@ -44,10 +44,10 @@ enum class EscapeChar {
   Down,
   Left,
   Right,
-  MetaUp,
-  MetaDown,
-  MetaLeft,
-  MetaRight,
+  CtrlUp,
+  CtrlDown,
+  CtrlLeft,
+  CtrlRight,
   Home,
   End,
 };
@@ -74,6 +74,8 @@ struct TypedChar {
     type = TYPED_CHAR_ESCAPE;
   }
 
+  bool is_failure() { return c.ch == '\0' && type == TYPED_CHAR_SIMPLE; }
+
   bool is_simple() { return type == TYPED_CHAR_SIMPLE; }
 
   bool is_escape() { return type == TYPED_CHAR_ESCAPE; }
@@ -82,6 +84,8 @@ struct TypedChar {
 
   EscapeChar escape() { return c.escapeCh; }
 };
+
+#define TYPED_CHAR_FAILURE (TypedChar{'\0'})
 
 void reportAndExit(const char *s) {
   perror(s);

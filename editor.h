@@ -118,6 +118,7 @@ struct Editor {
       refreshTerminalDimension();
 
       tc = readKey();
+      if (tc.is_failure()) continue;
 
       switch (mode) {
         case EditorMode::TextEdit:
