@@ -1,0 +1,5 @@
+- word jumping navigation
+- line numbers
+- search
+- file change detection
+- remember column position
