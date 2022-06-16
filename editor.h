@@ -209,11 +209,19 @@ struct Editor {
       if (tc.escape() == EscapeChar::End) cursorEnd();
 
       if (tc.escape() == EscapeChar::CtrlLeft) {
-        cursorX = prevWordJumpLocation(currentLine(), cursorX);
+        if (isBeginningOfCurrentLine()) {
+          cursorLeft();
+        } else {
+          cursorX = prevWordJumpLocation(currentLine(), cursorX);
+        }
       }
 
       if (tc.escape() == EscapeChar::CtrlRight) {
-        cursorX = nextWordJumpLocation(currentLine(), cursorX);
+        if (isEndOfCurrentLine()) {
+          cursorRight();
+        } else {
+          cursorX = nextWordJumpLocation(currentLine(), cursorX);
+        }
       }
     }
   }
@@ -337,6 +345,9 @@ struct Editor {
   int currentCol() { return horizontalScroll + cursorX; }
 
   string& currentLine() { return lines[currentRow()]; }
+
+  bool isEndOfCurrentLine() { return cursorX >= (int)currentLine().size(); }
+  bool isBeginningOfCurrentLine() { return cursorX <= 0; }
 
   int terminalRows() { return terminalDimension.first; }
   int terminalCols() { return terminalDimension.second; }

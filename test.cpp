@@ -187,6 +187,9 @@ void test_next_word_jump_location() {
   s = " abc_ _GHI  ";
   ASSERT_EQ(7, nextWordJumpLocation(s, 3));
   ASSERT_EQ(0, nextWordJumpLocation(s, -1));
+
+  s = "abc";
+  ASSERT_EQ(3, nextWordJumpLocation(s, 0));
 }
 
 void test_prev_word_jump_location() {
@@ -202,6 +205,9 @@ void test_prev_word_jump_location() {
 
   s = " abc_ _GHI  ";
   ASSERT_EQ(3, prevWordJumpLocation(s, 7));
+
+  s = "abc";
+  ASSERT_EQ(0, prevWordJumpLocation(s, 3));
 }
 
 int main() {
