@@ -10,6 +10,8 @@
 #include <utility>
 #include <vector>
 
+#include "debug.h"
+
 #define TYPED_CHAR_SIMPLE 0
 #define TYPED_CHAR_ESCAPE 1
 
@@ -255,3 +257,39 @@ struct TokenAnalyzer {
     return state;
   }
 };
+
+int nextWordJumpLocation(string &line, int currentPos) {
+  if (currentPos >= (int)line.size()) return line.size();
+  if (currentPos < 0) return 0;
+
+  auto it = line.begin();
+  advance(it, currentPos + 1);
+
+  bool isOnAlpha = isalpha(*it) > 0;
+
+  for (; it != line.end(); it++) {
+    if (isOnAlpha ^ (isalpha(*it) > 0)) {
+      return distance(line.begin(), it);
+    }
+  }
+
+  return line.size();
+}
+
+int prevWordJumpLocation(string &line, int currentPos) {
+  if (currentPos >= (int)line.size()) return line.size();
+  if (currentPos < 0) return 0;
+
+  auto it = line.rbegin();
+  advance(it, line.size() - currentPos);
+
+  bool isOnAlpha = isalpha(*it) > 0;
+
+  for (; it != line.rend(); it++) {
+    if (isOnAlpha ^ (isalpha(*it) > 0)) {
+      return line.size() - distance(line.rbegin(), it) - 1;
+    }
+  }
+
+  return 0;
+}

@@ -9,6 +9,7 @@ Normal:
 - open file
 - line move
 - help
+- keep indentation on line feed
 
 Hard:
 - LSP integration

@@ -174,6 +174,36 @@ void test_find_complex_examples() {
   ASSERT_EQ(20, (int)result[4].end);
 }
 
+void test_next_word_jump_location() {
+  string s;
+
+  s = "abc   ";
+  ASSERT_EQ(3, nextWordJumpLocation(s, 0));
+  ASSERT_EQ(3, nextWordJumpLocation(s, 1));
+  ASSERT_EQ(6, nextWordJumpLocation(s, 2));
+  ASSERT_EQ(6, nextWordJumpLocation(s, 5));
+  ASSERT_EQ(6, nextWordJumpLocation(s, 8));
+
+  s = " abc_ _GHI  ";
+  ASSERT_EQ(7, nextWordJumpLocation(s, 3));
+  ASSERT_EQ(0, nextWordJumpLocation(s, -1));
+}
+
+void test_prev_word_jump_location() {
+  string s;
+
+  s = "abc   ";
+  ASSERT_EQ(2, prevWordJumpLocation(s, 5));
+  ASSERT_EQ(2, prevWordJumpLocation(s, 4));
+  ASSERT_EQ(0, prevWordJumpLocation(s, 3));
+  ASSERT_EQ(0, prevWordJumpLocation(s, 2));
+  ASSERT_EQ(0, prevWordJumpLocation(s, 0));
+  ASSERT_EQ(0, prevWordJumpLocation(s, -1));
+
+  s = " abc_ _GHI  ";
+  ASSERT_EQ(3, prevWordJumpLocation(s, 7));
+}
+
 int main() {
   cout << "Tests\n";
 
@@ -194,6 +224,9 @@ int main() {
   test_does_not_find_unknown_word();
 
   test_find_complex_examples();
+
+  test_next_word_jump_location();
+  test_prev_word_jump_location();
 
   cout << endl;
 }

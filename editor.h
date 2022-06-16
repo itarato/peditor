@@ -207,6 +207,14 @@ struct Editor {
       if (tc.escape() == EscapeChar::Right) cursorRight();
       if (tc.escape() == EscapeChar::Home) cursorHome();
       if (tc.escape() == EscapeChar::End) cursorEnd();
+
+      if (tc.escape() == EscapeChar::CtrlLeft) {
+        cursorX = prevWordJumpLocation(currentLine(), cursorX);
+      }
+
+      if (tc.escape() == EscapeChar::CtrlRight) {
+        cursorX = nextWordJumpLocation(currentLine(), cursorX);
+      }
     }
   }
 
