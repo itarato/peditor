@@ -200,6 +200,22 @@ struct Editor {
           }
         }
       }
+
+      if (tc.simple() == ctrlKey('d')) {
+        int lineNo = verticalScroll + cursorY;
+        auto lineIt = lines.begin();
+        advance(lineIt, lineNo);
+        lines.erase(lineIt);
+
+        if (lines.size() == 0) {
+          lines.emplace_back("");
+        } else if (lineNo >= (int)lines.size()) {
+          cursorX = min((int)lines[lineNo - 1].size(), cursorX);
+          cursorUp();
+        } else {
+          cursorX = min((int)lines[lineNo].size(), cursorX);
+        }
+      }
     } else if (tc.is_escape()) {
       if (tc.escape() == EscapeChar::Down) cursorDown();
       if (tc.escape() == EscapeChar::Up) cursorUp();
