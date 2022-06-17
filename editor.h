@@ -191,11 +191,11 @@ struct Editor {
 
       if (tc.simple() == ENTER) {
         auto rowIt = currentLine().begin();
-        advance(rowIt, __cursorX);
+        advance(rowIt, currentCol());
         string newLine(rowIt, currentLine().end());
 
         auto rowIt2 = currentLine().begin();
-        advance(rowIt2, __cursorX);
+        advance(rowIt2, currentCol());
         currentLine().erase(rowIt2, currentLine().end());
 
         auto lineIt = lines.begin();
@@ -216,19 +216,19 @@ struct Editor {
         }
       }
 
+      // Delete line.
       if (tc.simple() == ctrlKey('d')) {
-        int lineNo = verticalScroll + __cursorY;
         auto lineIt = lines.begin();
-        advance(lineIt, lineNo);
+        advance(lineIt, currentRow());
         lines.erase(lineIt);
 
         if (lines.size() == 0) {
           lines.emplace_back("");
-        } else if (lineNo >= (int)lines.size()) {
-          __cursorX = min((int)lines[lineNo - 1].size(), __cursorX);
+        } else if (currentRow() >= (int)lines.size()) {
+          __cursorX = min((int)lines[currentRow() - 1].size(), __cursorX);
           cursorUp();
         } else {
-          __cursorX = min((int)lines[lineNo].size(), __cursorX);
+          __cursorX = min((int)lines[currentRow()].size(), __cursorX);
         }
       }
     } else if (tc.is_escape()) {
