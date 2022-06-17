@@ -20,6 +20,7 @@ struct termios orig_termios;
 #define ESCAPE char(27)
 #define ENTER char(13)
 #define TAB char(9)
+#define CTRL_BACKSPACE char(8)
 
 vector<pair<string, EscapeChar>> escapeCharMap{
     {"[A", EscapeChar::Up},           {"[B", EscapeChar::Down},

@@ -174,6 +174,16 @@ struct Editor {
         }
       }
 
+      if (tc.simple() == CTRL_BACKSPACE) {
+        if (onLineRow() && currentCol() >= 0) {
+          int colStart = prevWordJumpLocation(currentLine(), currentCol()) + 1;
+          if (currentCol() - colStart >= 0) {
+            currentLine().erase(colStart, currentCol() - colStart);
+            cursorX = colStart;
+          }
+        }
+      }
+
       if (tc.simple() == ENTER) {
         auto rowIt = currentLine().begin();
         advance(rowIt, cursorX);
@@ -228,7 +238,7 @@ struct Editor {
         if (isBeginningOfCurrentLine()) {
           cursorLeft();
         } else {
-          cursorX = prevWordJumpLocation(currentLine(), cursorX);
+          cursorX = max(prevWordJumpLocation(currentLine(), cursorX), 0);
         }
       }
 

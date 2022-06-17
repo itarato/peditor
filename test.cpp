@@ -198,16 +198,16 @@ void test_prev_word_jump_location() {
   s = "abc   ";
   ASSERT_EQ(2, prevWordJumpLocation(s, 5));
   ASSERT_EQ(2, prevWordJumpLocation(s, 4));
-  ASSERT_EQ(0, prevWordJumpLocation(s, 3));
-  ASSERT_EQ(0, prevWordJumpLocation(s, 2));
-  ASSERT_EQ(0, prevWordJumpLocation(s, 0));
-  ASSERT_EQ(0, prevWordJumpLocation(s, -1));
+  ASSERT_EQ(-1, prevWordJumpLocation(s, 3));
+  ASSERT_EQ(-1, prevWordJumpLocation(s, 2));
+  ASSERT_EQ(-1, prevWordJumpLocation(s, 0));
+  ASSERT_EQ(-1, prevWordJumpLocation(s, -1));
 
   s = " abc_ _GHI  ";
   ASSERT_EQ(3, prevWordJumpLocation(s, 7));
 
   s = "abc";
-  ASSERT_EQ(0, prevWordJumpLocation(s, 3));
+  ASSERT_EQ(-1, prevWordJumpLocation(s, 3));
 }
 
 int main() {

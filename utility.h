@@ -278,7 +278,7 @@ int nextWordJumpLocation(string &line, int currentPos) {
 
 int prevWordJumpLocation(string &line, int currentPos) {
   if (currentPos > (int)line.size()) return line.size();
-  if (currentPos < 0) return 0;
+  if (currentPos < 0) return -1;
 
   auto it = line.rbegin();
   advance(it, line.size() - currentPos);
@@ -291,5 +291,5 @@ int prevWordJumpLocation(string &line, int currentPos) {
     }
   }
 
-  return 0;
+  return -1;
 }
