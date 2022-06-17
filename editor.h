@@ -49,8 +49,8 @@ struct Prompt {
 struct Editor {
   Config config;
 
-  int cursorX{0};
-  int cursorY{0};
+  int __cursorX{0};
+  int __cursorY{0};
   int verticalScroll{0};
   int horizontalScroll{0};
 
@@ -167,7 +167,7 @@ struct Editor {
             advance(lineIt, currentRow());
             lines.erase(lineIt);
 
-            cursorTo(cursorY - 1, oldLineLen);
+            cursorTo(__cursorY - 1, oldLineLen);
           }
         } else {
           DLOG("Error: cannot backspace on not line row");
@@ -175,22 +175,27 @@ struct Editor {
       }
 
       if (tc.simple() == CTRL_BACKSPACE) {
-        if (onLineRow() && currentCol() >= 0) {
-          int colStart = prevWordJumpLocation(currentLine(), currentCol()) + 1;
-          if (currentCol() - colStart >= 0) {
-            currentLine().erase(colStart, currentCol() - colStart);
-            cursorX = colStart;
+        if (onLineRow()) {
+          if (currentCol() > 0) {
+            int colStart =
+                prevWordJumpLocation(currentLine(), currentCol()) + 1;
+            if (currentCol() - colStart >= 0) {
+              currentLine().erase(colStart, currentCol() - colStart);
+              __cursorX = colStart;
+            }
+          } else {
+            cursorLeft();
           }
         }
       }
 
       if (tc.simple() == ENTER) {
         auto rowIt = currentLine().begin();
-        advance(rowIt, cursorX);
+        advance(rowIt, __cursorX);
         string newLine(rowIt, currentLine().end());
 
         auto rowIt2 = currentLine().begin();
-        advance(rowIt2, cursorX);
+        advance(rowIt2, __cursorX);
         currentLine().erase(rowIt2, currentLine().end());
 
         auto lineIt = lines.begin();
@@ -212,7 +217,7 @@ struct Editor {
       }
 
       if (tc.simple() == ctrlKey('d')) {
-        int lineNo = verticalScroll + cursorY;
+        int lineNo = verticalScroll + __cursorY;
         auto lineIt = lines.begin();
         advance(lineIt, lineNo);
         lines.erase(lineIt);
@@ -220,10 +225,10 @@ struct Editor {
         if (lines.size() == 0) {
           lines.emplace_back("");
         } else if (lineNo >= (int)lines.size()) {
-          cursorX = min((int)lines[lineNo - 1].size(), cursorX);
+          __cursorX = min((int)lines[lineNo - 1].size(), __cursorX);
           cursorUp();
         } else {
-          cursorX = min((int)lines[lineNo].size(), cursorX);
+          __cursorX = min((int)lines[lineNo].size(), __cursorX);
         }
       }
     } else if (tc.is_escape()) {
@@ -238,7 +243,7 @@ struct Editor {
         if (isBeginningOfCurrentLine()) {
           cursorLeft();
         } else {
-          cursorX = max(prevWordJumpLocation(currentLine(), cursorX), 0);
+          __cursorX = max(prevWordJumpLocation(currentLine(), __cursorX), 0);
         }
       }
 
@@ -246,7 +251,7 @@ struct Editor {
         if (isEndOfCurrentLine()) {
           cursorRight();
         } else {
-          cursorX = nextWordJumpLocation(currentLine(), cursorX);
+          __cursorX = nextWordJumpLocation(currentLine(), __cursorX);
         }
       }
     }
@@ -269,7 +274,7 @@ struct Editor {
       }
     }
 
-    cursorX = prompt.prefix.size() + prompt.message.size();
+    __cursorX = prompt.prefix.size() + prompt.message.size();
   }
 
   bool onLineRow() {
@@ -277,103 +282,103 @@ struct Editor {
   }
 
   void cursorDown() {
-    cursorY++;
+    __cursorY++;
 
     if (onLineRow()) {
-      cursorX = min(cursorX, (int)currentLine().size());
+      __cursorX = min(__cursorX, (int)currentLine().size());
     }
 
     fixCursorPos();
   }
 
   void cursorUp() {
-    cursorY--;
+    __cursorY--;
 
     if (onLineRow()) {
-      cursorX = min(cursorX, (int)currentLine().size());
+      __cursorX = min(__cursorX, (int)currentLine().size());
     }
 
     fixCursorPos();
   }
 
   void cursorLeft() {
-    cursorX--;
+    __cursorX--;
     fixCursorPos();
   }
 
   void cursorRight() {
-    cursorX++;
+    __cursorX++;
     fixCursorPos();
   }
 
   void cursorTo(int row, int col) {
-    cursorX = col;
-    cursorY = row;
+    __cursorX = col;
+    __cursorY = row;
     fixCursorPos();
   }
 
-  void cursorHome() { cursorX = 0; }
+  void cursorHome() { __cursorX = 0; }
 
-  void cursorEnd() { cursorX = currentLine().size(); }
+  void cursorEnd() { __cursorX = currentLine().size(); }
 
   void fixCursorPos() {
-    if (cursorY >= (int)lines.size()) cursorY = lines.size() - 1;
-    if (cursorY >= terminalRows()) {
-      cursorY = terminalRows() - 1;
+    if (__cursorY >= (int)lines.size()) __cursorY = lines.size() - 1;
+    if (__cursorY >= terminalRows()) {
+      __cursorY = terminalRows() - 1;
 
       if (currentRow() < (int)lines.size() - 1) verticalScroll++;
     }
-    if (cursorY < 0) {
-      cursorY = 0;
+    if (__cursorY < 0) {
+      __cursorY = 0;
 
       if (verticalScroll > 0) verticalScroll--;
     }
-    // Now cursorY is either on a line or on 0 when there are no lines.
+    // Now __cursorY is either on a line or on 0 when there are no lines.
 
-    if (cursorY < (int)lines.size()) {
-      if (cursorX > (int)currentLine().size()) {
+    if (__cursorY < (int)lines.size()) {
+      if (__cursorX > (int)currentLine().size()) {
         if (currentRow() < (int)lines.size() - 1) {
-          if (cursorY >= terminalRows() - 1) {
+          if (__cursorY >= terminalRows() - 1) {
             verticalScroll++;
           } else {
-            cursorY++;
+            __cursorY++;
           }
-          cursorX = 0;
+          __cursorX = 0;
         } else {
-          cursorX = currentLine().size();
+          __cursorX = currentLine().size();
         }
       }
-      if (cursorX >= terminalCols()) cursorX = terminalCols() - 1;
-      if (cursorX < 0) {
+      if (__cursorX >= terminalCols()) __cursorX = terminalCols() - 1;
+      if (__cursorX < 0) {
         if (currentRow() > 0) {
-          if (cursorY <= 0) {
+          if (__cursorY <= 0) {
             if (verticalScroll > 0) {
               verticalScroll--;
-              cursorX = currentLine().size();
+              __cursorX = currentLine().size();
             } else {
               DLOG("Error: vscroll not suppose to be 0");
             }
           } else {
-            cursorY--;
-            cursorX = currentLine().size();
+            __cursorY--;
+            __cursorX = currentLine().size();
           }
         } else {
-          cursorX = 0;
+          __cursorX = 0;
         }
       }
     } else {
-      cursorX = 0;
+      __cursorX = 0;
     }
-    // Now cursorX is either on a char or on 0 when there are no chars.
+    // Now __cursorX is either on a char or on 0 when there are no chars.
   }
 
-  int currentRow() { return verticalScroll + cursorY; }
-  int currentCol() { return horizontalScroll + cursorX; }
+  int currentRow() { return verticalScroll + __cursorY; }
+  int currentCol() { return horizontalScroll + __cursorX; }
 
   string& currentLine() { return lines[currentRow()]; }
 
-  bool isEndOfCurrentLine() { return cursorX >= (int)currentLine().size(); }
-  bool isBeginningOfCurrentLine() { return cursorX <= 0; }
+  bool isEndOfCurrentLine() { return __cursorX >= (int)currentLine().size(); }
+  bool isBeginningOfCurrentLine() { return __cursorX <= 0; }
 
   int terminalRows() { return terminalDimension.first; }
   int terminalCols() { return terminalDimension.second; }
@@ -446,7 +451,7 @@ struct Editor {
     hideCursor();
     clearScreen(out);
     drawLines(out);
-    setCursorLocation(out, cursorY, cursorX);
+    setCursorLocation(out, __cursorY, __cursorX);
     showCursor(out);
 
     write(STDOUT_FILENO, out.c_str(), out.size());
@@ -457,12 +462,12 @@ struct Editor {
   }
 
   void openPrompt(string prefix, Command command) {
-    DLOG("prompt open cx: %d", cursorX);
+    DLOG("prompt open cx: %d", __cursorX);
 
     mode = EditorMode::Prompt;
-    prompt.reset(prefix, command, cursorX, cursorY);
-    cursorX = prompt.prefix.size() + prompt.message.size();
-    cursorY = terminalRows() - 1;
+    prompt.reset(prefix, command, __cursorX, __cursorY);
+    __cursorX = prompt.prefix.size() + prompt.message.size();
+    __cursorY = terminalRows() - 1;
   }
 
   void finalizeAndClosePrompt() {
@@ -480,9 +485,9 @@ struct Editor {
 
   void closePrompt() {
     mode = EditorMode::TextEdit;
-    cursorX = prompt.previousCursorX;
-    cursorY = prompt.previousCursorY;
+    __cursorX = prompt.previousCursorX;
+    __cursorY = prompt.previousCursorY;
 
-    DLOG("prompt close cx: %d", cursorX);
+    DLOG("prompt close cx: %d", __cursorX);
   }
 };
