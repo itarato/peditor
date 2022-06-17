@@ -17,3 +17,6 @@ Hard:
 Stupid:
 - code execution / build configs
 - line coloring/marking
+
+Bugfix:
+- turn: `__cursor? = ?` to `setCursor?(?)` so scroll and all can be controlled
