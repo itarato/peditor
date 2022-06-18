@@ -28,7 +28,7 @@ vector<pair<string, EscapeChar>> escapeCharMap{
     {"[H", EscapeChar::Home},         {"[F", EscapeChar::End},
     {"[1;5A", EscapeChar::CtrlUp},    {"[1;5B", EscapeChar::CtrlDown},
     {"[1;5C", EscapeChar::CtrlRight}, {"[1;5D", EscapeChar::CtrlLeft},
-};
+    {"[5~", EscapeChar::PageUp},      {"[6~", EscapeChar::PageDown}};
 
 void enableRawMode() {
   struct termios raw = orig_termios;

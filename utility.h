@@ -52,6 +52,8 @@ enum class EscapeChar {
   CtrlRight,
   Home,
   End,
+  PageUp,
+  PageDown,
 };
 
 struct TypedChar {

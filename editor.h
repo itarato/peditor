@@ -238,6 +238,8 @@ struct Editor {
       if (tc.escape() == EscapeChar::Right) cursorRight();
       if (tc.escape() == EscapeChar::Home) cursorHome();
       if (tc.escape() == EscapeChar::End) cursorEnd();
+      if (tc.escape() == EscapeChar::PageUp) cursorPageUp();
+      if (tc.escape() == EscapeChar::PageDown) cursorPageDown();
 
       if (tc.escape() == EscapeChar::CtrlLeft) {
         if (isBeginningOfCurrentLine()) {
@@ -313,6 +315,16 @@ struct Editor {
     fixCursorPos();
   }
 
+  void cursorPageDown() {
+    __cursorY += terminalRows();
+    fixCursorPos();
+  }
+
+  void cursorPageUp() {
+    __cursorY -= terminalRows();
+    fixCursorPos();
+  }
+
   void cursorTo(int row, int col) {
     __cursorX = col;
     __cursorY = row;
@@ -325,24 +337,16 @@ struct Editor {
   void cursorEnd() { setCol(currentLine().size()); }
 
   void fixCursorPos() {
-    DLOG("FIX TH=%d CY=%d VS=%d", terminalRows(), __cursorY, verticalScroll);
-
     // Decide which line (row) we should be on.
     if (currentRow() < 0) {
-      verticalScroll = 0;
-      __cursorY = 0;
-
-      DLOG("A -> CY=%d VS=%d", __cursorY, verticalScroll);
+      __cursorY -= currentRow();
     } else if (currentRow() >= (int)lines.size()) {
       __cursorY -= currentRow() - (int)lines.size() + 1;
-
-      DLOG("B -> CY=%d VS=%d", __cursorY, verticalScroll);
     }
 
     // Decide which char (col).
     if (currentCol() < 0) {
-      __cursorX = 0;
-      horizontalScroll = 0;
+      __cursorX -= currentCol();
     } else if (currentCol() > (int)currentLine().size()) {
       __cursorX -= currentCol() - currentLine().size();
     }
@@ -351,13 +355,9 @@ struct Editor {
     if (__cursorY < 0) {
       verticalScroll = currentRow();
       __cursorY = 0;
-
-      DLOG("E -> CY=%d VS=%d", __cursorY, verticalScroll);
     } else if (__cursorY >= terminalRows()) {
       verticalScroll = currentRow() - terminalRows() + 1;
       __cursorY = terminalRows() - 1;
-
-      DLOG("F -> CY=%d VS=%d", __cursorY, verticalScroll);
     }
 
     // Fix horizontal scroll.
