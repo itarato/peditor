@@ -5,7 +5,12 @@
 
 const char* debugFileName{"./debug.txt"};
 
+#ifdef VERBOSE
 #define DLOG(...) dlog(__FILE__, __LINE__, __VA_ARGS__)
+#else
+#define DLOG(...) \
+  {}
+#endif
 
 void dlog(const char* fileName, int lineNo, const char* s, ...) {
   FILE* f = fopen(debugFileName, "a+");

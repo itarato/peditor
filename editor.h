@@ -334,8 +334,6 @@ struct Editor {
 
       DLOG("A -> CY=%d VS=%d", __cursorY, verticalScroll);
     } else if (currentRow() >= (int)lines.size()) {
-      // __cursorY = min((int)lines.size() - 1, terminalRows() - 1);
-      // verticalScroll = lines.size() - terminalRows();
       __cursorY -= currentRow() - (int)lines.size() + 1;
 
       DLOG("B -> CY=%d VS=%d", __cursorY, verticalScroll);
@@ -346,8 +344,6 @@ struct Editor {
       __cursorX = 0;
       horizontalScroll = 0;
     } else if (currentCol() > (int)currentLine().size()) {
-      // __cursorX = min((int)currentLine().size(), terminalCols() - 1);
-      // horizontalScroll = currentLine().size() - terminalCols();
       __cursorX -= currentCol() - currentLine().size();
     }
 

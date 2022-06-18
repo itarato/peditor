@@ -10,7 +10,7 @@ Toy text editor.
 
 ```bash
 make clean
-make
+EXTRA_FLAGS="-DVERBOSE" make
 ```
 
 ### Test
