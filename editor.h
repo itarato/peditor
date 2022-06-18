@@ -232,29 +232,51 @@ struct Editor {
         }
       }
     } else if (tc.is_escape()) {
-      if (tc.escape() == EscapeChar::Down) cursorDown();
-      if (tc.escape() == EscapeChar::Up) cursorUp();
-      if (tc.escape() == EscapeChar::Left) cursorLeft();
-      if (tc.escape() == EscapeChar::Right) cursorRight();
-      if (tc.escape() == EscapeChar::Home) cursorHome();
-      if (tc.escape() == EscapeChar::End) cursorEnd();
-      if (tc.escape() == EscapeChar::PageUp) cursorPageUp();
-      if (tc.escape() == EscapeChar::PageDown) cursorPageDown();
-
-      if (tc.escape() == EscapeChar::CtrlLeft) {
-        if (isBeginningOfCurrentLine()) {
+      switch (tc.escape()) {
+        case EscapeChar::Down:
+          cursorDown();
+          break;
+        case EscapeChar::Up:
+          cursorUp();
+          break;
+        case EscapeChar::Left:
           cursorLeft();
-        } else {
-          setCol(prevWordJumpLocation(currentLine(), currentCol()));
-        }
-      }
-
-      if (tc.escape() == EscapeChar::CtrlRight) {
-        if (isEndOfCurrentLine()) {
+          break;
+        case EscapeChar::Right:
           cursorRight();
-        } else {
-          setCol(nextWordJumpLocation(currentLine(), currentCol()));
-        }
+          break;
+        case EscapeChar::Home:
+          cursorHome();
+          break;
+        case EscapeChar::End:
+          cursorEnd();
+          break;
+        case EscapeChar::PageUp:
+          cursorPageUp();
+          break;
+        case EscapeChar::PageDown:
+          cursorPageDown();
+          break;
+        case EscapeChar::CtrlLeft:
+          if (isBeginningOfCurrentLine()) {
+            cursorLeft();
+          } else {
+            setCol(prevWordJumpLocation(currentLine(), currentCol()));
+          }
+          break;
+        case EscapeChar::CtrlRight:
+          if (isEndOfCurrentLine()) {
+            cursorRight();
+          } else {
+            setCol(nextWordJumpLocation(currentLine(), currentCol()));
+          }
+          break;
+        case EscapeChar::CtrlUp:
+          scrollUp();
+          break;
+        case EscapeChar::CtrlDown:
+          scrollDown();
+          break;
       }
     }
   }
@@ -322,6 +344,16 @@ struct Editor {
 
   void cursorPageUp() {
     __cursorY -= terminalRows();
+    fixCursorPos();
+  }
+
+  void scrollUp() {
+    verticalScroll--;
+    fixCursorPos();
+  }
+
+  void scrollDown() {
+    verticalScroll++;
     fixCursorPos();
   }
 
