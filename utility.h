@@ -258,6 +258,16 @@ struct TokenAnalyzer {
   }
 };
 
+/**
+ * @brief Returns the location in a character seqence of the next different
+ * type character - alphabetic vs not-alphabetic. Eg if it's on a word, it shows
+ * the character after that word.
+ * At the end of the string it returns the position after the last character.
+ *
+ * @param line
+ * @param currentPos
+ * @return int
+ */
 int nextWordJumpLocation(string &line, int currentPos) {
   if (currentPos >= (int)line.size()) return line.size();
   if (currentPos < 0) return 0;
@@ -276,6 +286,16 @@ int nextWordJumpLocation(string &line, int currentPos) {
   return line.size();
 }
 
+/**
+ * @brief Returns the location in a character seqence of the previous different
+ * type character - alphabetic vs not-alphabetic. Eg if it's on a word, it shows
+ * the character before that word.
+ * At the beginning of the string it returns -1.
+ *
+ * @param line
+ * @param currentPos
+ * @return int
+ */
 int prevWordJumpLocation(string &line, int currentPos) {
   if (currentPos > (int)line.size()) return line.size();
   if (currentPos < 0) return -1;

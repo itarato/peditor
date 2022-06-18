@@ -125,10 +125,10 @@ TypedChar readKey() {
 
   string combo{};
 
-  for (;;) {
+  for (int i = 0;; i++) {
     if (read(STDIN_FILENO, &c, 1) != 1) {
       DLOG("Cannot read follow up combo char");
-      return TYPED_CHAR_FAILURE;
+      return i == 0 ? TypedChar{'\x1b'} : TYPED_CHAR_FAILURE;
     }
 
     combo.push_back(c);

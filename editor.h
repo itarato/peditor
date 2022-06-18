@@ -225,10 +225,10 @@ struct Editor {
         if (lines.size() == 0) {
           lines.emplace_back("");
         } else if (currentRow() >= (int)lines.size()) {
-          __cursorX = min((int)lines[currentRow() - 1].size(), __cursorX);
+          __cursorX = min((int)lines[currentRow() - 1].size(), currentCol());
           cursorUp();
         } else {
-          __cursorX = min((int)lines[currentRow()].size(), __cursorX);
+          __cursorX = min((int)lines[currentRow()].size(), currentCol());
         }
       }
     } else if (tc.is_escape()) {
@@ -243,7 +243,7 @@ struct Editor {
         if (isBeginningOfCurrentLine()) {
           cursorLeft();
         } else {
-          __cursorX = max(prevWordJumpLocation(currentLine(), __cursorX), 0);
+          __cursorX = max(prevWordJumpLocation(currentLine(), currentCol()), 0);
         }
       }
 
@@ -251,7 +251,7 @@ struct Editor {
         if (isEndOfCurrentLine()) {
           cursorRight();
         } else {
-          __cursorX = nextWordJumpLocation(currentLine(), __cursorX);
+          __cursorX = nextWordJumpLocation(currentLine(), currentCol());
         }
       }
     }
@@ -285,7 +285,7 @@ struct Editor {
     __cursorY++;
 
     if (onLineRow()) {
-      __cursorX = min(__cursorX, (int)currentLine().size());
+      __cursorX = min(currentCol(), (int)currentLine().size());
     }
 
     fixCursorPos();
@@ -295,7 +295,7 @@ struct Editor {
     __cursorY--;
 
     if (onLineRow()) {
-      __cursorX = min(__cursorX, (int)currentLine().size());
+      __cursorX = min(currentCol(), (int)currentLine().size());
     }
 
     fixCursorPos();
@@ -377,8 +377,10 @@ struct Editor {
 
   string& currentLine() { return lines[currentRow()]; }
 
-  bool isEndOfCurrentLine() { return __cursorX >= (int)currentLine().size(); }
-  bool isBeginningOfCurrentLine() { return __cursorX <= 0; }
+  bool isEndOfCurrentLine() {
+    return currentCol() >= (int)currentLine().size();
+  }
+  bool isBeginningOfCurrentLine() { return currentCol() <= 0; }
 
   int terminalRows() { return terminalDimension.first; }
   int terminalCols() { return terminalDimension.second; }
@@ -490,4 +492,6 @@ struct Editor {
 
     DLOG("prompt close cx: %d", __cursorX);
   }
+
+  // void setCol(int newCol) { if (newX < 0) }
 };
