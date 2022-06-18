@@ -53,6 +53,7 @@ struct Editor {
   int __cursorY{0};
   int verticalScroll{0};
   int horizontalScroll{0};
+  int xMemory{0};
 
   pair<int, int> terminalDimension{};
 
@@ -187,6 +188,7 @@ struct Editor {
             cursorLeft();
           }
         }
+        saveXMemory();
       }
 
       if (tc.simple() == ENTER) {
@@ -307,11 +309,13 @@ struct Editor {
 
   void cursorDown() {
     __cursorY++;
+    restoreXMemory();
     fixCursorPos();
   }
 
   void cursorUp() {
     __cursorY--;
+    restoreXMemory();
     fixCursorPos();
   }
 
@@ -324,6 +328,7 @@ struct Editor {
     }
 
     fixCursorPos();
+    saveXMemory();
   }
 
   void cursorRight() {
@@ -335,15 +340,18 @@ struct Editor {
     }
 
     fixCursorPos();
+    saveXMemory();
   }
 
   void cursorPageDown() {
     __cursorY += terminalRows();
+    restoreXMemory();
     fixCursorPos();
   }
 
   void cursorPageUp() {
     __cursorY -= terminalRows();
+    restoreXMemory();
     fixCursorPos();
   }
 
@@ -406,6 +414,9 @@ struct Editor {
   int currentCol() { return horizontalScroll + __cursorX; }
 
   string& currentLine() { return lines[currentRow()]; }
+
+  inline void restoreXMemory() { __cursorX = xMemory; }
+  inline void saveXMemory() { xMemory = __cursorX; }
 
   bool isEndOfCurrentLine() {
     return currentCol() >= (int)currentLine().size();
