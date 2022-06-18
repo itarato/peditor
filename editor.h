@@ -325,13 +325,20 @@ struct Editor {
   void cursorEnd() { setCol(currentLine().size()); }
 
   void fixCursorPos() {
+    DLOG("FIX TH=%d CY=%d VS=%d", terminalRows(), __cursorY, verticalScroll);
+
     // Decide which line (row) we should be on.
     if (currentRow() < 0) {
       verticalScroll = 0;
       __cursorY = 0;
+
+      DLOG("A -> CY=%d VS=%d", __cursorY, verticalScroll);
     } else if (currentRow() >= (int)lines.size()) {
-      __cursorY = min((int)lines.size() - 1, terminalRows() - 1);
-      verticalScroll = lines.size() - terminalRows();
+      // __cursorY = min((int)lines.size() - 1, terminalRows() - 1);
+      // verticalScroll = lines.size() - terminalRows();
+      __cursorY -= currentRow() - (int)lines.size() + 1;
+
+      DLOG("B -> CY=%d VS=%d", __cursorY, verticalScroll);
     }
 
     // Decide which char (col).
@@ -339,17 +346,22 @@ struct Editor {
       __cursorX = 0;
       horizontalScroll = 0;
     } else if (currentCol() > (int)currentLine().size()) {
-      __cursorY = min((int)currentLine().size(), terminalCols() - 1);
-      horizontalScroll = currentLine().size() - terminalCols();
+      // __cursorX = min((int)currentLine().size(), terminalCols() - 1);
+      // horizontalScroll = currentLine().size() - terminalCols();
+      __cursorX -= currentCol() - currentLine().size();
     }
 
     // Fix vertical scroll.
     if (__cursorY < 0) {
       verticalScroll = currentRow();
       __cursorY = 0;
+
+      DLOG("E -> CY=%d VS=%d", __cursorY, verticalScroll);
     } else if (__cursorY >= terminalRows()) {
       verticalScroll = currentRow() - terminalRows() + 1;
       __cursorY = terminalRows() - 1;
+
+      DLOG("F -> CY=%d VS=%d", __cursorY, verticalScroll);
     }
 
     // Fix horizontal scroll.
