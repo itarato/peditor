@@ -10,6 +10,7 @@ Normal:
 - line move
 - help
 - keep indentation on line feed
+- wrap mode / non wrap mode
 
 Hard:
 - LSP integration

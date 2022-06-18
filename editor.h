@@ -181,7 +181,7 @@ struct Editor {
                 prevWordJumpLocation(currentLine(), currentCol()) + 1;
             if (currentCol() - colStart >= 0) {
               currentLine().erase(colStart, currentCol() - colStart);
-              __cursorX = colStart;
+              setCol(colStart);
             }
           } else {
             cursorLeft();
@@ -225,10 +225,10 @@ struct Editor {
         if (lines.size() == 0) {
           lines.emplace_back("");
         } else if (currentRow() >= (int)lines.size()) {
-          __cursorX = min((int)lines[currentRow() - 1].size(), currentCol());
+          setCol(currentCol());
           cursorUp();
         } else {
-          __cursorX = min((int)lines[currentRow()].size(), currentCol());
+          setCol(currentCol());
         }
       }
     } else if (tc.is_escape()) {
@@ -243,7 +243,7 @@ struct Editor {
         if (isBeginningOfCurrentLine()) {
           cursorLeft();
         } else {
-          __cursorX = max(prevWordJumpLocation(currentLine(), currentCol()), 0);
+          setCol(prevWordJumpLocation(currentLine(), currentCol()));
         }
       }
 
@@ -251,7 +251,7 @@ struct Editor {
         if (isEndOfCurrentLine()) {
           cursorRight();
         } else {
-          __cursorX = nextWordJumpLocation(currentLine(), currentCol());
+          setCol(nextWordJumpLocation(currentLine(), currentCol()));
         }
       }
     }
@@ -283,93 +283,83 @@ struct Editor {
 
   void cursorDown() {
     __cursorY++;
-
-    if (onLineRow()) {
-      __cursorX = min(currentCol(), (int)currentLine().size());
-    }
-
     fixCursorPos();
   }
 
   void cursorUp() {
     __cursorY--;
-
-    if (onLineRow()) {
-      __cursorX = min(currentCol(), (int)currentLine().size());
-    }
-
     fixCursorPos();
   }
 
   void cursorLeft() {
     __cursorX--;
+
+    if (currentCol() < 0) {
+      __cursorY--;
+      if (onLineRow()) __cursorX = currentLine().size();
+    }
+
     fixCursorPos();
   }
 
   void cursorRight() {
     __cursorX++;
+
+    if (currentCol() > (int)currentLine().size()) {
+      __cursorY++;
+      if (onLineRow()) __cursorX = 0;
+    }
+
     fixCursorPos();
   }
 
   void cursorTo(int row, int col) {
     __cursorX = col;
     __cursorY = row;
+
     fixCursorPos();
   }
 
-  void cursorHome() { __cursorX = 0; }
+  void cursorHome() { setCol(0); }
 
-  void cursorEnd() { __cursorX = currentLine().size(); }
+  void cursorEnd() { setCol(currentLine().size()); }
 
   void fixCursorPos() {
-    if (__cursorY >= (int)lines.size()) __cursorY = lines.size() - 1;
-    if (__cursorY >= terminalRows()) {
-      __cursorY = terminalRows() - 1;
-
-      if (currentRow() < (int)lines.size() - 1) verticalScroll++;
-    }
-    if (__cursorY < 0) {
+    // Decide which line (row) we should be on.
+    if (currentRow() < 0) {
+      verticalScroll = 0;
       __cursorY = 0;
-
-      if (verticalScroll > 0) verticalScroll--;
+    } else if (currentRow() >= (int)lines.size()) {
+      __cursorY = min((int)lines.size() - 1, terminalRows() - 1);
+      verticalScroll = lines.size() - terminalRows();
     }
-    // Now __cursorY is either on a line or on 0 when there are no lines.
 
-    if (__cursorY < (int)lines.size()) {
-      if (__cursorX > (int)currentLine().size()) {
-        if (currentRow() < (int)lines.size() - 1) {
-          if (__cursorY >= terminalRows() - 1) {
-            verticalScroll++;
-          } else {
-            __cursorY++;
-          }
-          __cursorX = 0;
-        } else {
-          __cursorX = currentLine().size();
-        }
-      }
-      if (__cursorX >= terminalCols()) __cursorX = terminalCols() - 1;
-      if (__cursorX < 0) {
-        if (currentRow() > 0) {
-          if (__cursorY <= 0) {
-            if (verticalScroll > 0) {
-              verticalScroll--;
-              __cursorX = currentLine().size();
-            } else {
-              DLOG("Error: vscroll not suppose to be 0");
-            }
-          } else {
-            __cursorY--;
-            __cursorX = currentLine().size();
-          }
-        } else {
-          __cursorX = 0;
-        }
-      }
-    } else {
+    // Decide which char (col).
+    if (currentCol() < 0) {
       __cursorX = 0;
+      horizontalScroll = 0;
+    } else if (currentCol() > (int)currentLine().size()) {
+      __cursorY = min((int)currentLine().size(), terminalCols() - 1);
+      horizontalScroll = currentLine().size() - terminalCols();
     }
-    // Now __cursorX is either on a char or on 0 when there are no chars.
+
+    // Fix vertical scroll.
+    if (__cursorY < 0) {
+      verticalScroll = currentRow();
+      __cursorY = 0;
+    } else if (__cursorY >= terminalRows()) {
+      verticalScroll = currentRow() - terminalRows() + 1;
+      __cursorY = terminalRows() - 1;
+    }
+
+    // Fix horizontal scroll.
+    if (__cursorX < 0) {
+      horizontalScroll = currentCol();
+      __cursorX = 0;
+    } else if (__cursorX > terminalCols()) {
+      horizontalScroll = currentCol() - terminalCols() - 1;
+      __cursorX = terminalCols() - 1;
+    }
   }
 
   int currentRow() { return verticalScroll + __cursorY; }
@@ -493,5 +483,21 @@ struct Editor {
     DLOG("prompt close cx: %d", __cursorX);
   }
 
-  // void setCol(int newCol) { if (newX < 0) }
+  void setCol(int newCol) {
+    // Fix line position first.
+    if (newCol > (int)currentLine().size()) {
+      newCol = currentLine().size();
+    } else if (newCol < 0) {
+      newCol = 0;
+    }
+
+    // Fix horizontal scroll.
+    if (horizontalScroll > newCol) {
+      horizontalScroll = newCol;
+    } else if (horizontalScroll + terminalCols() < newCol) {
+      horizontalScroll = newCol - terminalCols() + 1;
+    }
+
+    __cursorX = newCol - horizontalScroll;
+  }
 };
