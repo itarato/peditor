@@ -18,9 +18,9 @@
 using namespace std;
 
 struct SyntaxHighlightConfig {
-  const char *numberColor{"92"};
+  const char *numberColor{"35"};
   const char *stringColor{"93"};
-  const char *parenColor{"91"};
+  const char *parenColor{"36"};
   const char *lvl1Color{"96"};
   const char *lvl2Color{"35"};
 

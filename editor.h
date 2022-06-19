@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <fstream>
 #include <iterator>
@@ -54,6 +55,7 @@ struct Editor {
   int verticalScroll{0};
   int horizontalScroll{0};
   int xMemory{0};
+  int leftMargin{0};
 
   pair<int, int> terminalDimension{};
 
@@ -115,6 +117,8 @@ struct Editor {
     TypedChar tc;
 
     while (!quitRequested) {
+      updateMargins();
+
       refreshScreen();
       refreshTerminalDimension();
 
@@ -324,7 +328,7 @@ struct Editor {
 
     if (currentCol() < 0) {
       __cursorY--;
-      if (onLineRow()) __cursorX = currentLine().size();
+      if (onLineRow()) setTextAreaCursorX(currentLine().size());
     }
 
     fixCursorPos();
@@ -336,7 +340,7 @@ struct Editor {
 
     if (currentCol() > (int)currentLine().size()) {
       __cursorY++;
-      if (onLineRow()) __cursorX = 0;
+      if (onLineRow()) setTextAreaCursorX(0);
     }
 
     fixCursorPos();
@@ -366,7 +370,7 @@ struct Editor {
   }
 
   void cursorTo(int row, int col) {
-    __cursorX = col;
+    setTextAreaCursorX(col);
     __cursorY = row;
 
     fixCursorPos();
@@ -401,30 +405,37 @@ struct Editor {
     }
 
     // Fix horizontal scroll.
-    if (__cursorX < 0) {
+    if (textAreaCursorX() < 0) {
       horizontalScroll = currentCol();
-      __cursorX = 0;
-    } else if (__cursorX > terminalCols()) {
-      horizontalScroll = currentCol() - terminalCols() - 1;
-      __cursorX = terminalCols() - 1;
+      setTextAreaCursorX(0);
+    } else if (textAreaCursorX() > textAreaCols()) {
+      horizontalScroll = currentCol() - textAreaCols() - 1;
+      setTextAreaCursorX(textAreaCols() - 1);
     }
   }
 
   int currentRow() { return verticalScroll + __cursorY; }
-  int currentCol() { return horizontalScroll + __cursorX; }
+  // Text area related -> TODO: rename
+  int currentCol() { return horizontalScroll + textAreaCursorX(); }
 
-  string& currentLine() { return lines[currentRow()]; }
+  inline string& currentLine() { return lines[currentRow()]; }
 
-  inline void restoreXMemory() { __cursorX = xMemory; }
-  inline void saveXMemory() { xMemory = __cursorX; }
+  inline void restoreXMemory() { setTextAreaCursorX(xMemory); }
+  inline void saveXMemory() { xMemory = textAreaCursorX(); }
 
-  bool isEndOfCurrentLine() {
+  inline bool isEndOfCurrentLine() {
     return currentCol() >= (int)currentLine().size();
   }
-  bool isBeginningOfCurrentLine() { return currentCol() <= 0; }
+  inline bool isBeginningOfCurrentLine() { return currentCol() <= 0; }
 
-  int terminalRows() { return terminalDimension.first; }
-  int terminalCols() { return terminalDimension.second; }
+  inline int terminalRows() { return terminalDimension.first; }
+  inline int terminalCols() { return terminalDimension.second; }
+
+  inline int textAreaCols() { return terminalCols() - leftMargin; }
+  inline int textAreaCursorX() { return __cursorX - leftMargin; }
+  inline void setTextAreaCursorX(int newTextAreaCursor) {
+    __cursorX = newTextAreaCursor + leftMargin;
+  }
 
   string decorateLine(string& line, vector<SyntaxColorInfo> colors) {
     string out{};
@@ -469,6 +480,14 @@ struct Editor {
         string& line = lines[lineNo];
         string decoratedLine = decorateLine(line, ta.colorizeTokens(line));
 
+        char formatBuf[32];
+        sprintf(formatBuf, "\x1b[33m%%%dd\x1b[0m ", leftMargin - 1);
+
+        char marginBuf[32];
+        sprintf(marginBuf, formatBuf, lineNo);
+
+        out.append(marginBuf);
+
         out.append(decoratedLine);
       } else {
         out.push_back('~');
@@ -505,8 +524,6 @@ struct Editor {
   }
 
   void openPrompt(string prefix, Command command) {
-    DLOG("prompt open cx: %d", __cursorX);
-
     mode = EditorMode::Prompt;
     prompt.reset(prefix, command, __cursorX, __cursorY);
     __cursorX = prompt.prefix.size() + prompt.message.size();
@@ -545,10 +562,16 @@ struct Editor {
     // Fix horizontal scroll.
     if (horizontalScroll > newCol) {
       horizontalScroll = newCol;
-    } else if (horizontalScroll + terminalCols() < newCol) {
-      horizontalScroll = newCol - terminalCols() + 1;
+    } else if (horizontalScroll + textAreaCols() < newCol) {
+      horizontalScroll = newCol - textAreaCols() + 1;
     }
 
-    __cursorX = newCol - horizontalScroll;
+    setTextAreaCursorX(newCol - horizontalScroll);
+  }
+
+  void updateMargins() {
+    int newLeftMargin = ceil(log10(lines.size() + 1)) + 1;
+    __cursorX += newLeftMargin - leftMargin;
+    leftMargin = newLeftMargin;
   }
 };
