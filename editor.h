@@ -285,6 +285,16 @@ struct Editor {
         case EscapeChar::CtrlDown:
           scrollDown();
           break;
+        case EscapeChar::ShiftUp:
+          break;
+        case EscapeChar::ShiftDown:
+          break;
+        case EscapeChar::ShiftLeft:
+          break;
+        case EscapeChar::ShiftRight:
+          if (!hasActiveSelection()) startSelectionInCurrentPosition();
+          cursorRight();
+          break;
       }
     }
   }
@@ -576,4 +586,10 @@ struct Editor {
     __cursorX += newLeftMargin - leftMargin;
     leftMargin = newLeftMargin;
   }
+
+  bool hasActiveSelection() { return selectionStart.has_value(); }
+  void startSelectionInCurrentPosition() {
+    selectionStart = optional<SelectionEdge>({currentRow(), currentCol()});
+  }
+  void endSelection() { selectionStart = nullopt; }
 };

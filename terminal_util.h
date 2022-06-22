@@ -23,12 +23,22 @@ struct termios orig_termios;
 #define CTRL_BACKSPACE char(8)
 
 vector<pair<string, EscapeChar>> escapeCharMap{
-    {"[A", EscapeChar::Up},           {"[B", EscapeChar::Down},
-    {"[C", EscapeChar::Right},        {"[D", EscapeChar::Left},
-    {"[H", EscapeChar::Home},         {"[F", EscapeChar::End},
-    {"[1;5A", EscapeChar::CtrlUp},    {"[1;5B", EscapeChar::CtrlDown},
-    {"[1;5C", EscapeChar::CtrlRight}, {"[1;5D", EscapeChar::CtrlLeft},
-    {"[5~", EscapeChar::PageUp},      {"[6~", EscapeChar::PageDown}};
+    {"[A", EscapeChar::Up},
+    {"[B", EscapeChar::Down},
+    {"[C", EscapeChar::Right},
+    {"[D", EscapeChar::Left},
+    {"[H", EscapeChar::Home},
+    {"[F", EscapeChar::End},
+    {"[1;5A", EscapeChar::CtrlUp},
+    {"[1;5B", EscapeChar::CtrlDown},
+    {"[1;5C", EscapeChar::CtrlRight},
+    {"[1;5D", EscapeChar::CtrlLeft},
+    {"[1;2A", EscapeChar::ShiftUp},
+    {"[1;2B", EscapeChar::ShiftDown},
+    {"[1;2C", EscapeChar::ShiftRight},
+    {"[1;2D", EscapeChar::ShiftLeft},
+    {"[5~", EscapeChar::PageUp},
+    {"[6~", EscapeChar::PageDown}};
 
 void enableRawMode() {
   struct termios raw = orig_termios;
