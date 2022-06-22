@@ -32,6 +32,13 @@ struct SyntaxHighlightConfig {
                                         "switch", "case", "const"};
 };
 
+struct SelectionEdge {
+  int row;
+  int col;
+
+  SelectionEdge(int row, int col) : row(row), col(col) {}
+};
+
 struct SyntaxColorInfo {
   int start;
   int end;

@@ -11,6 +11,8 @@ Normal:
 - help
 - keep indentation on line feed
 - wrap mode / non wrap mode
+- select mode
+- copy paste
 
 Hard:
 - LSP integration

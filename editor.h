@@ -67,6 +67,8 @@ struct Editor {
 
   Prompt prompt{};
 
+  optional<SelectionEdge> selectionStart{nullopt};
+
   Editor(Config config) : config(config) {}
 
   void init() {
