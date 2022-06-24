@@ -625,8 +625,6 @@ struct Editor {
   }
   optional<pair<int, int>> lineSelectionRange(int row) {
     if (!hasActiveSelection()) return nullopt;
-    if (row < selectionStart.value().row) return nullopt;
-    if (row > selectionEnd.value().row) return nullopt;
 
     int startCol, startRow, endCol, endRow;
     if (isSelectionRightFacing()) {
@@ -640,6 +638,9 @@ struct Editor {
       startCol = selectionEnd.value().col + 1;
       startRow = selectionEnd.value().row;
     }
+
+    if (row < startRow) return nullopt;
+    if (row > endRow) return nullopt;
 
     int start;
     int end;
