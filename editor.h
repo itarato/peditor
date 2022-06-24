@@ -451,23 +451,26 @@ struct Editor {
     __cursorX = newTextAreaCursor + leftMargin;
   }
 
-  string decorateLine(string& line, vector<SyntaxColorInfo> colors,
-                      int lineNo) {
+  string decorateLine(string& line, TokenAnalyzer* ta, int lineNo) {
     string out{};
 
     int offset{0};
     auto lineIt = line.begin();
 
-    sort(colors.begin(), colors.end(),
+    vector<SyntaxColorInfo> markers = ta->colorizeTokens(line);
+
+    auto selection = lineSelectionRange(lineNo);
+    if (selection.has_value()) {
+      markers.emplace_back(selection.value().first, BACKGROUND_REVERSE);
+      markers.emplace_back(selection.value().second, RESET_REVERSE);
+    }
+
+    sort(markers.begin(), markers.end(),
          [](SyntaxColorInfo& lhs, SyntaxColorInfo& rhs) {
            return lhs.pos < rhs.pos;
          });
 
-    for (auto& c : colors) {
-      DLOG("Line %s -- Col pos %d col %s", line.c_str(), c.pos, c.code);
-    }
-
-    for (auto& color : colors) {
+    for (auto& color : markers) {
       string prefix = "\x1b[";
       prefix.append(color.code);
       prefix.push_back('m');
@@ -495,8 +498,7 @@ struct Editor {
       if (size_t(lineNo) < lines.size()) {
         // TODO: include horizontalScroll
         string& line = lines[lineNo];
-        string decoratedLine =
-            decorateLine(line, ta.colorizeTokens(line), lineNo);
+        string decoratedLine = decorateLine(line, &ta, lineNo);
 
         char formatBuf[32];
         sprintf(formatBuf, "\x1b[33m%%%dd\x1b[0m ", leftMargin - 1);
@@ -611,6 +613,28 @@ struct Editor {
     if (row > selectionEnd.value().row) return false;
 
     return true;
+  }
+  optional<pair<int, int>> lineSelectionRange(int row) {
+    if (!hasActiveSelection()) return nullopt;
+    if (row < selectionStart.value().row) return nullopt;
+    if (row > selectionEnd.value().row) return nullopt;
+
+    int start;
+    int end;
+
+    if (row == selectionStart.value().row) {
+      start = selectionStart.value().col;
+    } else {
+      start = 0;
+    }
+
+    if (row == selectionEnd.value().row) {
+      end = selectionEnd.value().col + 1;
+    } else {
+      end = lines[row].size();
+    }
+
+    return pair<int, int>({start, end});
   }
   void endSelection() {
     selectionStart = nullopt;

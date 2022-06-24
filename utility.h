@@ -32,6 +32,8 @@
 #define LIGHTCYAN "96"
 #define WHITE "97"
 #define DEFAULT_FOREGROUND "39"
+#define BACKGROUND_REVERSE "7"
+#define RESET_REVERSE "27"
 
 using namespace std;
 
