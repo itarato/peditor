@@ -119,7 +119,7 @@ pair<int, int> getTerminalDimension() {
   return pair<int, int>(ws.ws_row, ws.ws_col);
 }
 
-inline char ctrlKey(char c) { return c & 0x1f; }
+inline constexpr char ctrlKey(char c) { return c & 0x1f; }
 
 TypedChar readKey() {
   char c;

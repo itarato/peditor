@@ -144,101 +144,38 @@ struct Editor {
 
   void executeTextEditInput(TypedChar tc) {
     if (tc.is_simple()) {
-      if (iscntrl(tc.simple())) {
-        // Ignore for now.
-        DLOG("ctrl char: %d", (u_int8_t)tc.simple());
-      } else {
-        if (currentRow() < (int)lines.size() &&
-            currentCol() <= (int)currentLine().size()) {
-          currentLine().insert(currentCol(), 1, tc.simple());
-          cursorRight();
-        }
-      }
-
-      if (tc.simple() == ctrlKey('q')) quitRequested = true;
-      if (tc.simple() == ctrlKey('s')) saveFile();
-      if (tc.simple() == ctrlKey('o')) {
-        openPrompt("Filename > ", Command::SaveFileAs);
-      }
-
-      if (tc.simple() == BACKSPACE) {
-        if (onLineRow()) {
-          if (currentCol() <= (int)currentLine().size() && currentCol() > 0) {
-            currentLine().erase(currentCol() - 1, 1);
-            cursorLeft();
-          } else if (currentCol() == 0 && currentRow() > 0) {
-            int oldLineLen = lines[currentRow() - 1].size();
-
-            lines[currentRow() - 1].append(currentLine());
-
-            auto lineIt = lines.begin();
-            advance(lineIt, currentRow());
-            lines.erase(lineIt);
-
-            cursorTo(__cursorY - 1, oldLineLen);
-          }
-        } else {
-          DLOG("Error: cannot backspace on not line row");
-        }
-      }
-
-      if (tc.simple() == CTRL_BACKSPACE) {
-        if (onLineRow()) {
-          if (currentCol() > 0) {
-            int colStart =
-                prevWordJumpLocation(currentLine(), currentCol()) + 1;
-            if (currentCol() - colStart >= 0) {
-              currentLine().erase(colStart, currentCol() - colStart);
-              setCol(colStart);
-            }
+      switch (tc.simple()) {
+        case ctrlKey('q'):
+          requestQuit();
+          break;
+        case ctrlKey('s'):
+          saveFile();
+          break;
+        case ctrlKey('o'):
+          openPrompt("Filename > ", Command::SaveFileAs);
+          break;
+        case ctrlKey('d'):
+          deleteLine();
+          break;
+        case BACKSPACE:
+          insertBackspace();
+          break;
+        case CTRL_BACKSPACE:
+          insertCtrlBackspace();
+          break;
+        case ENTER:
+          insertEnter();
+          break;
+        case TAB:
+          insertTab();
+          break;
+        default:
+          if (iscntrl(tc.simple())) {
+            DLOG("Unhandled simple ctrl char: %d", (u_int8_t)tc.simple());
           } else {
-            cursorLeft();
+            insertCharacter(tc.simple());
           }
-        }
-        saveXMemory();
-      }
-
-      if (tc.simple() == ENTER) {
-        auto rowIt = currentLine().begin();
-        advance(rowIt, currentCol());
-        string newLine(rowIt, currentLine().end());
-
-        auto rowIt2 = currentLine().begin();
-        advance(rowIt2, currentCol());
-        currentLine().erase(rowIt2, currentLine().end());
-
-        auto lineIt = lines.begin();
-        advance(lineIt, currentRow() + 1);
-        lines.insert(lineIt, newLine);
-
-        cursorHome();
-        cursorDown();
-      }
-
-      if (tc.simple() == TAB) {
-        if (onLineRow() && currentCol() <= (int)currentLine().size()) {
-          int spacesToFill = config.tabSize - (currentCol() % config.tabSize);
-          for (int i = 0; i < spacesToFill; i++) {
-            currentLine().insert(currentCol(), 1, ' ');
-            cursorRight();
-          }
-        }
-      }
-
-      // Delete line.
-      if (tc.simple() == ctrlKey('d')) {
-        auto lineIt = lines.begin();
-        advance(lineIt, currentRow());
-        lines.erase(lineIt);
-
-        if (lines.size() == 0) {
-          lines.emplace_back("");
-        } else if (currentRow() >= (int)lines.size()) {
-          setCol(currentCol());
-          cursorUp();
-        } else {
-          setCol(currentCol());
-        }
+          break;
       }
     } else if (tc.is_escape()) {
       switch (tc.escape()) {
@@ -267,18 +204,10 @@ struct Editor {
           cursorPageDown();
           break;
         case EscapeChar::CtrlLeft:
-          if (isBeginningOfCurrentLine()) {
-            cursorLeft();
-          } else {
-            setCol(prevWordJumpLocation(currentLine(), currentCol()));
-          }
+          cursorWordJumpLeft();
           break;
         case EscapeChar::CtrlRight:
-          if (isEndOfCurrentLine()) {
-            cursorRight();
-          } else {
-            setCol(nextWordJumpLocation(currentLine(), currentCol()));
-          }
+          cursosWordJumpRight();
           break;
         case EscapeChar::CtrlUp:
           scrollUp();
@@ -287,24 +216,16 @@ struct Editor {
           scrollDown();
           break;
         case EscapeChar::ShiftUp:
-          if (!hasActiveSelection()) startSelectionInCurrentPosition();
-          cursorUp();
-          endSelectionUpdatePositionToCurrent();
+          cursorSelectUp();
           break;
         case EscapeChar::ShiftDown:
-          if (!hasActiveSelection()) startSelectionInCurrentPosition();
-          cursorDown();
-          endSelectionUpdatePositionToCurrent();
+          cursorSelectDown();
           break;
         case EscapeChar::ShiftLeft:
-          if (!hasActiveSelection()) startSelectionInCurrentPosition();
-          cursorLeft();
-          endSelectionUpdatePositionToCurrent();
+          cursorSelectLeft();
           break;
         case EscapeChar::ShiftRight:
-          if (!hasActiveSelection()) startSelectionInCurrentPosition();
-          cursorRight();
-          endSelectionUpdatePositionToCurrent();
+          cursorSelectRight();
           break;
       }
     }
@@ -332,6 +253,134 @@ struct Editor {
 
   bool onLineRow() {
     return currentRow() >= 0 && currentRow() < (int)lines.size();
+  }
+
+  void insertCharacter(char c) {
+    if (currentRow() < (int)lines.size() &&
+        currentCol() <= (int)currentLine().size()) {
+      currentLine().insert(currentCol(), 1, c);
+      cursorRight();
+    }
+  }
+
+  inline void requestQuit() { quitRequested = true; }
+
+  void insertBackspace() {
+    if (onLineRow()) {
+      if (currentCol() <= (int)currentLine().size() && currentCol() > 0) {
+        currentLine().erase(currentCol() - 1, 1);
+        cursorLeft();
+      } else if (currentCol() == 0 && currentRow() > 0) {
+        int oldLineLen = lines[currentRow() - 1].size();
+
+        lines[currentRow() - 1].append(currentLine());
+
+        auto lineIt = lines.begin();
+        advance(lineIt, currentRow());
+        lines.erase(lineIt);
+
+        cursorTo(__cursorY - 1, oldLineLen);
+      }
+    } else {
+      DLOG("Error: cannot backspace on not line row");
+    }
+  }
+
+  void insertCtrlBackspace() {
+    if (onLineRow()) {
+      if (currentCol() > 0) {
+        int colStart = prevWordJumpLocation(currentLine(), currentCol()) + 1;
+        if (currentCol() - colStart >= 0) {
+          currentLine().erase(colStart, currentCol() - colStart);
+          setCol(colStart);
+        }
+      } else {
+        cursorLeft();
+      }
+    }
+    saveXMemory();
+  }
+
+  void insertEnter() {
+    auto rowIt = currentLine().begin();
+    advance(rowIt, currentCol());
+    string newLine(rowIt, currentLine().end());
+
+    auto rowIt2 = currentLine().begin();
+    advance(rowIt2, currentCol());
+    currentLine().erase(rowIt2, currentLine().end());
+
+    auto lineIt = lines.begin();
+    advance(lineIt, currentRow() + 1);
+    lines.insert(lineIt, newLine);
+
+    cursorHome();
+    cursorDown();
+  }
+
+  void insertTab() {
+    if (onLineRow() && currentCol() <= (int)currentLine().size()) {
+      int spacesToFill = config.tabSize - (currentCol() % config.tabSize);
+      for (int i = 0; i < spacesToFill; i++) {
+        currentLine().insert(currentCol(), 1, ' ');
+        cursorRight();
+      }
+    }
+  }
+
+  void deleteLine() {
+    auto lineIt = lines.begin();
+    advance(lineIt, currentRow());
+    lines.erase(lineIt);
+
+    if (lines.size() == 0) {
+      lines.emplace_back("");
+    } else if (currentRow() >= (int)lines.size()) {
+      setCol(currentCol());
+      cursorUp();
+    } else {
+      setCol(currentCol());
+    }
+  }
+
+  void cursorWordJumpLeft() {
+    if (isBeginningOfCurrentLine()) {
+      cursorLeft();
+    } else {
+      setCol(prevWordJumpLocation(currentLine(), currentCol()));
+    }
+  }
+
+  void cursosWordJumpRight() {
+    if (isEndOfCurrentLine()) {
+      cursorRight();
+    } else {
+      setCol(nextWordJumpLocation(currentLine(), currentCol()));
+    }
+  }
+
+  void cursorSelectUp() {
+    if (!hasActiveSelection()) startSelectionInCurrentPosition();
+    cursorUp();
+    endSelectionUpdatePositionToCurrent();
+  }
+
+  void cursorSelectDown() {
+    if (!hasActiveSelection()) startSelectionInCurrentPosition();
+    cursorDown();
+    endSelectionUpdatePositionToCurrent();
+  }
+
+  void cursorSelectLeft() {
+    if (!hasActiveSelection()) startSelectionInCurrentPosition();
+    cursorLeft();
+    endSelectionUpdatePositionToCurrent();
+  }
+
+  void cursorSelectRight() {
+    if (!hasActiveSelection()) startSelectionInCurrentPosition();
+    cursorRight();
+    endSelectionUpdatePositionToCurrent();
   }
 
   void cursorDown() {
