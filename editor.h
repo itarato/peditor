@@ -448,7 +448,10 @@ struct Editor {
     fixCursorPos();
   }
 
-  void cursorHome() { setCol(0); }
+  void cursorHome() {
+    setCol(0);
+    saveXMemory();
+  }
 
   void cursorEnd() { setCol(currentLine().size()); }
 
