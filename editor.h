@@ -287,15 +287,24 @@ struct Editor {
           scrollDown();
           break;
         case EscapeChar::ShiftUp:
+          if (!hasActiveSelection()) startSelectionInCurrentPosition();
+          cursorUp();
+          endSelectionUpdatePositionToCurrent();
           break;
         case EscapeChar::ShiftDown:
+          if (!hasActiveSelection()) startSelectionInCurrentPosition();
+          cursorDown();
+          endSelectionUpdatePositionToCurrent();
           break;
         case EscapeChar::ShiftLeft:
+          if (!hasActiveSelection()) startSelectionInCurrentPosition();
+          cursorLeft();
+          endSelectionUpdatePositionToCurrent();
           break;
         case EscapeChar::ShiftRight:
           if (!hasActiveSelection()) startSelectionInCurrentPosition();
-          endSelectionUpdatePositionToCurrent();
           cursorRight();
+          endSelectionUpdatePositionToCurrent();
           break;
       }
     }
@@ -619,17 +628,30 @@ struct Editor {
     if (row < selectionStart.value().row) return nullopt;
     if (row > selectionEnd.value().row) return nullopt;
 
+    int startCol, startRow, endCol, endRow;
+    if (isSelectionRightFacing()) {
+      startCol = selectionStart.value().col;
+      startRow = selectionStart.value().row;
+      endCol = selectionEnd.value().col - 1;
+      endRow = selectionEnd.value().row;
+    } else {
+      endCol = selectionStart.value().col;
+      endRow = selectionStart.value().row;
+      startCol = selectionEnd.value().col + 1;
+      startRow = selectionEnd.value().row;
+    }
+
     int start;
     int end;
 
-    if (row == selectionStart.value().row) {
-      start = selectionStart.value().col;
+    if (row == startRow) {
+      start = startCol;
     } else {
       start = 0;
     }
 
-    if (row == selectionEnd.value().row) {
-      end = selectionEnd.value().col + 1;
+    if (row == endRow) {
+      end = endCol + 1;
     } else {
       end = lines[row].size();
     }
@@ -639,5 +661,16 @@ struct Editor {
   void endSelection() {
     selectionStart = nullopt;
     selectionEnd = nullopt;
+  }
+  bool isSelectionRightFacing() {
+    if (!hasActiveSelection())
+      reportAndExit("Must check selection before use.");
+
+    if (selectionEnd.value().row < selectionStart.value().row) return false;
+    if (selectionEnd.value().row == selectionStart.value().row &&
+        selectionEnd.value().col < selectionStart.value().col)
+      return false;
+
+    return true;
   }
 };
