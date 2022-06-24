@@ -68,6 +68,7 @@ struct Editor {
   Prompt prompt{};
 
   optional<SelectionEdge> selectionStart{nullopt};
+  optional<SelectionEdge> selectionEnd{nullopt};
 
   Editor(Config config) : config(config) {}
 
@@ -293,6 +294,7 @@ struct Editor {
           break;
         case EscapeChar::ShiftRight:
           if (!hasActiveSelection()) startSelectionInCurrentPosition();
+          endSelectionUpdatePositionToCurrent();
           cursorRight();
           break;
       }
@@ -449,29 +451,32 @@ struct Editor {
     __cursorX = newTextAreaCursor + leftMargin;
   }
 
-  string decorateLine(string& line, vector<SyntaxColorInfo> colors) {
+  string decorateLine(string& line, vector<SyntaxColorInfo> colors,
+                      int lineNo) {
     string out{};
 
     int offset{0};
     auto lineIt = line.begin();
 
+    sort(colors.begin(), colors.end(),
+         [](SyntaxColorInfo& lhs, SyntaxColorInfo& rhs) {
+           return lhs.pos < rhs.pos;
+         });
+
+    for (auto& c : colors) {
+      DLOG("Line %s -- Col pos %d col %s", line.c_str(), c.pos, c.code);
+    }
+
     for (auto& color : colors) {
       string prefix = "\x1b[";
-      prefix.append(color.colorCode);
+      prefix.append(color.code);
       prefix.push_back('m');
 
-      string suffix{"\x1b[39m"};
-
-      copy(lineIt, lineIt + (color.start - offset), back_inserter(out));
-      advance(lineIt, color.start - offset);
-      offset = color.end + 1;
+      copy(lineIt, lineIt + (color.pos - offset), back_inserter(out));
+      advance(lineIt, color.pos - offset);
+      offset = color.pos;
 
       out.append(prefix);
-
-      copy(lineIt, lineIt + (color.end - color.start + 1), back_inserter(out));
-      advance(lineIt, color.end - color.start + 1);
-
-      out.append(suffix);
     }
 
     copy(lineIt, line.end(), back_inserter(out));
@@ -490,7 +495,8 @@ struct Editor {
       if (size_t(lineNo) < lines.size()) {
         // TODO: include horizontalScroll
         string& line = lines[lineNo];
-        string decoratedLine = decorateLine(line, ta.colorizeTokens(line));
+        string decoratedLine =
+            decorateLine(line, ta.colorizeTokens(line), lineNo);
 
         char formatBuf[32];
         sprintf(formatBuf, "\x1b[33m%%%dd\x1b[0m ", leftMargin - 1);
@@ -591,5 +597,23 @@ struct Editor {
   void startSelectionInCurrentPosition() {
     selectionStart = optional<SelectionEdge>({currentRow(), currentCol()});
   }
-  void endSelection() { selectionStart = nullopt; }
+  void endSelectionUpdatePositionToCurrent() {
+    selectionEnd = optional<SelectionEdge>({currentRow(), currentCol()});
+  }
+  bool isPositionInSelection(int row, int col) {
+    if (!hasActiveSelection()) return false;
+
+    if (row < selectionStart.value().row) return false;
+    if (row == selectionStart.value().row && col < selectionStart.value().col)
+      return false;
+    if (row == selectionEnd.value().row && col > selectionEnd.value().col)
+      return false;
+    if (row > selectionEnd.value().row) return false;
+
+    return true;
+  }
+  void endSelection() {
+    selectionStart = nullopt;
+    selectionEnd = nullopt;
+  }
 };

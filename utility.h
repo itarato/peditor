@@ -15,14 +15,32 @@
 #define TYPED_CHAR_SIMPLE 0
 #define TYPED_CHAR_ESCAPE 1
 
+#define BLACK "30"
+#define RED "31"
+#define GREEN "32"
+#define YELLOW "33"
+#define BLUE "34"
+#define MAGENTA "35"
+#define CYAN "36"
+#define LIGHTGRAY "37"
+#define DARKGRAY "90"
+#define LIGHTRED "91"
+#define LIGHTGREEN "92"
+#define LIGHTYELLOW "93"
+#define LIGHTBLUE "94"
+#define LIGHTMAGENTA "95"
+#define LIGHTCYAN "96"
+#define WHITE "97"
+#define DEFAULT_FOREGROUND "39"
+
 using namespace std;
 
 struct SyntaxHighlightConfig {
-  const char *numberColor{"35"};
-  const char *stringColor{"93"};
-  const char *parenColor{"36"};
-  const char *lvl1Color{"96"};
-  const char *lvl2Color{"35"};
+  const char *numberColor{MAGENTA};
+  const char *stringColor{LIGHTYELLOW};
+  const char *parenColor{CYAN};
+  const char *lvl1Color{LIGHTCYAN};
+  const char *lvl2Color{LIGHTBLUE};
 
   unordered_set<const char *> lvl1Words{
       "struct", "class",     "namespace", "include", "return",  "default",
@@ -40,12 +58,10 @@ struct SelectionEdge {
 };
 
 struct SyntaxColorInfo {
-  int start;
-  int end;
-  const char *colorCode;
+  int pos;
+  const char *code;
 
-  SyntaxColorInfo(int start, int end, const char *colorCode)
-      : start(start), end(end), colorCode(colorCode) {}
+  SyntaxColorInfo(int pos, const char *code) : pos(pos), code(code) {}
 };
 
 enum class EscapeChar {
@@ -137,7 +153,7 @@ struct TokenAnalyzer {
 
       switch (state) {
         case TokenState::Word:
-          if (isalpha(*it)) {
+          if (isalnum(*it)) {
             current.push_back(*it);
           } else {
             tokenDidComplete = true;
@@ -192,7 +208,8 @@ struct TokenAnalyzer {
       if (tokenDidComplete || isLast) {
         const char *colorResult = analyzeToken(state, current);
         if (colorResult) {
-          out.emplace_back(end - current.size() + 1, end, colorResult);
+          out.emplace_back(end - current.size() + 1, colorResult);
+          out.emplace_back(end + 1, DEFAULT_FOREGROUND);
         }
 
         state = TokenState::Nothing;
