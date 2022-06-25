@@ -261,9 +261,7 @@ struct Editor {
   }
 
   void insertCharacter(char c) {
-    if (hasActiveSelection()) {
-      insertBackspace();
-    }
+    if (hasActiveSelection()) insertBackspace();
 
     if (currentRow() < (int)lines.size() &&
         currentCol() <= (int)currentLine().size()) {
@@ -351,6 +349,8 @@ struct Editor {
   }
 
   void insertDelete() {
+    if (hasActiveSelection()) insertBackspace();
+
     if (currentCol() < (int)currentLine().size()) {
       currentLine().erase(currentCol(), 1);
     } else if (currentRow() < (int)lines.size() - 1) {
@@ -363,6 +363,8 @@ struct Editor {
   }
 
   void insertEnter() {
+    if (hasActiveSelection()) insertBackspace();
+
     auto rowIt = currentLine().begin();
     advance(rowIt, currentCol());
     string newLine(rowIt, currentLine().end());
