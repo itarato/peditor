@@ -99,6 +99,8 @@ struct Editor {
       lines.emplace_back(line);
     }
     f.close();
+
+    if (lines.empty()) lines.emplace_back("");
   }
 
   void saveFile() {
@@ -270,8 +272,50 @@ struct Editor {
 
   void insertBackspace() {
     if (hasActiveSelection()) {
+      SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+      DLOG("Found selection range. Start: C %d R %d End: C %d R %d",
+           selection.startCol, selection.startRow, selection.endCol,
+           selection.endRow);
+
       // Remove all lines
+      vector<LineSelection> lineSelections = selection.lineSelections();
+
+      auto lineIt = lines.begin();
+      advance(lineIt, selection.startRow + 1);
+      int lineAdjustmentOffset{0};
+
+      for (auto& lineSelection : lineSelections) {
+        DLOG("Line selection line: %d - start: %d end: %d",
+             lineSelection.lineNo, lineSelection.startCol,
+             lineSelection.endCol);
+
+        if (lineSelection.isFullLine()) {
+          lines.erase(lineIt);
+          lineAdjustmentOffset++;
+        } else {
+          int start =
+              lineSelection.isLeftBounded() ? lineSelection.startCol : 0;
+          int end =
+              lineSelection.isRightBounded()
+                  ? lineSelection.endCol
+                  : lines[lineSelection.lineNo - lineAdjustmentOffset].size();
+          lines[lineSelection.lineNo - lineAdjustmentOffset].erase(start,
+                                                                   end - start);
+        }
+      }
+
+      if (selection.isMultiline()) {
+        // TODO merge code with other line merge logic.
+        lines[selection.startRow].append(lines[selection.startRow + 1]);
+
+        auto lineIt = lines.begin();
+        advance(lineIt, selection.startRow + 1);
+        lines.erase(lineIt);
+      }
+
       // Put cursor to beginning
+      cursorTo(selection.startRow, selection.startCol);
+      endSelection();
     } else if (currentCol() <= (int)currentLine().size() && currentCol() > 0) {
       currentLine().erase(currentCol() - 1, 1);
       cursorLeft();
@@ -714,7 +758,7 @@ struct Editor {
     }
 
     if (row == selection.endRow) {
-      end = selection.endCol + 1;
+      end = selection.endCol;
     } else {
       end = lines[row].size();
     }

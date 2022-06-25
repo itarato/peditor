@@ -59,6 +59,23 @@ struct SelectionEdge {
   SelectionEdge(int row, int col) : row(row), col(col) {}
 };
 
+struct LineSelection {
+  int lineNo;
+  int startCol{-1};
+  int endCol{-1};
+
+  LineSelection(int lineNo) : lineNo(lineNo) {}
+  LineSelection(int lineNo, int startCol, int endCol)
+      : lineNo(lineNo), startCol(startCol), endCol(endCol) {}
+
+  bool isFullLine() { return startCol == -1 && endCol == -1; }
+  bool isLeftBounded() { return startCol >= 0; }
+  bool isRightBounded() { return endCol >= 0; }
+};
+
+/**
+ * End column is not included.
+ */
 struct SelectionRange {
   int startRow;
   int startCol;
@@ -69,10 +86,10 @@ struct SelectionRange {
     if (SelectionRange::isSelectionRightFacing(s0, s1)) {
       startCol = s0.col;
       startRow = s0.row;
-      endCol = s1.col - 1;
+      endCol = s1.col;
       endRow = s1.row;
     } else {
-      endCol = s0.col - 1;
+      endCol = s0.col;
       endRow = s0.row;
       startCol = s1.col;
       startRow = s1.row;
@@ -83,6 +100,22 @@ struct SelectionRange {
     if (s1.row < s0.row) return false;
     if (s1.row == s0.row && s1.col < s0.col) return false;
     return true;
+  }
+
+  bool isMultiline() { return startRow < endRow; }
+
+  vector<LineSelection> lineSelections() {
+    vector<LineSelection> out{};
+
+    if (startRow == endRow) {
+      out.emplace_back(startRow, startCol, endCol);
+    } else {
+      out.emplace_back(startRow, startCol, -1);
+      for (int i = startRow + 1; i < endRow; i++) out.emplace_back(i, -1, -1);
+      out.emplace_back(endRow, -1, endCol);
+    }
+
+    return out;
   }
 };
 
