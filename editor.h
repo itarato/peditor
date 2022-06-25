@@ -261,6 +261,10 @@ struct Editor {
   }
 
   void insertCharacter(char c) {
+    if (hasActiveSelection()) {
+      insertBackspace();
+    }
+
     if (currentRow() < (int)lines.size() &&
         currentCol() <= (int)currentLine().size()) {
       currentLine().insert(currentCol(), 1, c);
