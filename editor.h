@@ -371,41 +371,45 @@ struct Editor {
 
   void cursorSelectUp() {
     if (!hasActiveSelection()) startSelectionInCurrentPosition();
-    cursorUp();
+    cursorUp(true);
     endSelectionUpdatePositionToCurrent();
   }
 
   void cursorSelectDown() {
     if (!hasActiveSelection()) startSelectionInCurrentPosition();
-    cursorDown();
+    cursorDown(true);
     endSelectionUpdatePositionToCurrent();
   }
 
   void cursorSelectLeft() {
     if (!hasActiveSelection()) startSelectionInCurrentPosition();
-    cursorLeft();
+    cursorLeft(true);
     endSelectionUpdatePositionToCurrent();
   }
 
   void cursorSelectRight() {
     if (!hasActiveSelection()) startSelectionInCurrentPosition();
-    cursorRight();
+    cursorRight(true);
     endSelectionUpdatePositionToCurrent();
   }
 
-  void cursorDown() {
+  void cursorDown(bool keepSelection = false) {
     __cursorY++;
     restoreXMemory();
     fixCursorPos();
+
+    if (!keepSelection) endSelection();
   }
 
-  void cursorUp() {
+  void cursorUp(bool keepSelection = false) {
     __cursorY--;
     restoreXMemory();
     fixCursorPos();
+
+    if (!keepSelection) endSelection();
   }
 
-  void cursorLeft() {
+  void cursorLeft(bool keepSelection = false) {
     __cursorX--;
 
     if (currentCol() < 0) {
@@ -415,9 +419,11 @@ struct Editor {
 
     fixCursorPos();
     saveXMemory();
+
+    if (!keepSelection) endSelection();
   }
 
-  void cursorRight() {
+  void cursorRight(bool keepSelection = false) {
     __cursorX++;
 
     if (currentCol() > (int)currentLine().size()) {
@@ -427,6 +433,8 @@ struct Editor {
 
     fixCursorPos();
     saveXMemory();
+
+    if (!keepSelection) endSelection();
   }
 
   void cursorPageDown() {
