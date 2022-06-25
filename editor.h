@@ -374,11 +374,15 @@ struct Editor {
     advance(rowIt2, currentCol());
     currentLine().erase(rowIt2, currentLine().end());
 
+    int tabsLen = prefixTabOrSpaceLength(currentLine());
+    if (tabsLen > 0) newLine.insert(0, tabsLen, ' ');
+
     auto lineIt = lines.begin();
     advance(lineIt, currentRow() + 1);
     lines.insert(lineIt, newLine);
 
-    cursorHome();
+    setCol(tabsLen);
+    saveXMemory();
     cursorDown();
   }
 
@@ -684,10 +688,14 @@ struct Editor {
   string generateStatusLine() {
     string out{};
 
+    int rowPosPercentage = 100 * currentRow() / lines.size();
+
     char buf[2048];
-    sprintf(buf, " pEditor v0 | File: %s | Textarea: %dx%d | Cursor: %dx %dy",
+    sprintf(buf,
+            " pEditor v0 | File: %s | Textarea: %dx%d | Cursor: %dx %dy | %d%%",
             config.fileName.value_or("<no file>").c_str(), textAreaCols(),
-            textAreaRows(), textAreaCursorX(), textAreaCursorY());
+            textAreaRows(), textAreaCursorX(), textAreaCursorY(),
+            rowPosPercentage);
 
     out.append(buf);
 

@@ -406,3 +406,9 @@ int prevWordJumpLocation(string &line, int currentPos) {
 
   return -1;
 }
+
+int prefixTabOrSpaceLength(string &line) {
+  auto lineIt =
+      find_if(line.begin(), line.end(), [](auto &c) { return !isspace(c); });
+  return distance(line.begin(), lineIt);
+}
