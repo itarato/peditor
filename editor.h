@@ -227,6 +227,9 @@ struct Editor {
         case EscapeChar::ShiftRight:
           cursorSelectRight();
           break;
+        case EscapeChar::Delete:
+          insertDelete();
+          break;
       }
     }
   }
@@ -281,8 +284,6 @@ struct Editor {
 
         cursorTo(__cursorY - 1, oldLineLen);
       }
-    } else {
-      DLOG("Error: cannot backspace on not line row");
     }
   }
 
@@ -299,6 +300,20 @@ struct Editor {
       }
     }
     saveXMemory();
+  }
+
+  void insertDelete() {
+    if (onLineRow()) {
+      if (currentCol() < (int)currentLine().size()) {
+        currentLine().erase(currentCol(), 1);
+      } else if (currentRow() < (int)lines.size() - 1) {
+        currentLine().append(lines[currentRow() + 1]);
+
+        auto lineIt = lines.begin();
+        advance(lineIt, currentRow() + 1);
+        lines.erase(lineIt);
+      }
+    }
   }
 
   void insertEnter() {

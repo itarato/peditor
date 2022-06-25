@@ -83,6 +83,7 @@ enum class EscapeChar {
   End,
   PageUp,
   PageDown,
+  Delete,
 };
 
 struct TypedChar {
