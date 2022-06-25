@@ -269,50 +269,45 @@ struct Editor {
   inline void requestQuit() { quitRequested = true; }
 
   void insertBackspace() {
-    if (onLineRow()) {
-      if (currentCol() <= (int)currentLine().size() && currentCol() > 0) {
-        currentLine().erase(currentCol() - 1, 1);
-        cursorLeft();
-      } else if (currentCol() == 0 && currentRow() > 0) {
-        int oldLineLen = lines[currentRow() - 1].size();
+    if (currentCol() <= (int)currentLine().size() && currentCol() > 0) {
+      currentLine().erase(currentCol() - 1, 1);
+      cursorLeft();
+    } else if (currentCol() == 0 && currentRow() > 0) {
+      int oldLineLen = lines[currentRow() - 1].size();
 
-        lines[currentRow() - 1].append(currentLine());
+      lines[currentRow() - 1].append(currentLine());
 
-        auto lineIt = lines.begin();
-        advance(lineIt, currentRow());
-        lines.erase(lineIt);
+      auto lineIt = lines.begin();
+      advance(lineIt, currentRow());
+      lines.erase(lineIt);
 
-        cursorTo(__cursorY - 1, oldLineLen);
-      }
+      cursorTo(__cursorY - 1, oldLineLen);
     }
   }
 
   void insertCtrlBackspace() {
-    if (onLineRow()) {
-      if (currentCol() > 0) {
-        int colStart = prevWordJumpLocation(currentLine(), currentCol()) + 1;
-        if (currentCol() - colStart >= 0) {
-          currentLine().erase(colStart, currentCol() - colStart);
-          setCol(colStart);
-        }
-      } else {
-        cursorLeft();
+    if (currentCol() > 0) {
+      int colStart = prevWordJumpLocation(currentLine(), currentCol()) + 1;
+      if (currentCol() - colStart >= 0) {
+        currentLine().erase(colStart, currentCol() - colStart);
+        setCol(colStart);
       }
+    } else {
+      cursorLeft();
     }
+
     saveXMemory();
   }
 
   void insertDelete() {
-    if (onLineRow()) {
-      if (currentCol() < (int)currentLine().size()) {
-        currentLine().erase(currentCol(), 1);
-      } else if (currentRow() < (int)lines.size() - 1) {
-        currentLine().append(lines[currentRow() + 1]);
+    if (currentCol() < (int)currentLine().size()) {
+      currentLine().erase(currentCol(), 1);
+    } else if (currentRow() < (int)lines.size() - 1) {
+      currentLine().append(lines[currentRow() + 1]);
 
-        auto lineIt = lines.begin();
-        advance(lineIt, currentRow() + 1);
-        lines.erase(lineIt);
-      }
+      auto lineIt = lines.begin();
+      advance(lineIt, currentRow() + 1);
+      lines.erase(lineIt);
     }
   }
 
@@ -334,7 +329,7 @@ struct Editor {
   }
 
   void insertTab() {
-    if (onLineRow() && currentCol() <= (int)currentLine().size()) {
+    if (currentCol() <= (int)currentLine().size()) {
       int spacesToFill = config.tabSize - (currentCol() % config.tabSize);
       for (int i = 0; i < spacesToFill; i++) {
         currentLine().insert(currentCol(), 1, ' ');
