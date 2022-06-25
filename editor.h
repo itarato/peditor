@@ -269,7 +269,10 @@ struct Editor {
   inline void requestQuit() { quitRequested = true; }
 
   void insertBackspace() {
-    if (currentCol() <= (int)currentLine().size() && currentCol() > 0) {
+    if (hasActiveSelection()) {
+      // Remove all lines
+      // Put cursor to beginning
+    } else if (currentCol() <= (int)currentLine().size() && currentCol() > 0) {
       currentLine().erase(currentCol() - 1, 1);
       cursorLeft();
     } else if (currentCol() == 0 && currentRow() > 0) {
@@ -696,33 +699,22 @@ struct Editor {
   optional<pair<int, int>> lineSelectionRange(int row) {
     if (!hasActiveSelection()) return nullopt;
 
-    int startCol, startRow, endCol, endRow;
-    if (isSelectionRightFacing()) {
-      startCol = selectionStart.value().col;
-      startRow = selectionStart.value().row;
-      endCol = selectionEnd.value().col - 1;
-      endRow = selectionEnd.value().row;
-    } else {
-      endCol = selectionStart.value().col;
-      endRow = selectionStart.value().row;
-      startCol = selectionEnd.value().col + 1;
-      startRow = selectionEnd.value().row;
-    }
+    SelectionRange selection{selectionStart.value(), selectionEnd.value()};
 
-    if (row < startRow) return nullopt;
-    if (row > endRow) return nullopt;
+    if (row < selection.startRow) return nullopt;
+    if (row > selection.endRow) return nullopt;
 
     int start;
     int end;
 
-    if (row == startRow) {
-      start = startCol;
+    if (row == selection.startRow) {
+      start = selection.startCol;
     } else {
       start = 0;
     }
 
-    if (row == endRow) {
-      end = endCol + 1;
+    if (row == selection.endRow) {
+      end = selection.endCol + 1;
     } else {
       end = lines[row].size();
     }
@@ -732,16 +724,5 @@ struct Editor {
   void endSelection() {
     selectionStart = nullopt;
     selectionEnd = nullopt;
-  }
-  bool isSelectionRightFacing() {
-    if (!hasActiveSelection())
-      reportAndExit("Must check selection before use.");
-
-    if (selectionEnd.value().row < selectionStart.value().row) return false;
-    if (selectionEnd.value().row == selectionStart.value().row &&
-        selectionEnd.value().col < selectionStart.value().col)
-      return false;
-
-    return true;
   }
 };

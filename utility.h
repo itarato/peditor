@@ -59,6 +59,33 @@ struct SelectionEdge {
   SelectionEdge(int row, int col) : row(row), col(col) {}
 };
 
+struct SelectionRange {
+  int startRow;
+  int startCol;
+  int endRow;
+  int endCol;
+
+  SelectionRange(SelectionEdge s0, SelectionEdge s1) {
+    if (SelectionRange::isSelectionRightFacing(s0, s1)) {
+      startCol = s0.col;
+      startRow = s0.row;
+      endCol = s1.col - 1;
+      endRow = s1.row;
+    } else {
+      endCol = s0.col - 1;
+      endRow = s0.row;
+      startCol = s1.col;
+      startRow = s1.row;
+    }
+  }
+
+  static bool isSelectionRightFacing(SelectionEdge s0, SelectionEdge s1) {
+    if (s1.row < s0.row) return false;
+    if (s1.row == s0.row && s1.col < s0.col) return false;
+    return true;
+  }
+};
+
 struct SyntaxColorInfo {
   int pos;
   const char *code;
