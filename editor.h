@@ -56,6 +56,7 @@ struct Editor {
   int horizontalScroll{0};
   int xMemory{0};
   int leftMargin{0};
+  int bottomMargin{1};
 
   pair<int, int> terminalDimension{};
 
@@ -491,13 +492,13 @@ struct Editor {
   }
 
   void cursorPageDown() {
-    __cursorY += terminalRows();
+    __cursorY += textAreaRows();
     restoreXMemory();
     fixCursorPos();
   }
 
   void cursorPageUp() {
-    __cursorY -= terminalRows();
+    __cursorY -= textAreaRows();
     restoreXMemory();
     fixCursorPos();
   }
@@ -545,9 +546,9 @@ struct Editor {
     if (__cursorY < 0) {
       verticalScroll = currentRow();
       __cursorY = 0;
-    } else if (__cursorY >= terminalRows()) {
-      verticalScroll = currentRow() - terminalRows() + 1;
-      __cursorY = terminalRows() - 1;
+    } else if (__cursorY >= textAreaRows()) {
+      verticalScroll = currentRow() - textAreaRows() + 1;
+      __cursorY = textAreaRows() - 1;
     }
 
     // Fix horizontal scroll.
@@ -578,7 +579,9 @@ struct Editor {
   inline int terminalCols() { return terminalDimension.second; }
 
   inline int textAreaCols() { return terminalCols() - leftMargin; }
+  inline int textAreaRows() { return terminalRows() - bottomMargin; }
   inline int textAreaCursorX() { return __cursorX - leftMargin; }
+  inline int textAreaCursorY() { return __cursorY; }
   inline void setTextAreaCursorX(int newTextAreaCursor) {
     __cursorX = newTextAreaCursor + leftMargin;
   }
@@ -625,7 +628,7 @@ struct Editor {
     SyntaxHighlightConfig syntaxHighlightConfig;
     TokenAnalyzer ta{syntaxHighlightConfig};
 
-    for (int lineNo = verticalScroll; lineNo < verticalScroll + terminalRows();
+    for (int lineNo = verticalScroll; lineNo < verticalScroll + textAreaRows();
          lineNo++) {
       if (size_t(lineNo) < lines.size()) {
         // TODO: include horizontalScroll
@@ -645,17 +648,20 @@ struct Editor {
         out.push_back('~');
       }
 
-      if (lineNo < verticalScroll + terminalRows() - 1) {
-        out.append("\n\r");
-      }
+      out.append("\n\r");
+    }
 
-      if (mode == EditorMode::Prompt) {
-        if (lineNo == verticalScroll + terminalRows() - 2) {
-          out.append(prompt.prefix);
-          out.append(prompt.message);
-          break;
-        }
-      }
+    switch (mode) {
+      case EditorMode::Prompt:
+        out.append(prompt.prefix);
+        out.append(prompt.message);
+        break;
+      case EditorMode::TextEdit:
+        string statusLine = generateStatusLine();
+        out.append("\x1b[7m");
+        out.append(statusLine);
+        out.append("\x1b[27m");
+        break;
     }
   }
 
@@ -673,6 +679,26 @@ struct Editor {
 
   void refreshTerminalDimension() {
     terminalDimension = getTerminalDimension();
+  }
+
+  string generateStatusLine() {
+    string out{};
+
+    char buf[2048];
+    sprintf(buf, " pEditor v0 | File: %s | Textarea: %dx%d | Cursor: %dx %dy",
+            config.fileName.value_or("<no file>").c_str(), textAreaCols(),
+            textAreaRows(), textAreaCursorX(), textAreaCursorY());
+
+    out.append(buf);
+
+    if ((int)out.size() > terminalCols()) {
+      out.erase(terminalCols(), out.size() - terminalCols());
+    } else {
+      string filler(terminalCols() - (int)out.size(), ' ');
+      out.append(filler);
+    }
+
+    return out;
   }
 
   void openPrompt(string prefix, Command command) {
