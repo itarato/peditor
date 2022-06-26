@@ -20,4 +20,14 @@ void execute(Command *cmd, vector<string> *lines) {
   }
 }
 
+void reverse(Command *cmd, vector<string> *lines) {
+  switch (cmd->type) {
+    case CommandType::InsertChar:
+      lines->at(cmd->row).erase(cmd->col, 1);
+      break;
+    default:
+      reportAndExit("Unknown command.");
+  }
+}
+
 }  // namespace TextManipulator
