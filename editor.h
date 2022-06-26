@@ -169,6 +169,9 @@ struct Editor {
         case ctrlKey('z'):
           undo();
           break;
+        case ctrlKey('r'):
+          redo();
+          break;
         case BACKSPACE:
           insertBackspace();
           break;
@@ -434,6 +437,18 @@ struct Editor {
     fixCursorPos();
 
     redos.push_back(cmd);
+  }
+
+  void redo() {
+    if (redos.empty()) return;
+
+    Command cmd = redos.back();
+    redos.pop_back();
+
+    TextManipulator::execute(&cmd, &lines);
+    fixCursorPos();
+
+    undos.push_back(cmd);
   }
 
   void cursorWordJumpLeft() {
