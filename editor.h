@@ -355,16 +355,13 @@ struct Editor {
   }
 
   void insertDelete() {
-    if (hasActiveSelection()) insertBackspace();
-
-    if (currentCol() < (int)currentLine().size()) {
-      currentLine().erase(currentCol(), 1);
+    if (hasActiveSelection()) {
+      insertBackspace();
+    } else if (currentCol() < (int)currentLine().size()) {
+      execCommand(Command::makeDeleteChar(currentRow(), currentCol(),
+                                          currentLine()[currentCol()]));
     } else if (currentRow() < (int)lines.size() - 1) {
-      currentLine().append(lines[currentRow() + 1]);
-
-      auto lineIt = lines.begin();
-      advance(lineIt, currentRow() + 1);
-      lines.erase(lineIt);
+      execCommand(Command::makeMergeLine(currentRow(), currentCol()));
     }
   }
 
