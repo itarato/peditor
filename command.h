@@ -11,11 +11,11 @@ enum class CommandType {
 
   // Remove a character at a position.
   // Memory: removed char
-  RemoveChar,
+  DeleteChar,
 
   // Remove a whole slice from a line.
   // Memory: removed slice
-  RemoveSlice,
+  DeleteSlice,
 
   // Remove a whole line
   // Memory: line content
@@ -59,5 +59,13 @@ struct Command {
 
   static Command makeInsertChar(int row, int col, char c) {
     return Command(CommandType::InsertChar, row, col, c);
+  }
+
+  static Command makeDeleteChar(int row, int col, char c) {
+    return Command(CommandType::DeleteChar, row, col, c);
+  }
+
+  static Command makeMergeLine(int row, int col) {
+    return Command(CommandType::MergeLine, row, col);
   }
 };

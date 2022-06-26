@@ -278,10 +278,7 @@ struct Editor {
 
     if (currentRow() < (int)lines.size() &&
         currentCol() <= (int)currentLine().size()) {
-      Command cmd = Command::makeInsertChar(currentRow(), currentCol(), c);
-      undos.push_back(cmd);
-
-      TextManipulator::execute(&cmd, &lines);
+      execCommand(Command::makeInsertChar(currentRow(), currentCol(), c));
 
       cursorRight();
     }
@@ -336,17 +333,12 @@ struct Editor {
       cursorTo(selection.startRow, selection.startCol);
       endSelection();
     } else if (currentCol() <= (int)currentLine().size() && currentCol() > 0) {
-      currentLine().erase(currentCol() - 1, 1);
+      execCommand(Command::makeDeleteChar(currentRow(), currentCol() - 1,
+                                          currentLine()[currentCol() - 1]));
       cursorLeft();
     } else if (currentCol() == 0 && currentRow() > 0) {
       int oldLineLen = lines[currentRow() - 1].size();
-
-      lines[currentRow() - 1].append(currentLine());
-
-      auto lineIt = lines.begin();
-      advance(lineIt, currentRow());
-      lines.erase(lineIt);
-
+      execCommand(Command::makeMergeLine(previousRow(), previousLine().size()));
       cursorTo(__cursorY - 1, oldLineLen);
     }
   }
@@ -427,11 +419,23 @@ struct Editor {
     }
   }
 
+  void execCommand(Command&& cmd) {
+    undos.push_back(cmd);
+    DLOG("EXEC cmd: %d", cmd.type);
+
+    TextManipulator::execute(&cmd, &lines);
+
+    redos.clear();
+    // TODO: chunk undos to limit
+  }
+
   void undo() {
     if (undos.empty()) return;
 
     Command cmd = undos.back();
     undos.pop_back();
+
+    DLOG("UNDO cmd: %d", cmd.type);
 
     TextManipulator::reverse(&cmd, &lines);
     fixCursorPos();
@@ -444,6 +448,8 @@ struct Editor {
 
     Command cmd = redos.back();
     redos.pop_back();
+
+    DLOG("REDO cmd: %d", cmd.type);
 
     TextManipulator::execute(&cmd, &lines);
     fixCursorPos();
@@ -606,10 +612,15 @@ struct Editor {
   }
 
   int currentRow() { return verticalScroll + __cursorY; }
+  int previousRow() { return verticalScroll + __cursorY - 1; }
+  int nextRow() { return verticalScroll + __cursorY + 1; }
+
   // Text area related -> TODO: rename
   int currentCol() { return horizontalScroll + textAreaCursorX(); }
 
   inline string& currentLine() { return lines[currentRow()]; }
+  inline string& previousLine() { return lines[previousRow()]; }
+  inline string& nextLine() { return lines[nextRow()]; }
 
   inline void restoreXMemory() { setTextAreaCursorX(xMemory); }
   inline void saveXMemory() { xMemory = textAreaCursorX(); }
