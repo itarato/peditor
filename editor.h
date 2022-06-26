@@ -336,10 +336,15 @@ struct Editor {
   }
 
   void insertCtrlBackspace() {
-    if (currentCol() > 0) {
+    if (hasActiveSelection()) {
+      insertBackspace();
+    } else if (currentCol() > 0) {
       int colStart = prevWordJumpLocation(currentLine(), currentCol()) + 1;
       if (currentCol() - colStart >= 0) {
-        currentLine().erase(colStart, currentCol() - colStart);
+        execCommand(Command::makeDeleteSlice(
+            currentRow(), colStart,
+            currentLine().substr(colStart, currentCol() - colStart)));
+
         setCol(colStart);
       }
     } else {
