@@ -385,9 +385,11 @@ struct Editor {
   void insertTab() {
     if (currentCol() <= (int)currentLine().size()) {
       int spacesToFill = config.tabSize - (currentCol() % config.tabSize);
-      for (int i = 0; i < spacesToFill; i++) {
-        currentLine().insert(currentCol(), 1, ' ');
-        cursorRight();
+
+      if (spacesToFill > 0) {
+        string tabs(spacesToFill, ' ');
+        execCommand(Command::makeInsertSlice(currentRow(), currentCol(), tabs));
+        setCol(currentCol() + spacesToFill);
       }
     }
   }
