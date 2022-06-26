@@ -395,14 +395,13 @@ struct Editor {
   }
 
   void deleteLine() {
-    auto lineIt = lines.begin();
-    advance(lineIt, currentRow());
-    lines.erase(lineIt);
+    if (lines.size() == 1) {
+      execCommand(Command::makeDeleteSlice(0, 0, lines[0]));
+    } else {
+      execCommand(Command::makeDeleteLine(currentRow(), currentLine()));
+    }
 
-    if (lines.size() == 0) {
-      lines.emplace_back("");
-    } else if (currentRow() >= (int)lines.size()) {
-      setCol(currentCol());
+    if (currentRow() >= (int)lines.size()) {
       cursorUp();
     } else {
       setCol(currentCol());
