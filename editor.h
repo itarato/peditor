@@ -7,15 +7,18 @@
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
+#include <deque>
 #include <fstream>
 #include <iterator>
 #include <optional>
 #include <string>
 #include <vector>
 
+#include "command.h"
 #include "config.h"
 #include "debug.h"
 #include "terminal_util.h"
+#include "text_manipulator.h"
 #include "utility.h"
 
 using namespace std;
@@ -25,19 +28,19 @@ enum class EditorMode {
   Prompt,
 };
 
-enum class Command {
+enum class PromptCommand {
   Nothing,
   SaveFileAs,
 };
 
 struct Prompt {
   string prefix{};
-  Command command{Command::Nothing};
+  PromptCommand command{PromptCommand::Nothing};
   string message{};
   int previousCursorX{0};
   int previousCursorY{0};
 
-  void reset(string newPrefix, Command newCommand, int newPreviousCursorX,
+  void reset(string newPrefix, PromptCommand newCommand, int newPreviousCursorX,
              int newPreviousCursorY) {
     prefix = newPrefix;
     message.clear();
@@ -70,6 +73,9 @@ struct Editor {
 
   optional<SelectionEdge> selectionStart{nullopt};
   optional<SelectionEdge> selectionEnd{nullopt};
+
+  deque<Command> undos;
+  deque<Command> redos;
 
   Editor(Config config) : config(config) {}
 
@@ -155,7 +161,7 @@ struct Editor {
           saveFile();
           break;
         case ctrlKey('o'):
-          openPrompt("Filename > ", Command::SaveFileAs);
+          openPrompt("Filename > ", PromptCommand::SaveFileAs);
           break;
         case ctrlKey('d'):
           deleteLine();
@@ -266,7 +272,11 @@ struct Editor {
 
     if (currentRow() < (int)lines.size() &&
         currentCol() <= (int)currentLine().size()) {
-      currentLine().insert(currentCol(), 1, c);
+      Command cmd = Command::makeInsertChar(currentRow(), currentCol(), c);
+      undos.push_back(cmd);
+
+      TextManipulator::execute(&cmd, &lines);
+
       cursorRight();
     }
   }
@@ -709,7 +719,7 @@ struct Editor {
     return out;
   }
 
-  void openPrompt(string prefix, Command command) {
+  void openPrompt(string prefix, PromptCommand command) {
     mode = EditorMode::Prompt;
     prompt.reset(prefix, command, __cursorX, __cursorY);
     __cursorX = prompt.prefix.size() + prompt.message.size();
@@ -718,11 +728,11 @@ struct Editor {
 
   void finalizeAndClosePrompt() {
     switch (prompt.command) {
-      case Command::SaveFileAs:
+      case PromptCommand::SaveFileAs:
         config.fileName = optional<string>(prompt.message);
         saveFile();
         break;
-      case Command::Nothing:
+      case PromptCommand::Nothing:
         break;
     }
 
