@@ -49,6 +49,12 @@ void reverse(Command *cmd, vector<string> *lines) {
     auto lineIt = lines->begin();
     advance(lineIt, cmd->row + 1);
     lines->insert(lineIt, newLine);
+  } else if (cmd->type == CommandType::DeleteLine) {
+    auto lineIt = lines->begin();
+    advance(lineIt, cmd->row);
+    lines->insert(lineIt, cmd->memoryStr);
+  } else if (cmd->type == CommandType::DeleteSlice) {
+    lines->at(cmd->row).insert(cmd->col, cmd->memoryStr);
   } else {
     reportAndExit("Unknown revert command.");
   }
