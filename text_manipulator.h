@@ -21,6 +21,12 @@ void execute(Command *cmd, vector<string> *lines) {
     auto lineIt = lines->begin();
     advance(lineIt, cmd->row + 1);
     lines->erase(lineIt);
+  } else if (cmd->type == CommandType::DeleteLine) {
+    auto lineIt = lines->begin();
+    advance(lineIt, cmd->row);
+    lines->erase(lineIt);
+  } else if (cmd->type == CommandType::DeleteSlice) {
+    lines->at(cmd->row).erase(cmd->col, cmd->memoryStr.size());
   } else {
     reportAndExit("Unknown command.");
   }
@@ -44,7 +50,7 @@ void reverse(Command *cmd, vector<string> *lines) {
     advance(lineIt, cmd->row + 1);
     lines->insert(lineIt, newLine);
   } else {
-    reportAndExit("Unknown command.");
+    reportAndExit("Unknown revert command.");
   }
 }
 

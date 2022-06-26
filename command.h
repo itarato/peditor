@@ -50,6 +50,9 @@ struct Command {
         memoryStr(memoryStr),
         isMemoryChar(false) {}
 
+  Command(CommandType type, int row, string memoryStr)
+      : type(type), row(row), memoryStr(memoryStr), isMemoryChar(false) {}
+
   Command(CommandType type, int row, int col, char memoryChr)
       : type(type),
         row(row),
@@ -67,5 +70,13 @@ struct Command {
 
   static Command makeMergeLine(int row, int col) {
     return Command(CommandType::MergeLine, row, col);
+  }
+
+  static Command makeDeleteLine(int row, string memory) {
+    return Command(CommandType::DeleteLine, row, memory);
+  }
+
+  static Command makeDeleteSlice(int row, int col, string memory) {
+    return Command(CommandType::DeleteSlice, row, col, memory);
   }
 };
