@@ -9,6 +9,10 @@ enum class CommandType {
   // No memory
   InsertChar,
 
+  // Insert a string.
+  // Memory: snippet
+  InsertSlice,
+
   // Remove a character at a position.
   // Memory: removed char
   DeleteChar,
@@ -60,23 +64,31 @@ struct Command {
         memoryChr(memoryChr),
         isMemoryChar(true) {}
 
-  static Command makeInsertChar(int row, int col, char c) {
+  static inline Command makeInsertChar(int row, int col, char c) {
     return Command(CommandType::InsertChar, row, col, c);
   }
 
-  static Command makeDeleteChar(int row, int col, char c) {
+  static inline Command makeDeleteChar(int row, int col, char c) {
     return Command(CommandType::DeleteChar, row, col, c);
   }
 
-  static Command makeMergeLine(int row, int col) {
+  static inline Command makeMergeLine(int row, int col) {
     return Command(CommandType::MergeLine, row, col);
   }
 
-  static Command makeDeleteLine(int row, string memory) {
+  static inline Command makeDeleteLine(int row, string memory) {
     return Command(CommandType::DeleteLine, row, memory);
   }
 
-  static Command makeDeleteSlice(int row, int col, string memory) {
+  static inline Command makeDeleteSlice(int row, int col, string memory) {
     return Command(CommandType::DeleteSlice, row, col, memory);
+  }
+
+  static inline Command makeSplitLine(int row, int col) {
+    return Command(CommandType::SplitLine, row, col);
+  }
+
+  static inline Command makeInsertSlice(int row, int col, string memory) {
+    return Command(CommandType::InsertSlice, row, col, memory);
   }
 };

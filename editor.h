@@ -368,20 +368,14 @@ struct Editor {
   void insertEnter() {
     if (hasActiveSelection()) insertBackspace();
 
-    auto rowIt = currentLine().begin();
-    advance(rowIt, currentCol());
-    string newLine(rowIt, currentLine().end());
-
-    auto rowIt2 = currentLine().begin();
-    advance(rowIt2, currentCol());
-    currentLine().erase(rowIt2, currentLine().end());
-
     int tabsLen = prefixTabOrSpaceLength(currentLine());
-    if (tabsLen > 0) newLine.insert(0, tabsLen, ' ');
 
-    auto lineIt = lines.begin();
-    advance(lineIt, currentRow() + 1);
-    lines.insert(lineIt, newLine);
+    execCommand(Command::makeSplitLine(currentRow(), currentCol()));
+
+    if (tabsLen > 0) {
+      string tabs(tabsLen, ' ');
+      execCommand(Command::makeInsertSlice(nextRow(), 0, tabs));
+    }
 
     setCol(tabsLen);
     saveXMemory();
@@ -429,8 +423,6 @@ struct Editor {
     Command cmd = undos.back();
     undos.pop_back();
 
-    DLOG("UNDO cmd: %d", cmd.type);
-
     TextManipulator::reverse(&cmd, &lines);
     fixCursorPos();
 
@@ -442,8 +434,6 @@ struct Editor {
 
     Command cmd = redos.back();
     redos.pop_back();
-
-    DLOG("REDO cmd: %d", cmd.type);
 
     TextManipulator::execute(&cmd, &lines);
     fixCursorPos();
