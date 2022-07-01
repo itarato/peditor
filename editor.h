@@ -272,13 +272,14 @@ struct Editor {
           finalizeAndClosePrompt();
           return;
         }
-        if (tc.simple() == BACKSPACE) prompt.message.pop_back();
+        if (tc.simple() == BACKSPACE && !prompt.message.empty())
+          prompt.message.pop_back();
       } else {
         prompt.message.push_back(tc.simple());
       }
     }
 
-    __cursorX = prompt.prefix.size() + prompt.message.size();
+    __cursorX = prompt.prefix.size() + prompt.message.size() + 1;
   }
 
   bool onLineRow() {
@@ -735,8 +736,14 @@ struct Editor {
 
     switch (mode) {
       case EditorMode::Prompt:
+        out.append("\x1b[44m");
+        out.append("\x1b[97m ");
         out.append(prompt.prefix);
         out.append(prompt.message);
+        out.append(string(
+            terminalCols() - prompt.prefix.size() - prompt.message.size() - 1,
+            ' '));
+        out.append("\x1b[0m");
         break;
       case EditorMode::TextEdit:
         string statusLine = generateStatusLine();
@@ -790,7 +797,7 @@ struct Editor {
   void openPrompt(string prefix, PromptCommand command) {
     mode = EditorMode::Prompt;
     prompt.reset(prefix, command, __cursorX, __cursorY);
-    __cursorX = prompt.prefix.size() + prompt.message.size();
+    __cursorX = prompt.prefix.size() + prompt.message.size() + 1;
     __cursorY = terminalRows() - 1;
   }
 
