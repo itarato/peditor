@@ -22,12 +22,16 @@ make runtests
 
 ### Use
 
+Start:
+
+- Open with empty editor: `./pedit`
+- Open with file: `./pedit <FILENAME>`
+
 File operations:
 
-- Open empty editor: `./pedit`
-- Open file: `./pedit <FILENAME>`
 - Save: `CTRL` + `s`
-- Save as: `CTRL` + `o`
+- Save as: `CTRL` + `w`
+- Open: `CTRL` + `o`
 
 Editor management:
 
@@ -36,11 +40,11 @@ Editor management:
 Text editing:
 
 - Move: arrows
-- Word jump: `CTRL` + left/right
-- Vertical offsetting: `CTRL` + up/down
-- Word delete: `CTRL` + backspace
+- Word jump: `CTRL` + `left`/`right`
+- Vertical offsetting: `CTRL` + `up`/`down`
+- Word delete: `CTRL` + `backspace`
 - OS clipboard: OS bindings
-- Internal clipboard: `CTRL` + c/v
-- Undo/redo: `CTRL` + z/r
-- Line delete: `CTRL` + d
-- Selection mode: `CTRL` + x
+- Internal clipboard: `CTRL` + `c`/`v`
+- Undo/redo: `CTRL` + `z`/`r`
+- Line delete: `CTRL` + `d`
+- Selection mode: `CTRL` + `x`

@@ -92,15 +92,18 @@ struct Editor {
     // To have a non zero content to begin with.
     lines.emplace_back("");
 
-    if (config.fileName.has_value()) {
-      loadFile(config.fileName.value());
-    }
+    loadFile();
   }
 
-  void loadFile(string fileName) {
-    DLOG("Loading file: %s", fileName.c_str());
+  void loadFile() {
+    if (!config.fileName.has_value()) {
+      DLOG("Cannot load file - config does not have any.");
+      return;
+    }
 
-    ifstream f(fileName);
+    DLOG("Loading file: %s", config.fileName.value().c_str());
+
+    ifstream f(config.fileName.value());
 
     if (!f.is_open()) {
       reportAndExit("Failed opening file");
@@ -115,6 +118,8 @@ struct Editor {
     config.reloadKeywordList();
 
     if (lines.empty()) lines.emplace_back("");
+
+    cursorTo(0, 0);
   }
 
   void saveFile() {
@@ -794,6 +799,10 @@ struct Editor {
       case PromptCommand::SaveFileAs:
         config.fileName = optional<string>(prompt.message);
         saveFile();
+        break;
+      case PromptCommand::OpenFile:
+        config.fileName = optional<string>(prompt.message);
+        loadFile();
         break;
       case PromptCommand::Nothing:
         break;
