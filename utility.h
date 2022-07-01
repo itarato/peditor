@@ -194,156 +194,152 @@ enum class TokenState {
   Paren,
 };
 
-struct TokenAnalyzer 1 !2 ' 3 '' 4 - 5 --6 - < 7 - << 8->9 ::10;
-11 < -12, 13 = 14 = > 15 > 16 ? 17 #18 * 19 @20 [|, | ] 21 22 _ 23 ` 24 { , }
-25 { -, - }
-26 | 27 ~28 as 29 case,
-    of 30 class 31 data 32 data family 33 data instance 34 default 35 deriving 36 deriving
-        instance 37 do 38 forall 39 foreign 40 hiding 41 if,
-    then, else 42 import 43 infix, infixl, infixr 44 instance 45 let,
-    in 46 mdo 47 module 48 newtype 49 proc 50 qualified 51 rec 52 type 53 type family 54 type
-            instance 55 where Info > colorizeTokens(string &input) {
-  string current{};
-  TokenState state{TokenState::Nothing};
-  vector<SyntaxColorInfo> out{};
+struct TokenAnalyzer {
+  SyntaxHighlightConfig &config;
 
-  for (auto it = input.begin(); it != input.end(); it++) {
-    bool tokenDidComplete{false};
-    int end = distance(input.begin(), it);
-    bool isLast = it + 1 == input.end();
+  TokenAnalyzer(SyntaxHighlightConfig &config) : config(config) {}
 
-    switch (state) {
-      case TokenState::Word:
-        if (isalnum(*it) || *it == '_') {
+  vector<SyntaxColorInfo> colorizeTokens(string &input) {
+    string current{};
+    TokenState state{TokenState::Nothing};
+    vector<SyntaxColorInfo> out{};
+
+    for (auto it = input.begin(); it != input.end(); it++) {
+      bool tokenDidComplete{false};
+      int end = distance(input.begin(), it);
+      bool isLast = it + 1 == input.end();
+
+      switch (state) {
+        case TokenState::Word:
+          if (isalnum(*it) || *it == '_') {
+            current.push_back(*it);
+          } else {
+            tokenDidComplete = true;
+            end = distance(input.begin(), it) - 1;
+          }
+          break;
+        case TokenState::Number:
+          if (isdigit(*it)) {
+            current.push_back(*it);
+          } else {
+            tokenDidComplete = true;
+            end = distance(input.begin(), it) - 1;
+          }
+          break;
+        case TokenState::DoubleQuotedString:
           current.push_back(*it);
-        } else {
-          tokenDidComplete = true;
-          end = distance(input.begin(), it) - 1;
-        }
-        break;
-      case TokenState::Number:
-        if (isdigit(*it)) {
+
+          if (*it == '"') {
+            tokenDidComplete = true;
+            end = distance(input.begin(), it);
+
+            // We don't want this to be evald in this loop anymore.
+            if (!isLast) it++;
+          }
+          break;
+        case TokenState::SingleQuotedString:
           current.push_back(*it);
-        } else {
-          tokenDidComplete = true;
-          end = distance(input.begin(), it) - 1;
-        }
-        break;
-      case TokenState::DoubleQuotedString:
-        current.push_back(*it);
 
-        if (*it == '"') {
-          tokenDidComplete = true;
-          end = distance(input.begin(), it);
+          if (*it == '\'') {
+            tokenDidComplete = true;
+            end = distance(input.begin(), it);
 
-          // We don't want this to be evald in this loop anymore.
-          if (!isLast) it++;
-        }
-        break;
-      case TokenState::SingleQuotedString:
-        current.push_back(*it);
-
-        if (*it == '\'') {
-          tokenDidComplete = true;
-          end = distance(input.begin(), it);
-
-          // We don't want this to be evald in this loop anymore.
-          if (!isLast) it++;
-        }
-        break;
-      case TokenState::Paren:
-        if (isParen(*it)) {
-          current.push_back(*it);
-        } else {
-          tokenDidComplete = true;
-          end = distance(input.begin(), it) - 1;
-        }
-        break;
-      case TokenState::Nothing:
-        state = checkStart(&it, current);
-        break;
-    }
-
-    // Reload flag do to iterator adjustment.
-    isLast = it + 1 == input.end();
-    if (tokenDidComplete || isLast) {
-      const char *colorResult = analyzeToken(state, current);
-      if (colorResult) {
-        out.emplace_back(end - current.size() + 1, colorResult);
-        out.emplace_back(end + 1, DEFAULT_FOREGROUND);
+            // We don't want this to be evald in this loop anymore.
+            if (!isLast) it++;
+          }
+          break;
+        case TokenState::Paren:
+          if (isParen(*it)) {
+            current.push_back(*it);
+          } else {
+            tokenDidComplete = true;
+            end = distance(input.begin(), it) - 1;
+          }
+          break;
+        case TokenState::Nothing:
+          state = checkStart(&it, current);
+          break;
       }
 
-      state = TokenState::Nothing;
+      // Reload flag do to iterator adjustment.
+      isLast = it + 1 == input.end();
+      if (tokenDidComplete || isLast) {
+        const char *colorResult = analyzeToken(state, current);
+        if (colorResult) {
+          out.emplace_back(end - current.size() + 1, colorResult);
+          out.emplace_back(end + 1, DEFAULT_FOREGROUND);
+        }
+
+        state = TokenState::Nothing;
+      }
+
+      if (state == TokenState::Nothing) {
+        state = checkStart(&it, current);
+      }
     }
 
-    if (state == TokenState::Nothing) {
-      state = checkStart(&it, current);
+    return out;
+  }
+
+ private:
+  const char *analyzeToken(TokenState state, string &token) {
+    unordered_set<string>::iterator wordIt;
+
+    switch (state) {
+      case TokenState::Number:
+        return config.numberColor;
+      case TokenState::Word:
+        wordIt = find(config.keywords->begin(), config.keywords->end(), token);
+        if (wordIt != config.keywords->end()) return config.keywordColor;
+
+        return nullptr;
+      case TokenState::DoubleQuotedString:
+      case TokenState::SingleQuotedString:
+        return config.stringColor;
+      case TokenState::Paren:
+        return config.parenColor;
+      default:
+        return nullptr;
     }
   }
 
-  return out;
-}
+  TokenState checkStart(string::iterator *it, string &current) {
+    bool foundNewStart = false;
+    TokenState state{TokenState::Nothing};
 
-private:
-const char *analyzeToken(TokenState state, string &token) {
-  unordered_set<string>::iterator wordIt;
+    if (**it == '"') {
+      state = TokenState::DoubleQuotedString;
+      foundNewStart = true;
+    }
 
-  switch (state) {
-    case TokenState::Number:
-      return config.numberColor;
-    case TokenState::Word:
-      wordIt = find(config.keywords->begin(), config.keywords->end(), token);
-      if (wordIt != config.keywords->end()) return config.keywordColor;
+    if (**it == '\'') {
+      state = TokenState::SingleQuotedString;
+      foundNewStart = true;
+    }
 
-      return nullptr;
-    case TokenState::DoubleQuotedString:
-    case TokenState::SingleQuotedString:
-      return config.stringColor;
-    case TokenState::Paren:
-      return config.parenColor;
-    default:
-      return nullptr;
+    if (isdigit(**it)) {
+      state = TokenState::Number;
+      foundNewStart = true;
+    }
+
+    if (isalpha(**it) || **it == '_') {
+      state = TokenState::Word;
+      foundNewStart = true;
+    }
+
+    if (isParen(**it)) {
+      state = TokenState::Paren;
+      foundNewStart = true;
+    }
+
+    if (foundNewStart) {
+      current.clear();
+      current.push_back(**it);
+    }
+
+    return state;
   }
-}
-
-TokenState checkStart(string::iterator *it, string &current) {
-  bool foundNewStart = false;
-  TokenState state{TokenState::Nothing};
-
-  if (**it == '"') {
-    state = TokenState::DoubleQuotedString;
-    foundNewStart = true;
-  }
-
-  if (**it == '\'') {
-    state = TokenState::SingleQuotedString;
-    foundNewStart = true;
-  }
-
-  if (isdigit(**it)) {
-    state = TokenState::Number;
-    foundNewStart = true;
-  }
-
-  if (isalpha(**it) || **it == '_') {
-    state = TokenState::Word;
-    foundNewStart = true;
-  }
-
-  if (isParen(**it)) {
-    state = TokenState::Paren;
-    foundNewStart = true;
-  }
-
-  if (foundNewStart) {
-    current.clear();
-    current.push_back(**it);
-  }
-
-  return state;
-}
-}
-;
+};
 
 /**
  * @brief Returns the location in a character seqence of the next different
@@ -402,6 +398,7 @@ int prevWordJumpLocation(string &line, int currentPos) {
 }
 
 int prefixTabOrSpaceLength(string &line) {
-  auto lineIt = find_if(line.begin(), line.end(), [](auto &c) { return !isspace(c); });
+  auto lineIt =
+      find_if(line.begin(), line.end(), [](auto &c) { return !isspace(c); });
   return distance(line.begin(), lineIt);
 }

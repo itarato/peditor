@@ -33,6 +33,7 @@ enum class EditorMode {
 enum class PromptCommand {
   Nothing,
   SaveFileAs,
+  OpenFile,
 };
 
 struct Prompt {
@@ -166,8 +167,11 @@ struct Editor {
         case ctrlKey('s'):
           saveFile();
           break;
+        case ctrlKey('w'):
+          openPrompt("Safe file to > ", PromptCommand::SaveFileAs);
+          break;
         case ctrlKey('o'):
-          openPrompt("Filename > ", PromptCommand::SaveFileAs);
+          openPrompt("Open file > ", PromptCommand::OpenFile);
           break;
         case ctrlKey('d'):
           deleteLine();
