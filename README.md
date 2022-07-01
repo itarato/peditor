@@ -3,7 +3,7 @@ Peditor
 
 Toy text editor.
 
-[![asciicast](https://asciinema.org/a/SJonWXqbb0T6SgIQjvofFtnfv.svg)](https://asciinema.org/a/SJonWXqbb0T6SgIQjvofFtnfv)
+[![asciicast](https://asciinema.org/a/LP3tSFwa2FxruDQ7nQ33PCw6F.svg)](https://asciinema.org/a/LP3tSFwa2FxruDQ7nQ33PCw6F)
 
 
 ### Compile
