@@ -111,6 +111,8 @@ struct Editor {
     }
     f.close();
 
+    config.reloadKeywordList();
+
     if (lines.empty()) lines.emplace_back("");
   }
 
@@ -696,7 +698,7 @@ struct Editor {
   void drawLines(string& out) {
     resetCursorLocation(out);
 
-    SyntaxHighlightConfig syntaxHighlightConfig;
+    SyntaxHighlightConfig syntaxHighlightConfig{&config.keywords};
     TokenAnalyzer ta{syntaxHighlightConfig};
 
     for (int lineNo = verticalScroll; lineNo < verticalScroll + textAreaRows();

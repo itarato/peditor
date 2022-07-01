@@ -41,108 +41,10 @@ struct SyntaxHighlightConfig {
   const char *numberColor{MAGENTA};
   const char *stringColor{LIGHTYELLOW};
   const char *parenColor{CYAN};
-  const char *lvl1Color{LIGHTCYAN};
-  const char *lvl2Color{LIGHTBLUE};
+  const char *keywordColor{LIGHTCYAN};
+  unordered_set<string> *keywords;
 
-  unordered_set<const char *> lvl1Words{"alignas",
-                                        "alignof",
-                                        "and",
-                                        "and_eq",
-                                        "asm",
-                                        "atomic_cancel",
-                                        "atomic_commit",
-                                        "atomic_noexcept",
-                                        "auto",
-                                        "bitand",
-                                        "bitor",
-                                        "bool",
-                                        "break",
-                                        "case",
-                                        "catch",
-                                        "char",
-                                        "char8_t",
-                                        "char16_t",
-                                        "char32_t",
-                                        "class",
-                                        "compl",
-                                        "concept",
-                                        "const",
-                                        "consteval",
-                                        "constexpr",
-                                        "constinit",
-                                        "const_cast",
-                                        "continue",
-                                        "co_await",
-                                        "co_return",
-                                        "co_yield",
-                                        "decltype",
-                                        "default",
-                                        "delete",
-                                        "do",
-                                        "double",
-                                        "dynamic_cast",
-                                        "else",
-                                        "enum",
-                                        "explicit",
-                                        "export",
-                                        "extern",
-                                        "false",
-                                        "float",
-                                        "for",
-                                        "friend",
-                                        "goto",
-                                        "if",
-                                        "inline",
-                                        "int",
-                                        "long",
-                                        "mutable",
-                                        "namespace",
-                                        "new",
-                                        "noexcept",
-                                        "not",
-                                        "not_eq",
-                                        "nullptr",
-                                        "operator",
-                                        "or",
-                                        "or_eq",
-                                        "private",
-                                        "protected",
-                                        "public",
-                                        "reflexpr",
-                                        "register",
-                                        "reinterpret_cast",
-                                        "requires",
-                                        "return",
-                                        "short",
-                                        "signed",
-                                        "sizeof",
-                                        "static",
-                                        "static_assert",
-                                        "static_cast",
-                                        "struct",
-                                        "switch",
-                                        "synchronized",
-                                        "template",
-                                        "this",
-                                        "thread_local",
-                                        "throw",
-                                        "true",
-                                        "try",
-                                        "typedef",
-                                        "typeid",
-                                        "typename",
-                                        "union",
-                                        "unsigned",
-                                        "using",
-                                        "virtual",
-                                        "void",
-                                        "volatile",
-                                        "wchar_t",
-                                        "while",
-                                        "xor",
-                                        "xor_eq"};
-
-  unordered_set<const char *> lvl2Words{};
+  SyntaxHighlightConfig(unordered_set<string> *keywords) : keywords(keywords) {}
 };
 
 struct SelectionEdge {
@@ -292,157 +194,156 @@ enum class TokenState {
   Paren,
 };
 
-struct TokenAnalyzer {
-  SyntaxHighlightConfig &config;
+struct TokenAnalyzer 1 !2 ' 3 '' 4 - 5 --6 - < 7 - << 8->9 ::10;
+11 < -12, 13 = 14 = > 15 > 16 ? 17 #18 * 19 @20 [|, | ] 21 22 _ 23 ` 24 { , }
+25 { -, - }
+26 | 27 ~28 as 29 case,
+    of 30 class 31 data 32 data family 33 data instance 34 default 35 deriving 36 deriving
+        instance 37 do 38 forall 39 foreign 40 hiding 41 if,
+    then, else 42 import 43 infix, infixl, infixr 44 instance 45 let,
+    in 46 mdo 47 module 48 newtype 49 proc 50 qualified 51 rec 52 type 53 type family 54 type
+            instance 55 where Info > colorizeTokens(string &input) {
+  string current{};
+  TokenState state{TokenState::Nothing};
+  vector<SyntaxColorInfo> out{};
 
-  TokenAnalyzer(SyntaxHighlightConfig &config) : config(config) {}
-
-  vector<SyntaxColorInfo> colorizeTokens(string &input) {
-    string current{};
-    TokenState state{TokenState::Nothing};
-    vector<SyntaxColorInfo> out{};
-
-    for (auto it = input.begin(); it != input.end(); it++) {
-      bool tokenDidComplete{false};
-      int end = distance(input.begin(), it);
-      bool isLast = it + 1 == input.end();
-
-      switch (state) {
-        case TokenState::Word:
-          if (isalnum(*it)) {
-            current.push_back(*it);
-          } else {
-            tokenDidComplete = true;
-            end = distance(input.begin(), it) - 1;
-          }
-          break;
-        case TokenState::Number:
-          if (isdigit(*it)) {
-            current.push_back(*it);
-          } else {
-            tokenDidComplete = true;
-            end = distance(input.begin(), it) - 1;
-          }
-          break;
-        case TokenState::DoubleQuotedString:
-          current.push_back(*it);
-
-          if (*it == '"') {
-            tokenDidComplete = true;
-            end = distance(input.begin(), it);
-
-            // We don't want this to be evald in this loop anymore.
-            if (!isLast) it++;
-          }
-          break;
-        case TokenState::SingleQuotedString:
-          current.push_back(*it);
-
-          if (*it == '\'') {
-            tokenDidComplete = true;
-            end = distance(input.begin(), it);
-
-            // We don't want this to be evald in this loop anymore.
-            if (!isLast) it++;
-          }
-          break;
-        case TokenState::Paren:
-          if (isParen(*it)) {
-            current.push_back(*it);
-          } else {
-            tokenDidComplete = true;
-            end = distance(input.begin(), it) - 1;
-          }
-          break;
-        case TokenState::Nothing:
-          state = checkStart(&it, current);
-          break;
-      }
-
-      // Reload flag do to iterator adjustment.
-      isLast = it + 1 == input.end();
-      if (tokenDidComplete || isLast) {
-        const char *colorResult = analyzeToken(state, current);
-        if (colorResult) {
-          out.emplace_back(end - current.size() + 1, colorResult);
-          out.emplace_back(end + 1, DEFAULT_FOREGROUND);
-        }
-
-        state = TokenState::Nothing;
-      }
-
-      if (state == TokenState::Nothing) {
-        state = checkStart(&it, current);
-      }
-    }
-
-    return out;
-  }
-
- private:
-  const char *analyzeToken(TokenState state, string &token) {
-    unordered_set<const char *>::iterator wordIt;
+  for (auto it = input.begin(); it != input.end(); it++) {
+    bool tokenDidComplete{false};
+    int end = distance(input.begin(), it);
+    bool isLast = it + 1 == input.end();
 
     switch (state) {
-      case TokenState::Number:
-        return config.numberColor;
       case TokenState::Word:
-        wordIt = find(config.lvl1Words.begin(), config.lvl1Words.end(), token);
-        if (wordIt != config.lvl1Words.end()) {
-          return config.lvl1Color;
+        if (isalnum(*it) || *it == '_') {
+          current.push_back(*it);
+        } else {
+          tokenDidComplete = true;
+          end = distance(input.begin(), it) - 1;
         }
-        wordIt = find(config.lvl2Words.begin(), config.lvl2Words.end(), token);
-        if (wordIt != config.lvl2Words.end()) {
-          return config.lvl2Color;
+        break;
+      case TokenState::Number:
+        if (isdigit(*it)) {
+          current.push_back(*it);
+        } else {
+          tokenDidComplete = true;
+          end = distance(input.begin(), it) - 1;
         }
-        return nullptr;
+        break;
       case TokenState::DoubleQuotedString:
+        current.push_back(*it);
+
+        if (*it == '"') {
+          tokenDidComplete = true;
+          end = distance(input.begin(), it);
+
+          // We don't want this to be evald in this loop anymore.
+          if (!isLast) it++;
+        }
+        break;
       case TokenState::SingleQuotedString:
-        return config.stringColor;
+        current.push_back(*it);
+
+        if (*it == '\'') {
+          tokenDidComplete = true;
+          end = distance(input.begin(), it);
+
+          // We don't want this to be evald in this loop anymore.
+          if (!isLast) it++;
+        }
+        break;
       case TokenState::Paren:
-        return config.parenColor;
-      default:
-        return nullptr;
+        if (isParen(*it)) {
+          current.push_back(*it);
+        } else {
+          tokenDidComplete = true;
+          end = distance(input.begin(), it) - 1;
+        }
+        break;
+      case TokenState::Nothing:
+        state = checkStart(&it, current);
+        break;
+    }
+
+    // Reload flag do to iterator adjustment.
+    isLast = it + 1 == input.end();
+    if (tokenDidComplete || isLast) {
+      const char *colorResult = analyzeToken(state, current);
+      if (colorResult) {
+        out.emplace_back(end - current.size() + 1, colorResult);
+        out.emplace_back(end + 1, DEFAULT_FOREGROUND);
+      }
+
+      state = TokenState::Nothing;
+    }
+
+    if (state == TokenState::Nothing) {
+      state = checkStart(&it, current);
     }
   }
 
-  TokenState checkStart(string::iterator *it, string &current) {
-    bool foundNewStart = false;
-    TokenState state{TokenState::Nothing};
+  return out;
+}
 
-    if (**it == '"') {
-      state = TokenState::DoubleQuotedString;
-      foundNewStart = true;
-    }
+private:
+const char *analyzeToken(TokenState state, string &token) {
+  unordered_set<string>::iterator wordIt;
 
-    if (**it == '\'') {
-      state = TokenState::SingleQuotedString;
-      foundNewStart = true;
-    }
+  switch (state) {
+    case TokenState::Number:
+      return config.numberColor;
+    case TokenState::Word:
+      wordIt = find(config.keywords->begin(), config.keywords->end(), token);
+      if (wordIt != config.keywords->end()) return config.keywordColor;
 
-    if (isdigit(**it)) {
-      state = TokenState::Number;
-      foundNewStart = true;
-    }
-
-    if (isalpha(**it)) {
-      state = TokenState::Word;
-      foundNewStart = true;
-    }
-
-    if (isParen(**it)) {
-      state = TokenState::Paren;
-      foundNewStart = true;
-    }
-
-    if (foundNewStart) {
-      current.clear();
-      current.push_back(**it);
-    }
-
-    return state;
+      return nullptr;
+    case TokenState::DoubleQuotedString:
+    case TokenState::SingleQuotedString:
+      return config.stringColor;
+    case TokenState::Paren:
+      return config.parenColor;
+    default:
+      return nullptr;
   }
-};
+}
+
+TokenState checkStart(string::iterator *it, string &current) {
+  bool foundNewStart = false;
+  TokenState state{TokenState::Nothing};
+
+  if (**it == '"') {
+    state = TokenState::DoubleQuotedString;
+    foundNewStart = true;
+  }
+
+  if (**it == '\'') {
+    state = TokenState::SingleQuotedString;
+    foundNewStart = true;
+  }
+
+  if (isdigit(**it)) {
+    state = TokenState::Number;
+    foundNewStart = true;
+  }
+
+  if (isalpha(**it) || **it == '_') {
+    state = TokenState::Word;
+    foundNewStart = true;
+  }
+
+  if (isParen(**it)) {
+    state = TokenState::Paren;
+    foundNewStart = true;
+  }
+
+  if (foundNewStart) {
+    current.clear();
+    current.push_back(**it);
+  }
+
+  return state;
+}
+}
+;
 
 /**
  * @brief Returns the location in a character seqence of the next different
@@ -501,7 +402,6 @@ int prevWordJumpLocation(string &line, int currentPos) {
 }
 
 int prefixTabOrSpaceLength(string &line) {
-  auto lineIt =
-      find_if(line.begin(), line.end(), [](auto &c) { return !isspace(c); });
+  auto lineIt = find_if(line.begin(), line.end(), [](auto &c) { return !isspace(c); });
   return distance(line.begin(), lineIt);
 }
