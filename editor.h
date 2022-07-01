@@ -182,6 +182,9 @@ struct Editor {
         case ctrlKey('v'):
           pasteClipboardInternal();
           break;
+        case ctrlKey('h'):
+          startSelectionInCurrentPosition();
+          break;
         case BACKSPACE:
           insertBackspace();
           break;
@@ -239,18 +242,6 @@ struct Editor {
           break;
         case EscapeChar::CtrlDown:
           scrollDown();
-          break;
-        case EscapeChar::ShiftUp:
-          cursorSelectUp();
-          break;
-        case EscapeChar::ShiftDown:
-          cursorSelectDown();
-          break;
-        case EscapeChar::ShiftLeft:
-          cursorSelectLeft();
-          break;
-        case EscapeChar::ShiftRight:
-          cursorSelectRight();
           break;
         case EscapeChar::Delete:
           insertDelete();
@@ -510,36 +501,40 @@ struct Editor {
     saveXMemory();
   }
 
-  void cursorSelectUp() {
-    if (!hasActiveSelection()) startSelectionInCurrentPosition();
-    cursorUp(true);
-    endSelectionUpdatePositionToCurrent();
-  }
+  // void cursorSelectUp() {
+  //   if (!hasActiveSelection()) startSelectionInCurrentPosition();
+  //   cursorUp(true);
+  //   endSelectionUpdatePositionToCurrent();
+  // }
 
-  void cursorSelectDown() {
-    if (!hasActiveSelection()) startSelectionInCurrentPosition();
-    cursorDown(true);
-    endSelectionUpdatePositionToCurrent();
-  }
+  // void cursorSelectDown() {
+  //   if (!hasActiveSelection()) startSelectionInCurrentPosition();
+  //   cursorDown(true);
+  //   endSelectionUpdatePositionToCurrent();
+  // }
 
-  void cursorSelectLeft() {
-    if (!hasActiveSelection()) startSelectionInCurrentPosition();
-    cursorLeft(true);
-    endSelectionUpdatePositionToCurrent();
-  }
+  // void cursorSelectLeft() {
+  //   if (!hasActiveSelection()) startSelectionInCurrentPosition();
+  //   cursorLeft(true);
+  //   endSelectionUpdatePositionToCurrent();
+  // }
 
-  void cursorSelectRight() {
-    if (!hasActiveSelection()) startSelectionInCurrentPosition();
-    cursorRight(true);
-    endSelectionUpdatePositionToCurrent();
-  }
+  // void cursorSelectRight() {
+  //   if (!hasActiveSelection()) startSelectionInCurrentPosition();
+  //   cursorRight(true);
+  //   endSelectionUpdatePositionToCurrent();
+  // }
 
   void cursorDown(bool keepSelection = false) {
     __cursorY++;
     restoreXMemory();
     fixCursorPos();
 
-    if (!keepSelection) endSelection();
+    if (keepSelection) {
+      if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
+    } else {
+      endSelection();
+    }
   }
 
   void cursorUp(bool keepSelection = false) {
@@ -547,7 +542,11 @@ struct Editor {
     restoreXMemory();
     fixCursorPos();
 
-    if (!keepSelection) endSelection();
+    if (keepSelection) {
+      if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
+    } else {
+      endSelection();
+    }
   }
 
   void cursorLeft(bool keepSelection = false) {
@@ -561,7 +560,11 @@ struct Editor {
     fixCursorPos();
     saveXMemory();
 
-    if (!keepSelection) endSelection();
+    if (keepSelection) {
+      if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
+    } else {
+      endSelection();
+    }
   }
 
   void cursorRight(bool keepSelection = false) {
@@ -575,7 +578,11 @@ struct Editor {
     fixCursorPos();
     saveXMemory();
 
-    if (!keepSelection) endSelection();
+    if (keepSelection) {
+      if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
+    } else {
+      endSelection();
+    }
   }
 
   void cursorPageDown() {

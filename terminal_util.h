@@ -33,10 +33,11 @@ vector<pair<string, EscapeChar>> escapeCharMap{
     {"[1;5B", EscapeChar::CtrlDown},
     {"[1;5C", EscapeChar::CtrlRight},
     {"[1;5D", EscapeChar::CtrlLeft},
-    {"[1;2A", EscapeChar::ShiftUp},
-    {"[1;2B", EscapeChar::ShiftDown},
-    {"[1;2C", EscapeChar::ShiftRight},
-    {"[1;2D", EscapeChar::ShiftLeft},
+    // Shift + arrow is not a reliable combo, eg Konsole swallows it.
+    // {"[1;2A", EscapeChar::ShiftUp},
+    // {"[1;2B", EscapeChar::ShiftDown},
+    // {"[1;2C", EscapeChar::ShiftRight},
+    // {"[1;2D", EscapeChar::ShiftLeft},
     {"[5~", EscapeChar::PageUp},
     {"[6~", EscapeChar::PageDown},
     {"[3~", EscapeChar::Delete}};
