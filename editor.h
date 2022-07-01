@@ -339,7 +339,7 @@ struct Editor {
     } else if (currentCol() == 0 && currentRow() > 0) {
       int oldLineLen = lines[currentRow() - 1].size();
       execCommand(Command::makeMergeLine(previousRow(), previousLine().size()));
-      cursorTo(__cursorY - 1, oldLineLen);
+      cursorTo(previousRow(), oldLineLen);
     }
   }
 
@@ -376,10 +376,9 @@ struct Editor {
   void insertEnter() {
     if (hasActiveSelection()) insertBackspace();
 
-    int tabsLen = prefixTabOrSpaceLength(currentLine());
-
     execCommand(Command::makeSplitLine(currentRow(), currentCol()));
 
+    int tabsLen = prefixTabOrSpaceLength(currentLine());
     if (tabsLen > 0) {
       string tabs(tabsLen, ' ');
       execCommand(Command::makeInsertSlice(nextRow(), 0, tabs));
@@ -447,7 +446,10 @@ struct Editor {
 
     for (auto it = internalClipboard.begin(); it != internalClipboard.end();
          it++) {
-      if (it != internalClipboard.begin()) insertEnter();
+      if (it != internalClipboard.begin()) {
+        execCommand(Command::makeSplitLine(currentRow(), currentCol()));
+        cursorTo(nextRow(), 0);
+      }
 
       execCommand(Command::makeInsertSlice(currentRow(), currentCol(), *it));
       setCol(currentCol() + it->size());
@@ -600,7 +602,7 @@ struct Editor {
 
   void cursorTo(int row, int col) {
     setTextAreaCursorX(col);
-    __cursorY = row;
+    __cursorY += row - currentRow();
 
     fixCursorPos();
   }
