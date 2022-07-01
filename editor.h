@@ -79,6 +79,8 @@ struct Editor {
   deque<Command> undos;
   deque<Command> redos;
 
+  vector<string> internalClipboard{};
+
   Editor(Config config) : config(config) {}
 
   void init() {
@@ -173,6 +175,12 @@ struct Editor {
           break;
         case ctrlKey('r'):
           redo();
+          break;
+        case ctrlKey('c'):
+          copyClipboardInternal();
+          break;
+        case ctrlKey('v'):
+          pasteClipboardInternal();
           break;
         case BACKSPACE:
           insertBackspace();
@@ -408,6 +416,46 @@ struct Editor {
     }
   }
 
+  bool hasInternalClipboardContent() { return !internalClipboard.empty(); }
+
+  void copyClipboardInternal() {
+    if (!hasActiveSelection()) return;
+
+    SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+    vector<LineSelection> lineSelections = selection.lineSelections();
+
+    internalClipboard.clear();
+
+    for (auto& lineSelection : lineSelections) {
+      if (lineSelection.isFullLine()) {
+        internalClipboard.push_back(lines[selection.startRow]);
+      } else {
+        int start = lineSelection.isLeftBounded() ? lineSelection.startCol : 0;
+        int end = lineSelection.isRightBounded()
+                      ? lineSelection.endCol
+                      : lines[lineSelection.lineNo].size();
+        internalClipboard.push_back(
+            lines[selection.startRow].substr(start, end - start));
+      }
+    }
+
+    endSelection();
+  }
+
+  void pasteClipboardInternal() {
+    if (!hasInternalClipboardContent()) return;
+
+    for (auto it = internalClipboard.begin(); it != internalClipboard.end();
+         it++) {
+      if (it != internalClipboard.begin()) insertEnter();
+
+      execCommand(Command::makeInsertSlice(currentRow(), currentCol(), *it));
+      setCol(currentCol() + it->size());
+    }
+
+    saveXMemory();
+  }
+
   void execCommand(Command&& cmd) {
     undos.push_back(cmd);
     DLOG("EXEC cmd: %d", cmd.type);
@@ -448,6 +496,7 @@ struct Editor {
     } else {
       setCol(prevWordJumpLocation(currentLine(), currentCol()));
     }
+    saveXMemory();
   }
 
   void cursosWordJumpRight() {
@@ -456,6 +505,7 @@ struct Editor {
     } else {
       setCol(nextWordJumpLocation(currentLine(), currentCol()));
     }
+    saveXMemory();
   }
 
   void cursorSelectUp() {
