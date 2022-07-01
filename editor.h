@@ -182,8 +182,8 @@ struct Editor {
         case ctrlKey('v'):
           pasteClipboardInternal();
           break;
-        case ctrlKey('h'):
-          startSelectionInCurrentPosition();
+        case ctrlKey('x'):
+          toggleSelection();
           break;
         case BACKSPACE:
           insertBackspace();
@@ -489,6 +489,9 @@ struct Editor {
     } else {
       setCol(prevWordJumpLocation(currentLine(), currentCol()));
     }
+
+    if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
+
     saveXMemory();
   }
 
@@ -498,58 +501,29 @@ struct Editor {
     } else {
       setCol(nextWordJumpLocation(currentLine(), currentCol()));
     }
+
+    if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
+
     saveXMemory();
   }
 
-  // void cursorSelectUp() {
-  //   if (!hasActiveSelection()) startSelectionInCurrentPosition();
-  //   cursorUp(true);
-  //   endSelectionUpdatePositionToCurrent();
-  // }
-
-  // void cursorSelectDown() {
-  //   if (!hasActiveSelection()) startSelectionInCurrentPosition();
-  //   cursorDown(true);
-  //   endSelectionUpdatePositionToCurrent();
-  // }
-
-  // void cursorSelectLeft() {
-  //   if (!hasActiveSelection()) startSelectionInCurrentPosition();
-  //   cursorLeft(true);
-  //   endSelectionUpdatePositionToCurrent();
-  // }
-
-  // void cursorSelectRight() {
-  //   if (!hasActiveSelection()) startSelectionInCurrentPosition();
-  //   cursorRight(true);
-  //   endSelectionUpdatePositionToCurrent();
-  // }
-
-  void cursorDown(bool keepSelection = false) {
+  void cursorDown() {
     __cursorY++;
     restoreXMemory();
     fixCursorPos();
 
-    if (keepSelection) {
-      if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
-    } else {
-      endSelection();
-    }
+    if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
   }
 
-  void cursorUp(bool keepSelection = false) {
+  void cursorUp() {
     __cursorY--;
     restoreXMemory();
     fixCursorPos();
 
-    if (keepSelection) {
-      if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
-    } else {
-      endSelection();
-    }
+    if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
   }
 
-  void cursorLeft(bool keepSelection = false) {
+  void cursorLeft() {
     __cursorX--;
 
     if (currentCol() < 0) {
@@ -560,14 +534,10 @@ struct Editor {
     fixCursorPos();
     saveXMemory();
 
-    if (keepSelection) {
-      if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
-    } else {
-      endSelection();
-    }
+    if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
   }
 
-  void cursorRight(bool keepSelection = false) {
+  void cursorRight() {
     __cursorX++;
 
     if (currentCol() > (int)currentLine().size()) {
@@ -578,22 +548,24 @@ struct Editor {
     fixCursorPos();
     saveXMemory();
 
-    if (keepSelection) {
-      if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
-    } else {
-      endSelection();
-    }
+    if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
   }
 
   void cursorPageDown() {
     __cursorY += textAreaRows();
     restoreXMemory();
+
+    if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
+
     fixCursorPos();
   }
 
   void cursorPageUp() {
     __cursorY -= textAreaRows();
     restoreXMemory();
+
+    if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
+
     fixCursorPos();
   }
 
@@ -856,9 +828,15 @@ struct Editor {
     leftMargin = newLeftMargin;
   }
 
-  bool hasActiveSelection() { return selectionStart.has_value(); }
+  bool hasActiveSelection() {
+    return selectionStart.has_value() && selectionEnd.has_value();
+  }
+  void toggleSelection() {
+    hasActiveSelection() ? endSelection() : startSelectionInCurrentPosition();
+  }
   void startSelectionInCurrentPosition() {
     selectionStart = optional<SelectionEdge>({currentRow(), currentCol()});
+    endSelectionUpdatePositionToCurrent();
   }
   void endSelectionUpdatePositionToCurrent() {
     selectionEnd = optional<SelectionEdge>({currentRow(), currentCol()});

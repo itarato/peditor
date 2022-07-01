@@ -43,4 +43,4 @@ Text editing:
 - Internal clipboard: `CTRL` + c/v
 - Undo/redo: `CTRL` + z/r
 - Line delete: `CTRL` + d
-- Selection: `SHIFT` + arrows
+- Selection mode: `CTRL` + x
