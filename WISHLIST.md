@@ -1,6 +1,7 @@
 Normal:
-- search
 - file change detection
+- build mode - reading from config
+- search
 - line move
 - help
 - visual feedback / popup

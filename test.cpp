@@ -1,4 +1,5 @@
 #include <iostream>
+#include <unordered_set>
 #include <vector>
 
 #include "utility.h"
@@ -9,7 +10,7 @@ using namespace std;
 
 template <
 
-typename T>
+    typename T>
 void assert_eq(T v1, T v2, int lineNo) {
   if (v1 == v2) {
     cout << ".";
@@ -21,159 +22,168 @@ void assert_eq(T v1, T v2, int lineNo) {
 
 void test_find_number_beginning() {
   string raw = "123   ";
-  SyntaxHighlightConfig conf{};
+  SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(1, (int)result.size());
-  ASSERT_EQ(0, (int)result[0].start);
-  ASSERT_EQ(2, (int)result[0].end);
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(0, (int)result[0].pos);
+  ASSERT_EQ(3, (int)result[1].pos);
 }
 
 void test_find_number_middle() {
   string raw = "  123   ";
-  SyntaxHighlightConfig conf{};
+  SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(1, (int)result.size());
-  ASSERT_EQ(2, (int)result[0].start);
-  ASSERT_EQ(4, (int)result[0].end);
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(2, (int)result[0].pos);
+  ASSERT_EQ(5, (int)result[1].pos);
 }
 
 void test_find_number_end() {
   string raw = "   123";
-  SyntaxHighlightConfig conf{};
+  SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(1, (int)result.size());
-  ASSERT_EQ(3, (int)result[0].start);
-  ASSERT_EQ(5, (int)result[0].end);
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(3, (int)result[0].pos);
+  ASSERT_EQ(6, (int)result[1].pos);
 }
 
 void test_single_find_number_beginning() {
   string raw = "1   ";
-  SyntaxHighlightConfig conf{};
+  SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(1, (int)result.size());
-  ASSERT_EQ(0, (int)result[0].start);
-  ASSERT_EQ(0, (int)result[0].end);
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(0, (int)result[0].pos);
+  ASSERT_EQ(1, (int)result[1].pos);
 }
 
 void test_single_find_number_middle() {
   string raw = "  1   ";
-  SyntaxHighlightConfig conf{};
+  SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(1, (int)result.size());
-  ASSERT_EQ(2, (int)result[0].start);
-  ASSERT_EQ(2, (int)result[0].end);
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(2, (int)result[0].pos);
+  ASSERT_EQ(3, (int)result[1].pos);
 }
 
 void test_single_find_number_end() {
   string raw = "   1";
-  SyntaxHighlightConfig conf{};
+  SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(1, (int)result.size());
-  ASSERT_EQ(3, (int)result[0].start);
-  ASSERT_EQ(3, (int)result[0].end);
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(3, (int)result[0].pos);
+  ASSERT_EQ(4, (int)result[1].pos);
 }
 
 void test_find_string() {
   string raw = "\"abc\"";
-  SyntaxHighlightConfig conf{};
+  SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(1, (int)result.size());
-  ASSERT_EQ(0, (int)result[0].start);
-  ASSERT_EQ(4, (int)result[0].end);
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(0, (int)result[0].pos);
+  ASSERT_EQ(5, (int)result[1].pos);
 }
 
 void test_find_string_middle() {
   string raw = " \"abc\" ";
-  SyntaxHighlightConfig conf{};
+  SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(1, (int)result.size());
-  ASSERT_EQ(1, (int)result[0].start);
-  ASSERT_EQ(5, (int)result[0].end);
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(1, (int)result[0].pos);
+  ASSERT_EQ(6, (int)result[1].pos);
 }
 
 void test_find_single_quoted_string() {
   string raw = "--'a'--";
-  SyntaxHighlightConfig conf{};
+  SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(1, (int)result.size());
-  ASSERT_EQ(2, (int)result[0].start);
-  ASSERT_EQ(4, (int)result[0].end);
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(2, (int)result[0].pos);
+  ASSERT_EQ(5, (int)result[1].pos);
 }
 
 void test_find_word() {
   string raw = "for";
-  SyntaxHighlightConfig conf{};
+
+  unordered_set<string> keywords{
+      "for",
+  };
+  SyntaxHighlightConfig conf{&keywords};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(1, (int)result.size());
-  ASSERT_EQ(0, (int)result[0].start);
-  ASSERT_EQ(2, (int)result[0].end);
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(0, (int)result[0].pos);
+  ASSERT_EQ(3, (int)result[1].pos);
 }
 
 void test_does_not_find_unknown_word() {
   string raw = "hello for ever";
-  SyntaxHighlightConfig conf{};
+
+  unordered_set<string> keywords{
+      "for",
+  };
+  SyntaxHighlightConfig conf{&keywords};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(1, (int)result.size());
-  ASSERT_EQ(6, (int)result[0].start);
-  ASSERT_EQ(8, (int)result[0].end);
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(6, (int)result[0].pos);
+  ASSERT_EQ(9, (int)result[1].pos);
 }
 
 void test_find_complex_examples() {
   string raw = "for 123for x3 \"12'ab\"";
-  SyntaxHighlightConfig conf{};
+
+  unordered_set<string> keywords{
+      "for",
+  };
+  SyntaxHighlightConfig conf{&keywords};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(5, (int)result.size());
+  ASSERT_EQ(8, (int)result.size());
 
-  ASSERT_EQ(0, (int)result[0].start);
-  ASSERT_EQ(2, (int)result[0].end);
+  ASSERT_EQ(0, (int)result[0].pos);
+  ASSERT_EQ(3, (int)result[1].pos);
 
-  ASSERT_EQ(4, (int)result[1].start);
-  ASSERT_EQ(6, (int)result[1].end);
+  ASSERT_EQ(4, (int)result[2].pos);
+  ASSERT_EQ(7, (int)result[3].pos);
 
-  ASSERT_EQ(7, (int)result[2].start);
-  ASSERT_EQ(9, (int)result[2].end);
+  ASSERT_EQ(7, (int)result[4].pos);
+  ASSERT_EQ(10, (int)result[5].pos);
 
-  ASSERT_EQ(12, (int)result[3].start);
-  ASSERT_EQ(12, (int)result[3].end);
-
-  ASSERT_EQ(14, (int)result[4].start);
-  ASSERT_EQ(20, (int)result[4].end);
+  ASSERT_EQ(14, (int)result[6].pos);
+  ASSERT_EQ(21, (int)result[7].pos);
 }
 
 void test_next_word_jump_location() {

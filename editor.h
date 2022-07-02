@@ -84,6 +84,8 @@ struct Editor {
 
   vector<string> internalClipboard{};
 
+  bool isDirty{false};
+
   Editor(Config config) : config(config) {}
 
   void init() {
@@ -138,6 +140,8 @@ struct Editor {
     }
 
     f.close();
+
+    isDirty = false;
   }
 
   void runLoop() {
@@ -472,6 +476,7 @@ struct Editor {
     DLOG("EXEC cmd: %d", cmd.type);
 
     TextManipulator::execute(&cmd, &lines);
+    isDirty = true;
 
     redos.clear();
     while (undos.size() > UNDO_LIMIT) undos.pop_front();
@@ -755,7 +760,7 @@ struct Editor {
         string statusLine = generateStatusLine();
         out.append("\x1b[7m");
         out.append(statusLine);
-        out.append("\x1b[27m");
+        out.append("\x1b[0m");
         break;
     }
   }
@@ -782,18 +787,23 @@ struct Editor {
     int rowPosPercentage = 100 * currentRow() / lines.size();
 
     char buf[2048];
-    sprintf(buf,
-            " pEditor v0 | File: %s | Textarea: %dx%d | Cursor: %dx %dy | %d%%",
-            config.fileName.value_or("<no file>").c_str(), textAreaCols(),
-            textAreaRows(), textAreaCursorX(), textAreaCursorY(),
-            rowPosPercentage);
+    sprintf(
+        buf,
+        " pEditor v0 | File: %s%s | Textarea: %dx%d | Cursor: %dx %dy | %d%%",
+        config.fileName.value_or("<no file>").c_str(),
+        (isDirty ? " \x1b[94m(edited)\x1b[39m" : ""), textAreaCols(),
+        textAreaRows(), textAreaCursorX(), textAreaCursorY(), rowPosPercentage);
 
     out.append(buf);
 
-    if ((int)out.size() > terminalCols()) {
-      out.erase(terminalCols(), out.size() - terminalCols());
+    int visibleLen = visibleCharCount(out);
+
+    if (visibleLen > terminalCols()) {
+      int adjustedSafeLen = visibleStrRightCut(out, terminalCols());
+
+      out.erase(adjustedSafeLen - 1, out.size() - adjustedSafeLen + 1);
     } else {
-      string filler(terminalCols() - (int)out.size(), ' ');
+      string filler(terminalCols() - visibleLen, ' ');
       out.append(filler);
     }
 

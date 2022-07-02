@@ -289,6 +289,8 @@ struct TokenAnalyzer {
       case TokenState::Number:
         return config.numberColor;
       case TokenState::Word:
+        if (!config.keywords) return nullptr;
+
         wordIt = find(config.keywords->begin(), config.keywords->end(), token);
         if (wordIt != config.keywords->end()) return config.keywordColor;
 
@@ -401,4 +403,46 @@ int prefixTabOrSpaceLength(string &line) {
   auto lineIt =
       find_if(line.begin(), line.end(), [](auto &c) { return !isspace(c); });
   return distance(line.begin(), lineIt);
+}
+
+/**
+ * Count all non escaping characters.
+ */
+int visibleCharCount(string &s) {
+  int n{0};
+  bool isEscape{false};
+  for (auto &c : s) {
+    if (isEscape) {
+      if (c == 'm') isEscape = false;
+    } else {
+      if (c == '\x1b') {
+        isEscape = true;
+      } else {
+        n++;
+      }
+    }
+  }
+  return n;
+}
+
+int visibleStrRightCut(string &s, int len) {
+  int n{0};      // Visible idx.
+  int realN{0};  // Real idx.
+  bool isEscape{false};
+  for (auto &c : s) {
+    realN++;
+    if (isEscape) {
+      if (c == 'm') isEscape = false;
+    } else {
+      if (c == '\x1b') {
+        isEscape = true;
+      } else {
+        n++;
+
+        if (n > len) return realN;
+      }
+    }
+  }
+
+  return realN;
 }
