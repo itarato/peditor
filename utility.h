@@ -439,7 +439,7 @@ int visibleStrRightCut(string &s, int len) {
       } else {
         n++;
 
-        if (n > len) return realN;
+        if (n > len) return realN - 1;
       }
     }
   }

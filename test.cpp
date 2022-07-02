@@ -222,6 +222,21 @@ void test_prev_word_jump_location() {
   ASSERT_EQ(-1, prevWordJumpLocation(s, 3));
 }
 
+void test_visibleCharCount() {
+  string s{"abc\x1b[1mdef\x1b[21m123"};
+  ASSERT_EQ(9, visibleCharCount(s));
+}
+
+void test_visibleStrRightCut() {
+  string s{"abc\x1b[1mdef\x1b[21m"};
+  ASSERT_EQ(2, visibleStrRightCut(s, 2));
+  ASSERT_EQ(15, visibleStrRightCut(s, 100));
+  ASSERT_EQ(7, visibleStrRightCut(s, 3));
+  ASSERT_EQ(8, visibleStrRightCut(s, 4));
+  ASSERT_EQ(9, visibleStrRightCut(s, 5));
+  ASSERT_EQ(15, visibleStrRightCut(s, 6));
+}
+
 int main() {
   cout << "Tests\n";
 
@@ -245,6 +260,9 @@ int main() {
 
   test_next_word_jump_location();
   test_prev_word_jump_location();
+
+  test_visibleCharCount();
+  test_visibleStrRightCut();
 
   cout << endl;
 }

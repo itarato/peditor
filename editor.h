@@ -150,8 +150,8 @@ struct Editor {
     while (!quitRequested) {
       updateMargins();
 
-      refreshScreen();
       refreshTerminalDimension();
+      refreshScreen();
 
       tc = readKey();
       if (tc.is_failure()) continue;
@@ -801,7 +801,7 @@ struct Editor {
     if (visibleLen > terminalCols()) {
       int adjustedSafeLen = visibleStrRightCut(out, terminalCols());
 
-      out.erase(adjustedSafeLen - 1, out.size() - adjustedSafeLen + 1);
+      out.erase(adjustedSafeLen, out.size() - adjustedSafeLen);
     } else {
       string filler(terminalCols() - visibleLen, ' ');
       out.append(filler);
