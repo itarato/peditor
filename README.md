@@ -36,6 +36,9 @@ File operations:
 Editor management:
 
 - Exit: `CTRL` + `q`
+- Generic command mode: `CTRL` + `p`
+    - Tab size: `tab <SIZE>`
+    - Jump to line: `line <NUMBER>`
 
 Text editing:
 

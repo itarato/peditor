@@ -1,10 +1,9 @@
 Normal:
 - search
 - file change detection
-- open file
 - line move
 - help
-- copy paste
+- visual feedback / popup
 
 Optional:
 - wrap mode / non wrap mode

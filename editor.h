@@ -11,6 +11,7 @@
 #include <fstream>
 #include <iterator>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -34,6 +35,7 @@ enum class PromptCommand {
   Nothing,
   SaveFileAs,
   OpenFile,
+  MultiPurpose,
 };
 
 struct Prompt {
@@ -177,6 +179,9 @@ struct Editor {
           break;
         case ctrlKey('o'):
           openPrompt("Open file > ", PromptCommand::OpenFile);
+          break;
+        case ctrlKey('p'):
+          openPrompt("> ", PromptCommand::MultiPurpose);
           break;
         case ctrlKey('d'):
           deleteLine();
@@ -802,6 +807,8 @@ struct Editor {
   }
 
   void finalizeAndClosePrompt() {
+    closePrompt();
+
     switch (prompt.command) {
       case PromptCommand::SaveFileAs:
         config.fileName = optional<string>(prompt.message);
@@ -811,11 +818,12 @@ struct Editor {
         config.fileName = optional<string>(prompt.message);
         loadFile();
         break;
+      case PromptCommand::MultiPurpose:
+        executeMultiPurposeCommand(prompt.message);
+        break;
       case PromptCommand::Nothing:
         break;
     }
-
-    closePrompt();
   }
 
   void closePrompt() {
@@ -824,6 +832,30 @@ struct Editor {
     __cursorY = prompt.previousCursorY;
 
     DLOG("prompt close cx: %d", __cursorX);
+  }
+
+  void executeMultiPurposeCommand(string& raw) {
+    istringstream iss{raw};
+    string topCommand;
+    iss >> topCommand;
+
+    if (topCommand == "quit" || topCommand == "exit") {
+      requestQuit();
+    } else if (topCommand == "tab") {
+      int tabSize;
+      iss >> tabSize;
+
+      config.tabSize = tabSize;
+    } else if (topCommand == "line" || topCommand == "l") {
+      int lineNo;
+      iss >> lineNo;
+
+      DLOG("Line jump to: %d", lineNo);
+
+      cursorTo(lineNo, currentCol());
+    } else {
+      DLOG("Top command <%s> not recognized", topCommand.c_str());
+    }
   }
 
   void setCol(int newCol) {
