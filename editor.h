@@ -108,19 +108,20 @@ struct Editor {
     ifstream f(config.fileName.value());
 
     if (!f.is_open()) {
-      reportAndExit("Failed opening file");
+      DLOG("File %s does not exists. Creating one.",
+           config.fileName.value().c_str());
+      f.open("a");
+    } else {
+      lines.clear();
+      for (string line; getline(f, line);) {
+        lines.emplace_back(line);
+      }
     }
 
-    lines.clear();
-    for (string line; getline(f, line);) {
-      lines.emplace_back(line);
-    }
     f.close();
 
     config.reloadKeywordList();
-
     if (lines.empty()) lines.emplace_back("");
-
     cursorTo(0, 0);
   }
 
@@ -131,7 +132,7 @@ struct Editor {
     for (int i = 0; i < (int)lines.size(); i++) {
       f << lines[i];
 
-      if (i < (int)lines.size() - 1) {
+      if (i < (int)lines.size()) {
         f << endl;
       }
     }
@@ -644,12 +645,12 @@ struct Editor {
     }
   }
 
-  int currentRow() { return verticalScroll + __cursorY; }
-  int previousRow() { return verticalScroll + __cursorY - 1; }
-  int nextRow() { return verticalScroll + __cursorY + 1; }
+  inline int currentRow() { return verticalScroll + __cursorY; }
+  inline int previousRow() { return verticalScroll + __cursorY - 1; }
+  inline int nextRow() { return verticalScroll + __cursorY + 1; }
 
   // Text area related -> TODO: rename
-  int currentCol() { return horizontalScroll + textAreaCursorX(); }
+  inline int currentCol() { return horizontalScroll + textAreaCursorX(); }
 
   inline string& currentLine() { return lines[currentRow()]; }
   inline string& previousLine() { return lines[previousRow()]; }
