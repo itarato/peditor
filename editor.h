@@ -626,9 +626,16 @@ struct Editor {
   void cursorHome() {
     setCol(0);
     saveXMemory();
+
+    if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
   }
 
-  void cursorEnd() { setCol(currentLine().size()); }
+  void cursorEnd() {
+    setCol(currentLine().size());
+    saveXMemory();
+
+    if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
+  }
 
   void fixCursorPos() {
     // Decide which line (row) we should be on.
