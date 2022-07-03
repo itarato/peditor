@@ -18,6 +18,7 @@
 #include "command.h"
 #include "config.h"
 #include "debug.h"
+#include "file_watcher.h"
 #include "terminal_util.h"
 #include "text_manipulator.h"
 #include "utility.h"
@@ -36,6 +37,7 @@ enum class PromptCommand {
   SaveFileAs,
   OpenFile,
   MultiPurpose,
+  FileHasBeenModified,
 };
 
 struct Prompt {
@@ -86,6 +88,8 @@ struct Editor {
 
   bool isDirty{false};
 
+  FileWatcher fileWatcher{};
+
   Editor(Config config) : config(config) {}
 
   void init() {
@@ -122,6 +126,8 @@ struct Editor {
 
     f.close();
 
+    fileWatcher.watch(config.fileName.value());
+
     config.reloadKeywordList();
     if (lines.empty()) lines.emplace_back("");
     cursorTo(0, 0);
@@ -141,6 +147,8 @@ struct Editor {
 
     f.close();
 
+    fileWatcher.ignoreEventCycle();
+
     isDirty = false;
   }
 
@@ -152,6 +160,12 @@ struct Editor {
 
       refreshTerminalDimension();
       refreshScreen();
+
+      if (fileWatcher.hasBeenModified()) {
+        openPrompt("File change detected, press (r) for reload > ",
+                   PromptCommand::FileHasBeenModified);
+        continue;
+      }
 
       tc = readKey();
       if (tc.is_failure()) continue;
@@ -832,6 +846,9 @@ struct Editor {
       case PromptCommand::MultiPurpose:
         executeMultiPurposeCommand(prompt.message);
         break;
+      case PromptCommand::FileHasBeenModified:
+        executeFileHasBeenModifiedPrompt(prompt.message);
+        break;
       case PromptCommand::Nothing:
         break;
     }
@@ -867,6 +884,12 @@ struct Editor {
     } else {
       DLOG("Top command <%s> not recognized", topCommand.c_str());
     }
+  }
+
+  void executeFileHasBeenModifiedPrompt(string& cmd) {
+    if (cmd != "r") return;
+
+    loadFile();
   }
 
   void setCol(int newCol) {
