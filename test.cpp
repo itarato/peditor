@@ -8,9 +8,7 @@ using namespace std;
 
 #define ASSERT_EQ(v1, v2) assert_eq(v1, v2, __LINE__)
 
-template <
-
-    typename T>
+template <typename T>
 void assert_eq(T v1, T v2, int lineNo) {
   if (v1 == v2) {
     cout << ".";

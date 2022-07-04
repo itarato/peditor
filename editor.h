@@ -312,8 +312,7 @@ struct Editor {
   void insertCharacter(char c) {
     if (hasActiveSelection()) insertBackspace();
 
-    if (currentRow() < (int)lines.size() &&
-        currentCol() <= (int)currentLine().size()) {
+    if (currentRow() < (int)lines.size() && currentCol() <= currentLineSize()) {
       execCommand(Command::makeInsertChar(currentRow(), currentCol(), c));
 
       cursorRight();
@@ -358,7 +357,7 @@ struct Editor {
       // Put cursor to beginning
       cursorTo(selection.startRow, selection.startCol);
       endSelection();
-    } else if (currentCol() <= (int)currentLine().size() && currentCol() > 0) {
+    } else if (currentCol() <= currentLineSize() && currentCol() > 0) {
       execCommand(Command::makeDeleteChar(currentRow(), currentCol() - 1,
                                           currentLine()[currentCol() - 1]));
       cursorLeft();
@@ -391,7 +390,7 @@ struct Editor {
   void insertDelete() {
     if (hasActiveSelection()) {
       insertBackspace();
-    } else if (currentCol() < (int)currentLine().size()) {
+    } else if (currentCol() < currentLineSize()) {
       execCommand(Command::makeDeleteChar(currentRow(), currentCol(),
                                           currentLine()[currentCol()]));
     } else if (currentRow() < (int)lines.size() - 1) {
@@ -416,7 +415,7 @@ struct Editor {
   }
 
   void insertTab() {
-    if (currentCol() <= (int)currentLine().size()) {
+    if (currentCol() <= currentLineSize()) {
       int spacesToFill = config.tabSize - (currentCol() % config.tabSize);
 
       if (spacesToFill > 0) {
@@ -576,7 +575,7 @@ struct Editor {
   void cursorRight() {
     __cursorX++;
 
-    if (currentCol() > (int)currentLine().size()) {
+    if (currentCol() > currentLineSize()) {
       __cursorY++;
       if (onLineRow()) setTextAreaCursorX(0);
     }
@@ -647,26 +646,32 @@ struct Editor {
     // Decide which char (col).
     if (currentCol() < 0) {
       __cursorX -= currentCol();
-    } else if (currentCol() > (int)currentLine().size()) {
-      __cursorX -= currentCol() - currentLine().size();
+    } else if (currentCol() > currentLineSize()) {
+      __cursorX -= currentCol() - currentLineSize();
     }
 
     // Fix vertical scroll.
     if (__cursorY < 0) {
       verticalScroll = currentRow();
-      __cursorY = 0;
-    } else if (__cursorY >= textAreaRows()) {
+      setTextAreaCursorY(0);
+    } else if (textAreaCursorY() >= textAreaRows()) {
       verticalScroll = currentRow() - textAreaRows() + 1;
-      __cursorY = textAreaRows() - 1;
+      setTextAreaCursorY(textAreaRows() - 1);
     }
+
+    // DLOG("BEFORE TAX: %d TAW: %d CX: %d", textAreaCursorX(), textAreaCols(),
+    //      __cursorX);
 
     // Fix horizontal scroll.
     if (textAreaCursorX() < 0) {
       horizontalScroll = currentCol();
       setTextAreaCursorX(0);
-    } else if (textAreaCursorX() > textAreaCols()) {
-      horizontalScroll = currentCol() - textAreaCols() - 1;
+    } else if (textAreaCursorX() >= textAreaCols()) {
+      horizontalScroll = currentCol() - textAreaCols() + 1;
       setTextAreaCursorX(textAreaCols() - 1);
+
+      // DLOG("AFTER TAX: %d TAW: %d CX: %d HS: %d", textAreaCursorX(),
+      //      textAreaCols(), __cursorX, horizontalScroll);
     }
   }
 
@@ -680,13 +685,12 @@ struct Editor {
   inline string& currentLine() { return lines[currentRow()]; }
   inline string& previousLine() { return lines[previousRow()]; }
   inline string& nextLine() { return lines[nextRow()]; }
+  inline int currentLineSize() { return currentLine().size(); }
 
   inline void restoreXMemory() { setTextAreaCursorX(xMemory); }
   inline void saveXMemory() { xMemory = textAreaCursorX(); }
 
-  inline bool isEndOfCurrentLine() {
-    return currentCol() >= (int)currentLine().size();
-  }
+  inline bool isEndOfCurrentLine() { return currentCol() >= currentLineSize(); }
   inline bool isBeginningOfCurrentLine() { return currentCol() <= 0; }
 
   inline int terminalRows() { return terminalDimension.first; }
@@ -698,6 +702,10 @@ struct Editor {
   inline int textAreaCursorY() { return __cursorY; }
   inline void setTextAreaCursorX(int newTextAreaCursor) {
     __cursorX = newTextAreaCursor + leftMargin;
+  }
+  inline void setTextAreaCursorY(int newTextAreaCursor) {
+    // There is no top margin currently;
+    __cursorY = newTextAreaCursor;
   }
 
   string decorateLine(string& line, TokenAnalyzer* ta, int lineNo) {
@@ -762,7 +770,7 @@ struct Editor {
               visibleStrSlice(decoratedLine, horizontalScroll, textAreaCols());
 
           if (visibleBorders.first == -1) {
-            out.append("<");
+            out.append("\x1b[2m<\x1b[22m");
           } else {
             out.append(decoratedLine.substr(
                 visibleBorders.first,
@@ -778,7 +786,7 @@ struct Editor {
 
     switch (mode) {
       case EditorMode::Prompt:
-        out.append("\x1b[44m");
+        out.append("\x1b[0m\x1b[44m");
         out.append("\x1b[97m ");
         out.append(prompt.prefix);
         out.append(prompt.message);
@@ -789,7 +797,7 @@ struct Editor {
         break;
       case EditorMode::TextEdit:
         string statusLine = generateStatusLine();
-        out.append("\x1b[7m");
+        out.append("\x1b[0m\x1b[7m");
         out.append(statusLine);
         out.append("\x1b[0m");
         break;
@@ -916,7 +924,7 @@ struct Editor {
 
   void setCol(int newCol) {
     // Fix line position first.
-    if (newCol > (int)currentLine().size()) {
+    if (newCol > currentLineSize()) {
       newCol = currentLine().size();
     } else if (newCol < 0) {
       newCol = 0;
