@@ -446,3 +446,43 @@ int visibleStrRightCut(string &s, int len) {
 
   return realN;
 }
+
+/**
+ * @return pair<int, int> = <start, end>
+ *  start = -1 -> not visible
+ *  end   = -1 -> end is fully visible
+ */
+pair<int, int> visibleStrSlice(string &s, int offset, int len) {
+  if (len <= 0) reportAndExit("Invalid argument: len");
+
+  int start{-1};
+  int end{-1};
+
+  int n{0};      // Visible idx.
+  int realN{0};  // Real idx.
+  bool isEscape{false};
+
+  for (auto &c : s) {
+    if (start == -1 && n + 1 > offset) {
+      start = realN;
+    }
+
+    realN++;
+    if (isEscape) {
+      if (c == 'm') isEscape = false;
+    } else {
+      if (c == '\x1b') {
+        isEscape = true;
+      } else {
+        n++;
+
+        if (n > offset + len) {
+          end = realN - 2;
+          break;
+        }
+      }
+    }
+  }
+
+  return pair<int, int>{start, end};
+}

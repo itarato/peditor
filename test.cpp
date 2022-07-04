@@ -15,8 +15,8 @@ void assert_eq(T v1, T v2, int lineNo) {
   if (v1 == v2) {
     cout << ".";
   } else {
-    cout << "\n\nERROR on line " << lineNo << ": expected " << v1
-         << " to be equal with " << v2 << ".\n\n";
+    cout << "\n\nFail!\nLine: " << lineNo << "\nExpected: <" << v1
+         << ">\n  Actual: <" << v2 << ">\n\n";
   }
 }
 
@@ -237,6 +237,60 @@ void test_visibleStrRightCut() {
   ASSERT_EQ(15, visibleStrRightCut(s, 6));
 }
 
+void test_visibleStrSlice() {
+  string s;
+
+  s = {"abc\x1b[1mdef\x1b[21m"};
+
+  pair<int, int> res;
+
+  res = visibleStrSlice(s, 0, 2);
+  ASSERT_EQ(0, res.first);
+  ASSERT_EQ(1, res.second);
+
+  res = visibleStrSlice(s, 0, 3);
+  ASSERT_EQ(0, res.first);
+  ASSERT_EQ(6, res.second);
+
+  res = visibleStrSlice(s, 0, 5);
+  ASSERT_EQ(0, res.first);
+  ASSERT_EQ(8, res.second);
+
+  res = visibleStrSlice(s, 0, 6);
+  ASSERT_EQ(0, res.first);
+  ASSERT_EQ(-1, res.second);
+
+  res = visibleStrSlice(s, 1, 1);
+  ASSERT_EQ(1, res.first);
+  ASSERT_EQ(1, res.second);
+
+  res = visibleStrSlice(s, 1, 2);
+  ASSERT_EQ(1, res.first);
+  ASSERT_EQ(6, res.second);
+
+  res = visibleStrSlice(s, 0, 4);
+  ASSERT_EQ(0, res.first);
+  ASSERT_EQ(7, res.second);
+
+  res = visibleStrSlice(s, 2, 1);
+  ASSERT_EQ(2, res.first);
+  ASSERT_EQ(6, res.second);
+
+  res = visibleStrSlice(s, 3, 2);
+  ASSERT_EQ(3, res.first);
+  ASSERT_EQ(8, res.second);
+
+  res = visibleStrSlice(s, 3, 3);
+  ASSERT_EQ(3, res.first);
+  ASSERT_EQ(-1, res.second);
+
+  s = {"\x1b[1mdef\x1b[21m"};
+
+  res = visibleStrSlice(s, 0, 2);
+  ASSERT_EQ(0, res.first);
+  ASSERT_EQ(5, res.second);
+}
+
 int main() {
   cout << "Tests\n";
 
@@ -263,6 +317,8 @@ int main() {
 
   test_visibleCharCount();
   test_visibleStrRightCut();
+
+  test_visibleStrSlice();
 
   cout << endl;
 }
