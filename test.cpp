@@ -184,6 +184,18 @@ void test_find_complex_examples() {
   ASSERT_EQ(21, (int)result[7].pos);
 }
 
+void test_parens() {
+  string raw = "abc(";
+  SyntaxHighlightConfig conf{nullptr};
+
+  TokenAnalyzer ta{conf};
+  auto result = ta.colorizeTokens(raw);
+
+  ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(3, (int)result[0].pos);
+  ASSERT_EQ(4, (int)result[1].pos);
+}
+
 void test_next_word_jump_location() {
   string s;
 
@@ -309,6 +321,8 @@ int main() {
   test_does_not_find_unknown_word();
 
   test_find_complex_examples();
+
+  test_parens();
 
   test_next_word_jump_location();
   test_prev_word_jump_location();

@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iterator>
+#include <optional>
 #include <string>
 #include <unordered_set>
 #include <utility>
@@ -181,16 +182,19 @@ void reportAndExit(const char *s) {
   exit(EXIT_FAILURE);
 }
 
-bool isParen(char c) {
+inline bool isParen(char c) {
   return c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}';
 }
+inline bool isWordStart(char c) { return isalpha(c) || c == '_'; }
+inline bool isWord(char c) { return isalnum(c) || c == '_'; }
+inline bool isNumber(char c) { return isdigit(c); }
 
 enum class TokenState {
-  Nothing,
+  Unknown,
+  Skip,
   Word,
   Number,
-  DoubleQuotedString,
-  SingleQuotedString,
+  QuotedString,
   Paren,
 };
 
@@ -201,80 +205,37 @@ struct TokenAnalyzer {
 
   vector<SyntaxColorInfo> colorizeTokens(string &input) {
     string current{};
-    TokenState state{TokenState::Nothing};
     vector<SyntaxColorInfo> out{};
 
-    for (auto it = input.begin(); it != input.end(); it++) {
-      bool tokenDidComplete{false};
-      int end = distance(input.begin(), it);
-      bool isLast = it + 1 == input.end();
+    for (auto it = input.begin(); it != input.end();) {
+      current.clear();
+      auto start = distance(input.begin(), it);
 
-      switch (state) {
-        case TokenState::Word:
-          if (isalnum(*it) || *it == '_') {
-            current.push_back(*it);
-          } else {
-            tokenDidComplete = true;
-            end = distance(input.begin(), it) - 1;
-          }
-          break;
-        case TokenState::Number:
-          if (isdigit(*it)) {
-            current.push_back(*it);
-          } else {
-            tokenDidComplete = true;
-            end = distance(input.begin(), it) - 1;
-          }
-          break;
-        case TokenState::DoubleQuotedString:
-          current.push_back(*it);
+      if (isWordStart(*it)) {
+        while (it != input.end() && isWord(*it)) current.push_back(*it++);
+        registerColorMarks(current, start, TokenState::Word, &out);
+      } else if (isNumber(*it)) {
+        while (it != input.end() && isNumber(*it)) current.push_back(*it++);
+        registerColorMarks(current, start, TokenState::Number, &out);
+      } else if (*it == '\'') {
+        current.push_back(*it++);
 
-          if (*it == '"') {
-            tokenDidComplete = true;
-            end = distance(input.begin(), it);
+        while (it != input.end() && *it != '\'') current.push_back(*it++);
+        if (it != input.end()) current.push_back(*it++);
 
-            // We don't want this to be evald in this loop anymore.
-            if (!isLast) it++;
-          }
-          break;
-        case TokenState::SingleQuotedString:
-          current.push_back(*it);
+        registerColorMarks(current, start, TokenState::QuotedString, &out);
+      } else if (*it == '"') {
+        current.push_back(*it++);
 
-          if (*it == '\'') {
-            tokenDidComplete = true;
-            end = distance(input.begin(), it);
+        while (it != input.end() && *it != '"') current.push_back(*it++);
+        if (it != input.end()) current.push_back(*it++);
 
-            // We don't want this to be evald in this loop anymore.
-            if (!isLast) it++;
-          }
-          break;
-        case TokenState::Paren:
-          if (isParen(*it)) {
-            current.push_back(*it);
-          } else {
-            tokenDidComplete = true;
-            end = distance(input.begin(), it) - 1;
-          }
-          break;
-        case TokenState::Nothing:
-          state = checkStart(&it, current);
-          break;
-      }
-
-      // Reload flag do to iterator adjustment.
-      isLast = it + 1 == input.end();
-      if (tokenDidComplete || isLast) {
-        const char *colorResult = analyzeToken(state, current);
-        if (colorResult) {
-          out.emplace_back(end - current.size() + 1, colorResult);
-          out.emplace_back(end + 1, DEFAULT_FOREGROUND);
-        }
-
-        state = TokenState::Nothing;
-      }
-
-      if (state == TokenState::Nothing) {
-        state = checkStart(&it, current);
+        registerColorMarks(current, start, TokenState::QuotedString, &out);
+      } else if (isParen(*it)) {
+        while (it != input.end() && isParen(*it)) current.push_back(*it++);
+        registerColorMarks(current, start, TokenState::Paren, &out);
+      } else {
+        it++;
       }
     }
 
@@ -295,8 +256,7 @@ struct TokenAnalyzer {
         if (wordIt != config.keywords->end()) return config.keywordColor;
 
         return nullptr;
-      case TokenState::DoubleQuotedString:
-      case TokenState::SingleQuotedString:
+      case TokenState::QuotedString:
         return config.stringColor;
       case TokenState::Paren:
         return config.parenColor;
@@ -305,41 +265,13 @@ struct TokenAnalyzer {
     }
   }
 
-  TokenState checkStart(string::iterator *it, string &current) {
-    bool foundNewStart = false;
-    TokenState state{TokenState::Nothing};
-
-    if (**it == '"') {
-      state = TokenState::DoubleQuotedString;
-      foundNewStart = true;
+  void registerColorMarks(string &word, int start, TokenState state,
+                          vector<SyntaxColorInfo> *out) {
+    const char *colorResult = analyzeToken(state, word);
+    if (colorResult) {
+      out->emplace_back(start, colorResult);
+      out->emplace_back(start + word.size(), DEFAULT_FOREGROUND);
     }
-
-    if (**it == '\'') {
-      state = TokenState::SingleQuotedString;
-      foundNewStart = true;
-    }
-
-    if (isdigit(**it)) {
-      state = TokenState::Number;
-      foundNewStart = true;
-    }
-
-    if (isalpha(**it) || **it == '_') {
-      state = TokenState::Word;
-      foundNewStart = true;
-    }
-
-    if (isParen(**it)) {
-      state = TokenState::Paren;
-      foundNewStart = true;
-    }
-
-    if (foundNewStart) {
-      current.clear();
-      current.push_back(**it);
-    }
-
-    return state;
   }
 };
 
