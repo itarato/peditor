@@ -758,7 +758,18 @@ struct Editor {
 
         out.append(marginBuf);
 
-        out.append(decoratedLine);
+        if (!decoratedLine.empty()) {
+          pair<int, int> visibleBorders =
+              visibleStrSlice(decoratedLine, horizontalScroll, textAreaCols());
+
+          if (visibleBorders.first == -1) {
+            out.append("<");
+          } else {
+            out.append(decoratedLine.substr(
+                visibleBorders.first,
+                visibleBorders.second - visibleBorders.first + 1));
+          }
+        }
       } else {
         out.push_back('~');
       }

@@ -258,7 +258,7 @@ void test_visibleStrSlice() {
 
   res = visibleStrSlice(s, 0, 6);
   ASSERT_EQ(0, res.first);
-  ASSERT_EQ(-1, res.second);
+  ASSERT_EQ(14, res.second);
 
   res = visibleStrSlice(s, 1, 1);
   ASSERT_EQ(1, res.first);
@@ -282,7 +282,7 @@ void test_visibleStrSlice() {
 
   res = visibleStrSlice(s, 3, 3);
   ASSERT_EQ(3, res.first);
-  ASSERT_EQ(-1, res.second);
+  ASSERT_EQ(14, res.second);
 
   s = {"\x1b[1mdef\x1b[21m"};
 

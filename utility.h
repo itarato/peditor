@@ -456,7 +456,7 @@ pair<int, int> visibleStrSlice(string &s, int offset, int len) {
   if (len <= 0) reportAndExit("Invalid argument: len");
 
   int start{-1};
-  int end{-1};
+  int end{(int)s.size() - 1};
 
   int n{0};      // Visible idx.
   int realN{0};  // Real idx.
