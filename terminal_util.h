@@ -128,7 +128,7 @@ TypedChar readKey() {
   int result;
 
   while ((result = read(STDIN_FILENO, &c, 1)) != 1) {
-    if (result == -1 && errno != EAGAIN) {
+    if (result == -1 && errno != EAGAIN && errno != EINTR) {
       reportAndExit("Failed reading input");
     }
   }

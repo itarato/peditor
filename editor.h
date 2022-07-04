@@ -158,7 +158,6 @@ struct Editor {
     while (!quitRequested) {
       updateMargins();
 
-      refreshTerminalDimension();
       refreshScreen();
 
       if (fileWatcher.hasBeenModified()) {
@@ -800,7 +799,12 @@ struct Editor {
   void refreshScreen() {
     string out{};
 
+    refreshTerminalDimension();
+
+    if (textAreaCols() <= 1) return;
+
     hideCursor();
+
     clearScreen(out);
     drawLines(out);
     setCursorLocation(out, __cursorY, __cursorX);
