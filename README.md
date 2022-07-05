@@ -39,6 +39,8 @@ Editor management:
 - Generic command mode: `CTRL` + `p`
     - Tab size: `tab <SIZE>`
     - Jump to line: `line <NUMBER>`
+    - Search: `search <KEYWORD>`
+    - Search end: `search`
 
 Text editing:
 
