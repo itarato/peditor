@@ -32,7 +32,9 @@
 #define LIGHTMAGENTA "95"
 #define LIGHTCYAN "96"
 #define WHITE "97"
+#define BLUE_BACKGROUND "44"
 #define DEFAULT_FOREGROUND "39"
+#define DEFAULT_BACKGROUND "49"
 #define BACKGROUND_REVERSE "7"
 #define RESET_REVERSE "27"
 #define UNDERLINE "4"
@@ -430,8 +432,8 @@ vector<SyntaxColorInfo> searchTermMarkers(string &line, string &searchTerm) {
     size_t i = line.find(searchTerm, from);
     if (i == string::npos) break;
 
-    out.emplace_back(i, UNDERLINE);
-    out.emplace_back(i + (int)searchTerm.size(), RESET_UNDERLINE);
+    out.emplace_back(i, BLUE_BACKGROUND);
+    out.emplace_back(i + (int)searchTerm.size(), DEFAULT_BACKGROUND);
 
     from = i + searchTerm.size();
   }
