@@ -14,6 +14,7 @@ Hard:
 Stupid:
 - code execution / build configs
 - line coloring/marking
+- invent lines programming command
 
 Bugfix:
 -
