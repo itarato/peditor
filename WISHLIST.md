@@ -1,5 +1,4 @@
 Normal:
-- search jump
 - line move
 - help
 - visual feedback / popup
