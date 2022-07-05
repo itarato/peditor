@@ -668,7 +668,14 @@ struct Editor {
 
     auto lineIt = lines.rbegin();
     advance(lineIt, lines.size() - currentRow() - 1);
-    size_t from = currentCol() - 1;
+    size_t from;
+
+    if (currentCol() == 0) {
+      lineIt++;
+      from = lineIt->size();
+    } else {
+      from = currentCol() - 1;
+    }
 
     while (lineIt != lines.rend()) {
       size_t pos = lineIt->rfind(searchTerm.value(), from);
