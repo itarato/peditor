@@ -90,6 +90,8 @@ struct Editor {
 
   FileWatcher fileWatcher{};
 
+  optional<string> searchTerm{nullopt};
+
   Editor(Config config) : config(config) {}
 
   void init() {
@@ -911,6 +913,16 @@ struct Editor {
       DLOG("Line jump to: %d", lineNo);
 
       cursorTo(lineNo, currentCol());
+    } else if (topCommand == "search" || topCommand == "s") {
+      string term;
+      // FIXME: Not just one, but get all the rest (maybe there are spaces);
+      iss >> term;
+
+      if (term.empty()) {
+        searchTerm = nullopt;
+      } else {
+        searchTerm = term;
+      }
     } else {
       DLOG("Top command <%s> not recognized", topCommand.c_str());
     }

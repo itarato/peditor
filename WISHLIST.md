@@ -1,6 +1,6 @@
 Normal:
-- build mode - reading from config
 - search
+- build mode - reading from config
 - line move
 - help
 - visual feedback / popup

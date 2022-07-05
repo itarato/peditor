@@ -18,7 +18,7 @@ static unordered_map<const char*, const char*> fileTypeAssociationMap{
     {".c", "c++"},   {".rb", "ruby"}, {".hs", "haskell"}};
 
 struct Config {
-  int tabSize{4};
+  int tabSize{2};
   optional<string> fileName{nullopt};
   unordered_set<string> keywords{};
 
