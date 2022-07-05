@@ -146,6 +146,8 @@ enum class EscapeChar {
   Delete,
   AltLT,
   AltGT,
+  AltShiftLT,
+  AltShiftGT,
 };
 
 struct TypedChar {

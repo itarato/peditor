@@ -1,8 +1,8 @@
 Normal:
-- help
-- visual feedback / popup
 - line indent (left / right)
 - selection moves (left right up down)
+- help
+- visual feedback / popup
 
 Optional:
 - build mode - reading from config

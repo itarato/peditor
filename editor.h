@@ -294,6 +294,12 @@ struct Editor {
         case EscapeChar::AltGT:
           lineMoveForward();
           break;
+        case EscapeChar::AltShiftLT:
+          lineIndentLeft();
+          break;
+        case EscapeChar::AltShiftGT:
+          lineIndentRight();
+          break;
       }
     }
   }
@@ -550,6 +556,48 @@ struct Editor {
     iter_swap(currentIt - 1, currentIt);
 
     cursorUp();
+  }
+
+  void lineIndentRight() {
+    if (hasActiveSelection()) {
+      SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+      vector<LineSelection> lineSelections = selection.lineSelections();
+      for (auto& sel : lineSelections) {
+        lineIndentRight(&lines[sel.lineNo]);
+      }
+    } else {
+      lineIndentRight(&currentLine());
+    }
+    setCol(currentCol() + config.tabSize);
+  }
+
+  void lineIndentRight(string* line) {
+    string indent(config.tabSize, ' ');
+    line->insert(0, indent);
+  }
+
+  void lineIndentLeft() {
+    if (hasActiveSelection()) {
+      SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+      vector<LineSelection> lineSelections = selection.lineSelections();
+      for (auto& sel : lineSelections) {
+        lineIndentLeft(&lines[sel.lineNo]);
+      }
+    } else {
+      lineIndentLeft(&currentLine());
+    }
+    setCol(max(currentCol() - config.tabSize, 0));
+  }
+
+  void lineIndentLeft(string* line) {
+    auto it = find_if(line->begin(), line->end(),
+                      [](auto& c) { return !isspace(c); });
+    int leadingTabLen = distance(line->begin(), it);
+    int tabsRemoved = min(leadingTabLen, config.tabSize);
+
+    if (tabsRemoved == 0) return;
+
+    line->erase(0, tabsRemoved);
   }
 
   void cursorWordJumpLeft() {
