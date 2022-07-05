@@ -1,6 +1,5 @@
 Normal:
-- search
-- build mode - reading from config
+- search jump
 - line move
 - help
 - visual feedback / popup
@@ -8,6 +7,7 @@ Normal:
 - selection moves (left right up down)
 
 Optional:
+- build mode - reading from config
 - wrap mode / non wrap mode
 
 Hard:
