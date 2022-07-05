@@ -1,5 +1,4 @@
 Normal:
-- line move
 - help
 - visual feedback / popup
 - line indent (left / right)

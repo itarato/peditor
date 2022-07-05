@@ -288,6 +288,12 @@ struct Editor {
         case EscapeChar::Delete:
           insertDelete();
           break;
+        case EscapeChar::AltLT:
+          lineMoveBackward();
+          break;
+        case EscapeChar::AltGT:
+          lineMoveForward();
+          break;
       }
     }
   }
@@ -524,6 +530,26 @@ struct Editor {
     fixCursorPos();
 
     undos.push_back(cmd);
+  }
+
+  void lineMoveForward() {
+    if (currentRow() >= (int)lines.size() - 1) return;
+
+    auto currentIt = lines.begin();
+    advance(currentIt, currentRow());
+    iter_swap(currentIt, currentIt + 1);
+
+    cursorDown();
+  }
+
+  void lineMoveBackward() {
+    if (currentRow() <= 0) return;
+
+    auto currentIt = lines.begin();
+    advance(currentIt, currentRow());
+    iter_swap(currentIt - 1, currentIt);
+
+    cursorUp();
   }
 
   void cursorWordJumpLeft() {

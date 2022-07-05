@@ -55,3 +55,4 @@ Text editing:
 - Undo/redo: `CTRL` + `z`/`r`
 - Line delete: `CTRL` + `d`
 - Selection mode: `CTRL` + `x`
+- Line move: `ALT` + `<`/`>`

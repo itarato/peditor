@@ -18,9 +18,10 @@ void dlog(const char* fileName, int lineNo, const char* s, ...) {
   va_list args;
   va_start(args, s);
 
-  fprintf(f, "[%s:%d] ", fileName, lineNo);
+  fprintf(f, "\x1b[93m%16s\x1b[39m:\x1b[96m%-4d\x1b[0m \x1b[94m", fileName,
+          lineNo);
   vfprintf(f, s, args);
-  fprintf(f, "\n");
+  fprintf(f, "\x1b[0m\n");
 
   va_end(args);
 

@@ -144,6 +144,8 @@ enum class EscapeChar {
   PageUp,
   PageDown,
   Delete,
+  AltLT,
+  AltGT,
 };
 
 struct TypedChar {
