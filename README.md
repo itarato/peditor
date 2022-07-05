@@ -40,6 +40,8 @@ Editor management:
     - Tab size: `tab <SIZE>`
     - Jump to line: `line <NUMBER>`
     - Search: `search <KEYWORD>`
+        - Next find: `CTRL` + `n`
+        - Previous find: `CTRL` + `b`
     - Search end: `search`
 
 Text editing:

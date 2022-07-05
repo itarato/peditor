@@ -221,6 +221,12 @@ struct Editor {
         case ctrlKey('x'):
           toggleSelection();
           break;
+        case ctrlKey('n'):
+          jumpToNextSearchHit();
+          break;
+        case ctrlKey('b'):
+          jumpToPrevSearchHit();
+          break;
         case BACKSPACE:
           insertBackspace();
           break;
@@ -637,6 +643,46 @@ struct Editor {
     if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
   }
 
+  void jumpToNextSearchHit() {
+    if (!searchTerm.has_value()) return;
+
+    auto lineIt = lines.begin();
+    advance(lineIt, currentRow());
+    size_t from = currentCol() + 1;
+
+    while (lineIt != lines.end()) {
+      size_t pos = lineIt->find(searchTerm.value(), from);
+
+      if (pos == string::npos) {
+        lineIt++;
+        from = 0;
+      } else {
+        cursorTo(distance(lines.begin(), lineIt), pos);
+        return;
+      }
+    }
+  }
+
+  void jumpToPrevSearchHit() {
+    if (!searchTerm.has_value()) return;
+
+    auto lineIt = lines.rbegin();
+    advance(lineIt, lines.size() - currentRow() - 1);
+    size_t from = currentCol() - 1;
+
+    while (lineIt != lines.rend()) {
+      size_t pos = lineIt->rfind(searchTerm.value(), from);
+
+      if (pos == string::npos) {
+        lineIt++;
+        from = lineIt->size();
+      } else {
+        cursorTo(lines.size() - distance(lines.rbegin(), lineIt) - 1, pos);
+        return;
+      }
+    }
+  }
+
   void fixCursorPos() {
     // Decide which line (row) we should be on.
     if (currentRow() < 0) {
@@ -661,9 +707,6 @@ struct Editor {
       setTextAreaCursorY(textAreaRows() - 1);
     }
 
-    // DLOG("BEFORE TAX: %d TAW: %d CX: %d", textAreaCursorX(), textAreaCols(),
-    //      __cursorX);
-
     // Fix horizontal scroll.
     if (textAreaCursorX() < 0) {
       horizontalScroll = currentCol();
@@ -671,9 +714,6 @@ struct Editor {
     } else if (textAreaCursorX() >= textAreaCols()) {
       horizontalScroll = currentCol() - textAreaCols() + 1;
       setTextAreaCursorX(textAreaCols() - 1);
-
-      // DLOG("AFTER TAX: %d TAW: %d CX: %d HS: %d", textAreaCursorX(),
-      //      textAreaCols(), __cursorX, horizontalScroll);
     }
   }
 
