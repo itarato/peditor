@@ -724,6 +724,12 @@ struct Editor {
       markers.emplace_back(selection.value().second, RESET_REVERSE);
     }
 
+    if (searchTerm.has_value()) {
+      auto _searchTermMarkers = searchTermMarkers(line, searchTerm.value());
+      copy(_searchTermMarkers.begin(), _searchTermMarkers.end(),
+           back_inserter(markers));
+    }
+
     sort(markers.begin(), markers.end(),
          [](SyntaxColorInfo& lhs, SyntaxColorInfo& rhs) {
            return lhs.pos < rhs.pos;

@@ -35,6 +35,8 @@
 #define DEFAULT_FOREGROUND "39"
 #define BACKGROUND_REVERSE "7"
 #define RESET_REVERSE "27"
+#define UNDERLINE "4"
+#define RESET_UNDERLINE "24"
 
 using namespace std;
 
@@ -417,4 +419,22 @@ pair<int, int> visibleStrSlice(string &s, int offset, int len) {
   }
 
   return pair<int, int>{start, end};
+}
+
+vector<SyntaxColorInfo> searchTermMarkers(string &line, string &searchTerm) {
+  vector<SyntaxColorInfo> out{};
+
+  size_t from{0};
+
+  for (;;) {
+    size_t i = line.find(searchTerm, from);
+    if (i == string::npos) break;
+
+    out.emplace_back(i, UNDERLINE);
+    out.emplace_back(i + (int)searchTerm.size(), RESET_UNDERLINE);
+
+    from = i + searchTerm.size();
+  }
+
+  return out;
 }
