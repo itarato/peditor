@@ -55,5 +55,5 @@ Text editing:
 - Undo/redo: `CTRL` + `z`/`r`
 - Line delete: `CTRL` + `d`
 - Selection mode: `CTRL` + `x`
-- Line move: `ALT` + `<`/`>`
+- Line move (single or selection block): `ALT` + `<`/`>`
 - Indentation (single or selection block): `SHIFT` + `ALT` + `<`/`>`
