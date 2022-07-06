@@ -539,23 +539,65 @@ struct Editor {
   }
 
   void lineMoveForward() {
-    if (currentRow() >= (int)lines.size() - 1) return;
+    if (hasActiveSelection()) {
+      if (selectionEnd.value().row >= (int)lines.size() - 1) return;
 
-    auto currentIt = lines.begin();
-    advance(currentIt, currentRow());
-    iter_swap(currentIt, currentIt + 1);
+      int selectionLen =
+          selectionEnd.value().row - selectionStart.value().row + 1;
 
-    cursorDown();
+      auto currentIt = lines.begin();
+      advance(currentIt, selectionStart.value().row);
+      lineMoveForward(&currentIt, selectionLen);
+
+      selectionStart = {selectionStart.value().row + 1,
+                        selectionStart.value().col};
+      selectionEnd = {selectionEnd.value().row + 1, selectionEnd.value().col};
+    } else {
+      if (currentRow() >= (int)lines.size() - 1) return;
+
+      auto currentIt = lines.begin();
+      advance(currentIt, currentRow());
+      lineMoveForward(&currentIt, 1);
+    }
+
+    cursorTo(nextRow(), currentCol());
+  }
+
+  void lineMoveForward(vector<string>::iterator* it, int lineCount) {
+    for (int offs = lineCount - 1; offs >= 0; offs--) {
+      iter_swap(*it + offs, *it + offs + 1);
+    }
   }
 
   void lineMoveBackward() {
-    if (currentRow() <= 0) return;
+    if (hasActiveSelection()) {
+      if (selectionStart.value().row <= 0) return;
 
-    auto currentIt = lines.begin();
-    advance(currentIt, currentRow());
-    iter_swap(currentIt - 1, currentIt);
+      int selectionLen =
+          selectionEnd.value().row - selectionStart.value().row + 1;
 
-    cursorUp();
+      auto currentIt = lines.begin();
+      advance(currentIt, selectionStart.value().row);
+      lineMoveBackward(&currentIt, selectionLen);
+
+      selectionStart = {selectionStart.value().row - 1,
+                        selectionStart.value().col};
+      selectionEnd = {selectionEnd.value().row - 1, selectionEnd.value().col};
+    } else {
+      if (currentRow() <= 0) return;
+
+      auto currentIt = lines.begin();
+      advance(currentIt, currentRow());
+      lineMoveBackward(&currentIt, 1);
+    }
+
+    cursorTo(previousRow(), currentCol());
+  }
+
+  void lineMoveBackward(vector<string>::iterator* it, int lineCount) {
+    for (int offs = 0; offs < lineCount; offs++) {
+      iter_swap(*it + offs - 1, *it + offs);
+    }
   }
 
   void lineIndentRight() {
