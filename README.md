@@ -56,3 +56,4 @@ Text editing:
 - Line delete: `CTRL` + `d`
 - Selection mode: `CTRL` + `x`
 - Line move: `ALT` + `<`/`>`
+- Indentation (single or selection block): `SHIFT` + `ALT` + `<`/`>`

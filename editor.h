@@ -565,10 +565,17 @@ struct Editor {
       for (auto& sel : lineSelections) {
         lineIndentRight(&lines[sel.lineNo]);
       }
+
+      selectionStart = {selectionStart.value().row,
+                        selectionStart.value().col + config.tabSize};
+      selectionEnd = {selectionEnd.value().row,
+                      selectionEnd.value().col + config.tabSize};
     } else {
       lineIndentRight(&currentLine());
     }
+
     setCol(currentCol() + config.tabSize);
+    saveXMemory();
   }
 
   void lineIndentRight(string* line) {
@@ -581,23 +588,38 @@ struct Editor {
       SelectionRange selection{selectionStart.value(), selectionEnd.value()};
       vector<LineSelection> lineSelections = selection.lineSelections();
       for (auto& sel : lineSelections) {
-        lineIndentLeft(&lines[sel.lineNo]);
+        int tabsRemoved = lineIndentLeft(&lines[sel.lineNo]);
+
+        if (sel.lineNo == currentRow()) setCol(currentCol() - tabsRemoved);
+
+        if (sel.lineNo == selectionStart.value().row) {
+          selectionStart = {selectionStart.value().row,
+                            selectionStart.value().col - tabsRemoved};
+        }
+
+        if (sel.lineNo == selectionEnd.value().row) {
+          selectionEnd = {selectionEnd.value().row,
+                          selectionEnd.value().col - tabsRemoved};
+        }
       }
+
     } else {
-      lineIndentLeft(&currentLine());
+      int tabsRemoved = lineIndentLeft(&currentLine());
+      setCol(currentCol() - tabsRemoved);
     }
-    setCol(max(currentCol() - config.tabSize, 0));
+
+    saveXMemory();
   }
 
-  void lineIndentLeft(string* line) {
+  int lineIndentLeft(string* line) {
     auto it = find_if(line->begin(), line->end(),
                       [](auto& c) { return !isspace(c); });
     int leadingTabLen = distance(line->begin(), it);
     int tabsRemoved = min(leadingTabLen, config.tabSize);
 
-    if (tabsRemoved == 0) return;
+    if (tabsRemoved != 0) line->erase(0, tabsRemoved);
 
-    line->erase(0, tabsRemoved);
+    return tabsRemoved;
   }
 
   void cursorWordJumpLeft() {
