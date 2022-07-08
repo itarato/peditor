@@ -129,8 +129,12 @@ struct Editor {
   }
 
   void saveFile() {
-    activeTextView()->saveFile();
-    fileWatcher.ignoreEventCycle();
+    if (activeTextView()->fileName.has_value()) {
+      activeTextView()->saveFile();
+      fileWatcher.ignoreEventCycle();
+    } else {
+      openPrompt("New file needs a name > ", PromptCommand::SaveFileAs);
+    }
   }
 
   void runLoop() {
@@ -458,8 +462,7 @@ struct Editor {
     TokenAnalyzer ta{syntaxHighlightConfig};
 
     for (int lineNo = activeTextView()->verticalScroll;
-         lineNo <
-         activeTextView()->verticalScroll + activeTextView()->textAreaRows();
+         lineNo < activeTextView()->verticalScroll + activeTextView()->rows;
          lineNo++) {
       if (size_t(lineNo) < activeTextView()->lines.size()) {
         // TODO: include horizontalScroll
@@ -477,7 +480,7 @@ struct Editor {
         if (!decoratedLine.empty()) {
           pair<int, int> visibleBorders =
               visibleStrSlice(decoratedLine, activeTextView()->horizontalScroll,
-                              activeTextView()->textAreaCols());
+                              activeTextView()->cols);
 
           if (visibleBorders.first == -1) {
             out.append("\x1b[2m<\x1b[22m");
@@ -533,7 +536,7 @@ struct Editor {
 
     // TODO: do something better here, don't check the text view - it might be
     // irrelevant.
-    if (activeTextView()->textAreaCols() <= 1) return;
+    if (activeTextView()->cols <= 1) return;
 
     hideCursor();
 
@@ -566,7 +569,7 @@ struct Editor {
         " pEditor v0 | File: %s%s | Textarea: %dx%d | Cursor: %dx %dy | %d%%",
         activeTextView()->fileName.value_or("<no file>").c_str(),
         (activeTextView()->isDirty ? " \x1b[94m(edited)\x1b[39m" : ""),
-        activeTextView()->textAreaCols(), activeTextView()->textAreaRows(),
+        activeTextView()->cols, activeTextView()->rows,
         activeTextView()->textAreaCursorX(),
         activeTextView()->textAreaCursorY(), rowPosPercentage);
 
@@ -588,8 +591,8 @@ struct Editor {
 
   void openPrompt(string prefix, PromptCommand command) {
     mode = EditorMode::Prompt;
-    prompt.reset(prefix, command, activeTextView()->__cursorX,
-                 activeTextView()->__cursorY);
+    prompt.reset(prefix, command, activeTextView()->cursor.x,
+                 activeTextView()->cursor.y);
     cursor.x = prompt.prefix.size() + prompt.message.size() + 1;
     cursor.y = terminalRows() - 1;
   }

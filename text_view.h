@@ -22,8 +22,8 @@ static unordered_map<const char*, const char*> fileTypeAssociationMap{
     {".c", "c++"},   {".rb", "ruby"}, {".hs", "haskell"}};
 
 struct TextView {
-  int __cursorX{0};
-  int __cursorY{0};
+  Point cursor{0, 0};
+
   int verticalScroll{0};
   int horizontalScroll{0};
   int xMemory{0};
@@ -153,7 +153,7 @@ struct TextView {
   }
 
   void cursorDown() {
-    __cursorY++;
+    cursor.y++;
     restoreXMemory();
     fixCursorPos();
 
@@ -161,7 +161,7 @@ struct TextView {
   }
 
   void cursorUp() {
-    __cursorY--;
+    cursor.y--;
     restoreXMemory();
     fixCursorPos();
 
@@ -169,10 +169,10 @@ struct TextView {
   }
 
   void cursorLeft() {
-    __cursorX--;
+    cursor.x--;
 
     if (currentCol() < 0) {
-      __cursorY--;
+      cursor.y--;
       if (onLineRow()) setTextAreaCursorX(currentLine().size());
     }
 
@@ -183,10 +183,10 @@ struct TextView {
   }
 
   void cursorRight() {
-    __cursorX++;
+    cursor.x++;
 
     if (currentCol() > currentLineSize()) {
-      __cursorY++;
+      cursor.y++;
       if (onLineRow()) setTextAreaCursorX(0);
     }
 
@@ -197,7 +197,7 @@ struct TextView {
   }
 
   void cursorPageDown() {
-    __cursorY += textAreaRows();
+    cursor.y += rows;
     restoreXMemory();
 
     if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
@@ -206,7 +206,7 @@ struct TextView {
   }
 
   void cursorPageUp() {
-    __cursorY -= textAreaRows();
+    cursor.y -= rows;
     restoreXMemory();
 
     if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
@@ -226,7 +226,7 @@ struct TextView {
 
   void cursorTo(int row, int col) {
     setTextAreaCursorX(col);
-    __cursorY += row - currentRow();
+    cursor.y += row - currentRow();
 
     fixCursorPos();
   }
@@ -248,40 +248,40 @@ struct TextView {
   void fixCursorPos() {
     // Decide which line (row) we should be on.
     if (currentRow() < 0) {
-      __cursorY -= currentRow();
+      cursor.y -= currentRow();
     } else if (currentRow() >= (int)lines.size()) {
-      __cursorY -= currentRow() - (int)lines.size() + 1;
+      cursor.y -= currentRow() - (int)lines.size() + 1;
     }
 
     // Decide which char (col).
     if (currentCol() < 0) {
-      __cursorX -= currentCol();
+      cursor.x -= currentCol();
     } else if (currentCol() > currentLineSize()) {
-      __cursorX -= currentCol() - currentLineSize();
+      cursor.x -= currentCol() - currentLineSize();
     }
 
     // Fix vertical scroll.
-    if (__cursorY < 0) {
+    if (cursor.y < 0) {
       verticalScroll = currentRow();
       setTextAreaCursorY(0);
-    } else if (textAreaCursorY() >= textAreaRows()) {
-      verticalScroll = currentRow() - textAreaRows() + 1;
-      setTextAreaCursorY(textAreaRows() - 1);
+    } else if (textAreaCursorY() >= rows) {
+      verticalScroll = currentRow() - rows + 1;
+      setTextAreaCursorY(rows - 1);
     }
 
     // Fix horizontal scroll.
     if (textAreaCursorX() < 0) {
       horizontalScroll = currentCol();
       setTextAreaCursorX(0);
-    } else if (textAreaCursorX() >= textAreaCols()) {
-      horizontalScroll = currentCol() - textAreaCols() + 1;
-      setTextAreaCursorX(textAreaCols() - 1);
+    } else if (textAreaCursorX() >= cols) {
+      horizontalScroll = currentCol() - cols + 1;
+      setTextAreaCursorX(cols - 1);
     }
   }
 
-  inline int currentRow() { return verticalScroll + __cursorY; }
-  inline int previousRow() { return verticalScroll + __cursorY - 1; }
-  inline int nextRow() { return verticalScroll + __cursorY + 1; }
+  inline int currentRow() { return verticalScroll + cursor.y; }
+  inline int previousRow() { return verticalScroll + cursor.y - 1; }
+  inline int nextRow() { return verticalScroll + cursor.y + 1; }
 
   // Text area related -> TODO: rename
   inline int currentCol() { return horizontalScroll + textAreaCursorX(); }
@@ -297,8 +297,8 @@ struct TextView {
     // Fix horizontal scroll.
     if (horizontalScroll > newCol) {
       horizontalScroll = newCol;
-    } else if (horizontalScroll + textAreaCols() < newCol) {
-      horizontalScroll = newCol - textAreaCols() + 1;
+    } else if (horizontalScroll + cols < newCol) {
+      horizontalScroll = newCol - cols + 1;
     }
 
     setTextAreaCursorX(newCol - horizontalScroll);
@@ -644,29 +644,21 @@ struct TextView {
 
   // END SELECTIONS
 
-  // inline int textAreaCols() { return terminalCols() - leftMargin; }
-  // inline int textAreaRows() { return terminalRows() - bottomMargin; }
-  // TODO: DELETE
-  inline int textAreaCols() { return cols; }
-  inline int textAreaRows() { return rows; }
-  // inline int textAreaCursorX() { return __cursorX - leftMargin; }
-  // inline int textAreaCursorY() { return __cursorY; }
-  // TODO: DELETE
-  inline int textAreaCursorX() { return __cursorX; }
-  inline int textAreaCursorY() { return __cursorY; }
+  inline int textAreaCursorX() { return cursor.x; }
+  inline int textAreaCursorY() { return cursor.y; }
   // inline void setTextAreaCursorX(int newTextAreaCursor) {
-  //   __cursorX = newTextAreaCursor + leftMargin;
+  //   cursor.x = newTextAreaCursor + leftMargin;
   // }
   // inline void setTextAreaCursorY(int newTextAreaCursor) {
   //   // There is no top margin currently;
-  //   __cursorY = newTextAreaCursor;
+  //   cursor.y = newTextAreaCursor;
   // }
   // TODO: DELETE
   inline void setTextAreaCursorX(int newTextAreaCursor) {
-    __cursorX = newTextAreaCursor;
+    cursor.x = newTextAreaCursor;
   }
   inline void setTextAreaCursorY(int newTextAreaCursor) {
     // There is no top margin currently;
-    __cursorY = newTextAreaCursor;
+    cursor.y = newTextAreaCursor;
   }
 };

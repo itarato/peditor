@@ -122,6 +122,9 @@ struct SelectionRange {
 struct Point {
   int x{-1};
   int y{-1};
+
+  Point() {}
+  Point(int x, int y) : x(x), y(y) {}
 };
 
 struct SyntaxColorInfo {
