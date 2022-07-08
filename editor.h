@@ -667,8 +667,6 @@ struct Editor {
   }
 
   void updateMargins() {
-    int newLeftMargin = ceil(log10(activeTextView()->lines.size() + 1)) + 1;
-    activeTextView()->__cursorX += newLeftMargin - leftMargin;
-    leftMargin = newLeftMargin;
+    leftMargin = max(1, (int)ceil(log10(activeTextView()->lines.size()))) + 1;
   }
 };
