@@ -666,7 +666,7 @@ struct Editor {
     loadFile();
   }
 
-  void updateMargins() {
+  inline void updateMargins() {
     leftMargin = max(1, (int)ceil(log10(activeTextView()->lines.size()))) + 1;
   }
 };
