@@ -31,14 +31,18 @@ int main(int argc, char** argv) {
 
   Config config{};
 
-  if (argc == 2) config.setFileName(argv[1]);
-
   Editor editor{config};
   peditor = &editor;
 
+  editor.init();
+
+  if (argc == 2) {
+    editor.activeTextView()->setFileName(argv[1]);
+    editor.loadFile();
+  }
+
   initTerminalWindowChangeWatch();
 
-  editor.init();
   editor.runLoop();
 
   DLOG("peditor end");

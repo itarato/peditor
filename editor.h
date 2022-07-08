@@ -21,6 +21,7 @@
 #include "file_watcher.h"
 #include "terminal_util.h"
 #include "text_manipulator.h"
+#include "text_view.h"
 #include "utility.h"
 
 using namespace std;
@@ -60,17 +61,10 @@ struct Prompt {
 struct Editor {
   Config config;
 
-  int __cursorX{0};
-  int __cursorY{0};
-  int verticalScroll{0};
-  int horizontalScroll{0};
-  int xMemory{0};
   int leftMargin{0};
   int bottomMargin{1};
 
   pair<int, int> terminalDimension{};
-
-  vector<string> lines{};
 
   bool quitRequested{false};
 
@@ -78,80 +72,65 @@ struct Editor {
 
   Prompt prompt{};
 
-  optional<SelectionEdge> selectionStart{nullopt};
-  optional<SelectionEdge> selectionEnd{nullopt};
-
-  deque<Command> undos;
-  deque<Command> redos;
-
   vector<string> internalClipboard{};
-
-  bool isDirty{false};
 
   FileWatcher fileWatcher{};
 
   optional<string> searchTerm{nullopt};
 
+  vector<TextView> textViews{};
+
   Editor(Config config) : config(config) {}
 
   void init() {
+    textViews.emplace_back();
+
     preserveTermiosOriginalState();
     enableRawMode();
     refreshTerminalDimension();
 
     // To have a non zero content to begin with.
-    lines.emplace_back("");
+    activeTextView()->lines.emplace_back("");
 
     loadFile();
   }
 
+  inline TextView* activeTextView() { return &(textViews[0]); }
+
   void loadFile() {
-    lines.clear();
+    activeTextView()->lines.clear();
 
-    if (config.fileName.has_value()) {
-      DLOG("Loading file: %s", config.fileName.value().c_str());
+    if (activeTextView()->fileName.has_value()) {
+      DLOG("Loading file: %s", activeTextView()->fileName.value().c_str());
 
-      ifstream f(config.fileName.value());
+      ifstream f(activeTextView()->fileName.value());
 
       if (!f.is_open()) {
         DLOG("File %s does not exists. Creating one.",
-             config.fileName.value().c_str());
+             activeTextView()->fileName.value().c_str());
         f.open("a");
       } else {
         for (string line; getline(f, line);) {
-          lines.emplace_back(line);
+          activeTextView()->lines.emplace_back(line);
         }
       }
 
       f.close();
 
-      fileWatcher.watch(config.fileName.value());
+      fileWatcher.watch(activeTextView()->fileName.value());
     } else {
       DLOG("Cannot load file - config does not have any.");
     }
 
-    config.reloadKeywordList();
-    if (lines.empty()) lines.emplace_back("");
+    activeTextView()->reloadKeywordList();
+    if (activeTextView()->lines.empty())
+      activeTextView()->lines.emplace_back("");
     cursorTo(0, 0);
   }
 
   void saveFile() {
-    DLOG("Save file: %s", config.fileName.value().c_str());
-    ofstream f(config.fileName.value(), ios::out | ios::trunc);
-
-    for (int i = 0; i < (int)lines.size(); i++) {
-      f << lines[i];
-
-      if (i < (int)lines.size()) {
-        f << endl;
-      }
-    }
-
-    f.close();
-
+    activeTextView()->saveFile();
     fileWatcher.ignoreEventCycle();
-
-    isDirty = false;
   }
 
   void runLoop() {
@@ -322,17 +301,20 @@ struct Editor {
       }
     }
 
-    __cursorX = prompt.prefix.size() + prompt.message.size() + 1;
+    activeTextView()->__cursorX =
+        prompt.prefix.size() + prompt.message.size() + 1;
   }
 
   bool onLineRow() {
-    return currentRow() >= 0 && currentRow() < (int)lines.size();
+    return currentRow() >= 0 &&
+           currentRow() < (int)activeTextView()->lines.size();
   }
 
   void insertCharacter(char c) {
     if (hasActiveSelection()) insertBackspace();
 
-    if (currentRow() < (int)lines.size() && currentCol() <= currentLineSize()) {
+    if (currentRow() < (int)activeTextView()->lines.size() &&
+        currentCol() <= currentLineSize()) {
       execCommand(Command::makeInsertChar(currentRow(), currentCol(), c));
 
       cursorRight();
@@ -343,7 +325,8 @@ struct Editor {
 
   void insertBackspace() {
     if (hasActiveSelection()) {
-      SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+      SelectionRange selection{activeTextView()->selectionStart.value(),
+                               activeTextView()->selectionEnd.value()};
 
       // Remove all lines
       vector<LineSelection> lineSelections = selection.lineSelections();
@@ -353,25 +336,30 @@ struct Editor {
       for (auto& lineSelection : lineSelections) {
         if (lineSelection.isFullLine()) {
           lineAdjustmentOffset++;
-          execCommand(Command::makeDeleteLine(selection.startRow + 1,
-                                              lines[selection.startRow + 1]));
+          execCommand(Command::makeDeleteLine(
+              selection.startRow + 1,
+              activeTextView()->lines[selection.startRow + 1]));
         } else {
           int start =
               lineSelection.isLeftBounded() ? lineSelection.startCol : 0;
           int end =
               lineSelection.isRightBounded()
                   ? lineSelection.endCol
-                  : lines[lineSelection.lineNo - lineAdjustmentOffset].size();
+                  : activeTextView()
+                        ->lines[lineSelection.lineNo - lineAdjustmentOffset]
+                        .size();
           execCommand(Command::makeDeleteSlice(
               lineSelection.lineNo - lineAdjustmentOffset, start,
-              lines[lineSelection.lineNo - lineAdjustmentOffset].substr(
-                  start, end - start)));
+              activeTextView()
+                  ->lines[lineSelection.lineNo - lineAdjustmentOffset]
+                  .substr(start, end - start)));
         }
       }
 
       if (selection.isMultiline()) {
-        execCommand(Command::makeMergeLine(selection.startRow,
-                                           lines[selection.startRow].size()));
+        execCommand(Command::makeMergeLine(
+            selection.startRow,
+            activeTextView()->lines[selection.startRow].size()));
       }
 
       // Put cursor to beginning
@@ -382,7 +370,7 @@ struct Editor {
                                           currentLine()[currentCol() - 1]));
       cursorLeft();
     } else if (currentCol() == 0 && currentRow() > 0) {
-      int oldLineLen = lines[currentRow() - 1].size();
+      int oldLineLen = activeTextView()->lines[currentRow() - 1].size();
       execCommand(Command::makeMergeLine(previousRow(), previousLine().size()));
       cursorTo(previousRow(), oldLineLen);
     }
@@ -413,7 +401,7 @@ struct Editor {
     } else if (currentCol() < currentLineSize()) {
       execCommand(Command::makeDeleteChar(currentRow(), currentCol(),
                                           currentLine()[currentCol()]));
-    } else if (currentRow() < (int)lines.size() - 1) {
+    } else if (currentRow() < (int)activeTextView()->lines.size() - 1) {
       execCommand(Command::makeMergeLine(currentRow(), currentCol()));
     }
   }
@@ -447,13 +435,13 @@ struct Editor {
   }
 
   void deleteLine() {
-    if (lines.size() == 1) {
-      execCommand(Command::makeDeleteSlice(0, 0, lines[0]));
+    if (activeTextView()->lines.size() == 1) {
+      execCommand(Command::makeDeleteSlice(0, 0, activeTextView()->lines[0]));
     } else {
       execCommand(Command::makeDeleteLine(currentRow(), currentLine()));
     }
 
-    if (currentRow() >= (int)lines.size()) {
+    if (currentRow() >= (int)activeTextView()->lines.size()) {
       cursorUp();
     } else {
       setCol(currentCol());
@@ -465,21 +453,24 @@ struct Editor {
   void copyClipboardInternal() {
     if (!hasActiveSelection()) return;
 
-    SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+    SelectionRange selection{activeTextView()->selectionStart.value(),
+                             activeTextView()->selectionEnd.value()};
     vector<LineSelection> lineSelections = selection.lineSelections();
 
     internalClipboard.clear();
 
     for (auto& lineSelection : lineSelections) {
       if (lineSelection.isFullLine()) {
-        internalClipboard.push_back(lines[selection.startRow]);
+        internalClipboard.push_back(
+            activeTextView()->lines[selection.startRow]);
       } else {
         int start = lineSelection.isLeftBounded() ? lineSelection.startCol : 0;
         int end = lineSelection.isRightBounded()
                       ? lineSelection.endCol
-                      : lines[lineSelection.lineNo].size();
+                      : activeTextView()->lines[lineSelection.lineNo].size();
         internalClipboard.push_back(
-            lines[selection.startRow].substr(start, end - start));
+            activeTextView()->lines[selection.startRow].substr(start,
+                                                               end - start));
       }
     }
 
@@ -504,54 +495,61 @@ struct Editor {
   }
 
   void execCommand(Command&& cmd) {
-    undos.push_back(cmd);
+    activeTextView()->undos.push_back(cmd);
     DLOG("EXEC cmd: %d", cmd.type);
 
-    TextManipulator::execute(&cmd, &lines);
-    isDirty = true;
+    TextManipulator::execute(&cmd, &activeTextView()->lines);
+    activeTextView()->isDirty = true;
 
-    redos.clear();
-    while (undos.size() > UNDO_LIMIT) undos.pop_front();
+    activeTextView()->redos.clear();
+    while (activeTextView()->undos.size() > UNDO_LIMIT)
+      activeTextView()->undos.pop_front();
   }
 
   void undo() {
-    if (undos.empty()) return;
+    if (activeTextView()->undos.empty()) return;
 
-    Command cmd = undos.back();
-    undos.pop_back();
+    Command cmd = activeTextView()->undos.back();
+    activeTextView()->undos.pop_back();
 
-    TextManipulator::reverse(&cmd, &lines);
+    TextManipulator::reverse(&cmd, &activeTextView()->lines);
     fixCursorPos();
 
-    redos.push_back(cmd);
+    activeTextView()->redos.push_back(cmd);
   }
 
   void redo() {
-    if (redos.empty()) return;
+    if (activeTextView()->redos.empty()) return;
 
-    Command cmd = redos.back();
-    redos.pop_back();
+    Command cmd = activeTextView()->redos.back();
+    activeTextView()->redos.pop_back();
 
-    TextManipulator::execute(&cmd, &lines);
+    TextManipulator::execute(&cmd, &activeTextView()->lines);
     fixCursorPos();
 
-    undos.push_back(cmd);
+    activeTextView()->undos.push_back(cmd);
   }
 
   void lineMoveForward() {
     if (hasActiveSelection()) {
-      if (selectionEnd.value().row >= (int)lines.size() - 1) return;
+      if (activeTextView()->selectionEnd.value().row >=
+          (int)activeTextView()->lines.size() - 1)
+        return;
 
-      int selectionLen =
-          selectionEnd.value().row - selectionStart.value().row + 1;
+      int selectionLen = activeTextView()->selectionEnd.value().row -
+                         activeTextView()->selectionStart.value().row + 1;
 
-      lineMoveForward(selectionStart.value().row, selectionLen);
+      lineMoveForward(activeTextView()->selectionStart.value().row,
+                      selectionLen);
 
-      selectionStart = {selectionStart.value().row + 1,
-                        selectionStart.value().col};
-      selectionEnd = {selectionEnd.value().row + 1, selectionEnd.value().col};
+      activeTextView()->selectionStart = {
+          activeTextView()->selectionStart.value().row + 1,
+          activeTextView()->selectionStart.value().col};
+      activeTextView()->selectionEnd = {
+          activeTextView()->selectionEnd.value().row + 1,
+          activeTextView()->selectionEnd.value().col};
     } else {
-      if (currentRow() >= (int)lines.size() - 1) return;
+      if (currentRow() >= (int)activeTextView()->lines.size() - 1) return;
 
       lineMoveForward(currentRow(), 1);
     }
@@ -567,16 +565,20 @@ struct Editor {
 
   void lineMoveBackward() {
     if (hasActiveSelection()) {
-      if (selectionStart.value().row <= 0) return;
+      if (activeTextView()->selectionStart.value().row <= 0) return;
 
-      int selectionLen =
-          selectionEnd.value().row - selectionStart.value().row + 1;
+      int selectionLen = activeTextView()->selectionEnd.value().row -
+                         activeTextView()->selectionStart.value().row + 1;
 
-      lineMoveBackward(selectionStart.value().row, selectionLen);
+      lineMoveBackward(activeTextView()->selectionStart.value().row,
+                       selectionLen);
 
-      selectionStart = {selectionStart.value().row - 1,
-                        selectionStart.value().col};
-      selectionEnd = {selectionEnd.value().row - 1, selectionEnd.value().col};
+      activeTextView()->selectionStart = {
+          activeTextView()->selectionStart.value().row - 1,
+          activeTextView()->selectionStart.value().col};
+      activeTextView()->selectionEnd = {
+          activeTextView()->selectionEnd.value().row - 1,
+          activeTextView()->selectionEnd.value().col};
     } else {
       if (currentRow() <= 0) return;
 
@@ -594,16 +596,19 @@ struct Editor {
 
   void lineIndentRight() {
     if (hasActiveSelection()) {
-      SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+      SelectionRange selection{activeTextView()->selectionStart.value(),
+                               activeTextView()->selectionEnd.value()};
       vector<LineSelection> lineSelections = selection.lineSelections();
       for (auto& sel : lineSelections) {
         lineIndentRight(sel.lineNo);
       }
 
-      selectionStart = {selectionStart.value().row,
-                        selectionStart.value().col + config.tabSize};
-      selectionEnd = {selectionEnd.value().row,
-                      selectionEnd.value().col + config.tabSize};
+      activeTextView()->selectionStart = {
+          activeTextView()->selectionStart.value().row,
+          activeTextView()->selectionStart.value().col + config.tabSize};
+      activeTextView()->selectionEnd = {
+          activeTextView()->selectionEnd.value().row,
+          activeTextView()->selectionEnd.value().col + config.tabSize};
     } else {
       lineIndentRight(currentRow());
     }
@@ -619,21 +624,24 @@ struct Editor {
 
   void lineIndentLeft() {
     if (hasActiveSelection()) {
-      SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+      SelectionRange selection{activeTextView()->selectionStart.value(),
+                               activeTextView()->selectionEnd.value()};
       vector<LineSelection> lineSelections = selection.lineSelections();
       for (auto& sel : lineSelections) {
         int tabsRemoved = lineIndentLeft(sel.lineNo);
 
         if (sel.lineNo == currentRow()) setCol(currentCol() - tabsRemoved);
 
-        if (sel.lineNo == selectionStart.value().row) {
-          selectionStart = {selectionStart.value().row,
-                            selectionStart.value().col - tabsRemoved};
+        if (sel.lineNo == activeTextView()->selectionStart.value().row) {
+          activeTextView()->selectionStart = {
+              activeTextView()->selectionStart.value().row,
+              activeTextView()->selectionStart.value().col - tabsRemoved};
         }
 
-        if (sel.lineNo == selectionEnd.value().row) {
-          selectionEnd = {selectionEnd.value().row,
-                          selectionEnd.value().col - tabsRemoved};
+        if (sel.lineNo == activeTextView()->selectionEnd.value().row) {
+          activeTextView()->selectionEnd = {
+              activeTextView()->selectionEnd.value().row,
+              activeTextView()->selectionEnd.value().col - tabsRemoved};
         }
       }
 
@@ -646,7 +654,7 @@ struct Editor {
   }
 
   int lineIndentLeft(int lineNo) {
-    auto& line = lines[lineNo];
+    auto& line = activeTextView()->lines[lineNo];
     auto it =
         find_if(line.begin(), line.end(), [](auto& c) { return !isspace(c); });
     int leadingTabLen = distance(line.begin(), it);
@@ -685,7 +693,7 @@ struct Editor {
   }
 
   void cursorDown() {
-    __cursorY++;
+    activeTextView()->__cursorY++;
     restoreXMemory();
     fixCursorPos();
 
@@ -693,7 +701,7 @@ struct Editor {
   }
 
   void cursorUp() {
-    __cursorY--;
+    activeTextView()->__cursorY--;
     restoreXMemory();
     fixCursorPos();
 
@@ -701,10 +709,10 @@ struct Editor {
   }
 
   void cursorLeft() {
-    __cursorX--;
+    activeTextView()->__cursorX--;
 
     if (currentCol() < 0) {
-      __cursorY--;
+      activeTextView()->__cursorY--;
       if (onLineRow()) setTextAreaCursorX(currentLine().size());
     }
 
@@ -715,10 +723,10 @@ struct Editor {
   }
 
   void cursorRight() {
-    __cursorX++;
+    activeTextView()->__cursorX++;
 
     if (currentCol() > currentLineSize()) {
-      __cursorY++;
+      activeTextView()->__cursorY++;
       if (onLineRow()) setTextAreaCursorX(0);
     }
 
@@ -729,7 +737,7 @@ struct Editor {
   }
 
   void cursorPageDown() {
-    __cursorY += textAreaRows();
+    activeTextView()->__cursorY += textAreaRows();
     restoreXMemory();
 
     if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
@@ -738,7 +746,7 @@ struct Editor {
   }
 
   void cursorPageUp() {
-    __cursorY -= textAreaRows();
+    activeTextView()->__cursorY -= textAreaRows();
     restoreXMemory();
 
     if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
@@ -747,18 +755,18 @@ struct Editor {
   }
 
   void scrollUp() {
-    verticalScroll--;
+    activeTextView()->verticalScroll--;
     fixCursorPos();
   }
 
   void scrollDown() {
-    verticalScroll++;
+    activeTextView()->verticalScroll++;
     fixCursorPos();
   }
 
   void cursorTo(int row, int col) {
     setTextAreaCursorX(col);
-    __cursorY += row - currentRow();
+    activeTextView()->__cursorY += row - currentRow();
 
     fixCursorPos();
   }
@@ -780,18 +788,18 @@ struct Editor {
   void jumpToNextSearchHit() {
     if (!searchTerm.has_value()) return;
 
-    auto lineIt = lines.begin();
+    auto lineIt = activeTextView()->lines.begin();
     advance(lineIt, currentRow());
     size_t from = currentCol() + 1;
 
-    while (lineIt != lines.end()) {
+    while (lineIt != activeTextView()->lines.end()) {
       size_t pos = lineIt->find(searchTerm.value(), from);
 
       if (pos == string::npos) {
         lineIt++;
         from = 0;
       } else {
-        cursorTo(distance(lines.begin(), lineIt), pos);
+        cursorTo(distance(activeTextView()->lines.begin(), lineIt), pos);
         return;
       }
     }
@@ -800,8 +808,8 @@ struct Editor {
   void jumpToPrevSearchHit() {
     if (!searchTerm.has_value()) return;
 
-    auto lineIt = lines.rbegin();
-    advance(lineIt, lines.size() - currentRow() - 1);
+    auto lineIt = activeTextView()->lines.rbegin();
+    advance(lineIt, activeTextView()->lines.size() - currentRow() - 1);
     size_t from;
 
     if (currentCol() == 0) {
@@ -811,14 +819,16 @@ struct Editor {
       from = currentCol() - 1;
     }
 
-    while (lineIt != lines.rend()) {
+    while (lineIt != activeTextView()->lines.rend()) {
       size_t pos = lineIt->rfind(searchTerm.value(), from);
 
       if (pos == string::npos) {
         lineIt++;
         from = lineIt->size();
       } else {
-        cursorTo(lines.size() - distance(lines.rbegin(), lineIt) - 1, pos);
+        cursorTo(activeTextView()->lines.size() -
+                     distance(activeTextView()->lines.rbegin(), lineIt) - 1,
+                 pos);
         return;
       }
     }
@@ -827,51 +837,64 @@ struct Editor {
   void fixCursorPos() {
     // Decide which line (row) we should be on.
     if (currentRow() < 0) {
-      __cursorY -= currentRow();
-    } else if (currentRow() >= (int)lines.size()) {
-      __cursorY -= currentRow() - (int)lines.size() + 1;
+      activeTextView()->__cursorY -= currentRow();
+    } else if (currentRow() >= (int)activeTextView()->lines.size()) {
+      activeTextView()->__cursorY -=
+          currentRow() - (int)activeTextView()->lines.size() + 1;
     }
 
     // Decide which char (col).
     if (currentCol() < 0) {
-      __cursorX -= currentCol();
+      activeTextView()->__cursorX -= currentCol();
     } else if (currentCol() > currentLineSize()) {
-      __cursorX -= currentCol() - currentLineSize();
+      activeTextView()->__cursorX -= currentCol() - currentLineSize();
     }
 
     // Fix vertical scroll.
-    if (__cursorY < 0) {
-      verticalScroll = currentRow();
+    if (activeTextView()->__cursorY < 0) {
+      activeTextView()->verticalScroll = currentRow();
       setTextAreaCursorY(0);
     } else if (textAreaCursorY() >= textAreaRows()) {
-      verticalScroll = currentRow() - textAreaRows() + 1;
+      activeTextView()->verticalScroll = currentRow() - textAreaRows() + 1;
       setTextAreaCursorY(textAreaRows() - 1);
     }
 
     // Fix horizontal scroll.
     if (textAreaCursorX() < 0) {
-      horizontalScroll = currentCol();
+      activeTextView()->horizontalScroll = currentCol();
       setTextAreaCursorX(0);
     } else if (textAreaCursorX() >= textAreaCols()) {
-      horizontalScroll = currentCol() - textAreaCols() + 1;
+      activeTextView()->horizontalScroll = currentCol() - textAreaCols() + 1;
       setTextAreaCursorX(textAreaCols() - 1);
     }
   }
 
-  inline int currentRow() { return verticalScroll + __cursorY; }
-  inline int previousRow() { return verticalScroll + __cursorY - 1; }
-  inline int nextRow() { return verticalScroll + __cursorY + 1; }
+  inline int currentRow() {
+    return activeTextView()->verticalScroll + activeTextView()->__cursorY;
+  }
+  inline int previousRow() {
+    return activeTextView()->verticalScroll + activeTextView()->__cursorY - 1;
+  }
+  inline int nextRow() {
+    return activeTextView()->verticalScroll + activeTextView()->__cursorY + 1;
+  }
 
   // Text area related -> TODO: rename
-  inline int currentCol() { return horizontalScroll + textAreaCursorX(); }
+  inline int currentCol() {
+    return activeTextView()->horizontalScroll + textAreaCursorX();
+  }
 
-  inline string& currentLine() { return lines[currentRow()]; }
-  inline string& previousLine() { return lines[previousRow()]; }
-  inline string& nextLine() { return lines[nextRow()]; }
+  inline string& currentLine() { return activeTextView()->lines[currentRow()]; }
+  inline string& previousLine() {
+    return activeTextView()->lines[previousRow()];
+  }
+  inline string& nextLine() { return activeTextView()->lines[nextRow()]; }
   inline int currentLineSize() { return currentLine().size(); }
 
-  inline void restoreXMemory() { setTextAreaCursorX(xMemory); }
-  inline void saveXMemory() { xMemory = textAreaCursorX(); }
+  inline void restoreXMemory() {
+    setTextAreaCursorX(activeTextView()->xMemory);
+  }
+  inline void saveXMemory() { activeTextView()->xMemory = textAreaCursorX(); }
 
   inline bool isEndOfCurrentLine() { return currentCol() >= currentLineSize(); }
   inline bool isBeginningOfCurrentLine() { return currentCol() <= 0; }
@@ -881,14 +904,16 @@ struct Editor {
 
   inline int textAreaCols() { return terminalCols() - leftMargin; }
   inline int textAreaRows() { return terminalRows() - bottomMargin; }
-  inline int textAreaCursorX() { return __cursorX - leftMargin; }
-  inline int textAreaCursorY() { return __cursorY; }
+  inline int textAreaCursorX() {
+    return activeTextView()->__cursorX - leftMargin;
+  }
+  inline int textAreaCursorY() { return activeTextView()->__cursorY; }
   inline void setTextAreaCursorX(int newTextAreaCursor) {
-    __cursorX = newTextAreaCursor + leftMargin;
+    activeTextView()->__cursorX = newTextAreaCursor + leftMargin;
   }
   inline void setTextAreaCursorY(int newTextAreaCursor) {
     // There is no top margin currently;
-    __cursorY = newTextAreaCursor;
+    activeTextView()->__cursorY = newTextAreaCursor;
   }
 
   string decorateLine(string& line, TokenAnalyzer* ta, int lineNo) {
@@ -936,14 +961,14 @@ struct Editor {
   void drawLines(string& out) {
     resetCursorLocation(out);
 
-    SyntaxHighlightConfig syntaxHighlightConfig{&config.keywords};
+    SyntaxHighlightConfig syntaxHighlightConfig{&activeTextView()->keywords};
     TokenAnalyzer ta{syntaxHighlightConfig};
 
-    for (int lineNo = verticalScroll; lineNo < verticalScroll + textAreaRows();
-         lineNo++) {
-      if (size_t(lineNo) < lines.size()) {
+    for (int lineNo = activeTextView()->verticalScroll;
+         lineNo < activeTextView()->verticalScroll + textAreaRows(); lineNo++) {
+      if (size_t(lineNo) < activeTextView()->lines.size()) {
         // TODO: include horizontalScroll
-        string& line = lines[lineNo];
+        string& line = activeTextView()->lines[lineNo];
         string decoratedLine = decorateLine(line, &ta, lineNo);
 
         char formatBuf[32];
@@ -956,7 +981,8 @@ struct Editor {
 
         if (!decoratedLine.empty()) {
           pair<int, int> visibleBorders =
-              visibleStrSlice(decoratedLine, horizontalScroll, textAreaCols());
+              visibleStrSlice(decoratedLine, activeTextView()->horizontalScroll,
+                              textAreaCols());
 
           if (visibleBorders.first == -1) {
             out.append("\x1b[2m<\x1b[22m");
@@ -1004,7 +1030,8 @@ struct Editor {
 
     clearScreen(out);
     drawLines(out);
-    setCursorLocation(out, __cursorY, __cursorX);
+    setCursorLocation(out, activeTextView()->__cursorY,
+                      activeTextView()->__cursorX);
     showCursor(out);
 
     write(STDOUT_FILENO, out.c_str(), out.size());
@@ -1017,15 +1044,16 @@ struct Editor {
   string generateStatusLine() {
     string out{};
 
-    int rowPosPercentage = 100 * currentRow() / lines.size();
+    int rowPosPercentage = 100 * currentRow() / activeTextView()->lines.size();
 
     char buf[2048];
     sprintf(
         buf,
         " pEditor v0 | File: %s%s | Textarea: %dx%d | Cursor: %dx %dy | %d%%",
-        config.fileName.value_or("<no file>").c_str(),
-        (isDirty ? " \x1b[94m(edited)\x1b[39m" : ""), textAreaCols(),
-        textAreaRows(), textAreaCursorX(), textAreaCursorY(), rowPosPercentage);
+        activeTextView()->fileName.value_or("<no file>").c_str(),
+        (activeTextView()->isDirty ? " \x1b[94m(edited)\x1b[39m" : ""),
+        textAreaCols(), textAreaRows(), textAreaCursorX(), textAreaCursorY(),
+        rowPosPercentage);
 
     out.append(buf);
 
@@ -1045,9 +1073,11 @@ struct Editor {
 
   void openPrompt(string prefix, PromptCommand command) {
     mode = EditorMode::Prompt;
-    prompt.reset(prefix, command, __cursorX, __cursorY);
-    __cursorX = prompt.prefix.size() + prompt.message.size() + 1;
-    __cursorY = terminalRows() - 1;
+    prompt.reset(prefix, command, activeTextView()->__cursorX,
+                 activeTextView()->__cursorY);
+    activeTextView()->__cursorX =
+        prompt.prefix.size() + prompt.message.size() + 1;
+    activeTextView()->__cursorY = terminalRows() - 1;
   }
 
   void finalizeAndClosePrompt() {
@@ -1055,11 +1085,11 @@ struct Editor {
 
     switch (prompt.command) {
       case PromptCommand::SaveFileAs:
-        config.fileName = optional<string>(prompt.message);
+        activeTextView()->fileName = optional<string>(prompt.message);
         saveFile();
         break;
       case PromptCommand::OpenFile:
-        config.fileName = optional<string>(prompt.message);
+        activeTextView()->fileName = optional<string>(prompt.message);
         loadFile();
         break;
       case PromptCommand::MultiPurpose:
@@ -1075,10 +1105,10 @@ struct Editor {
 
   void closePrompt() {
     mode = EditorMode::TextEdit;
-    __cursorX = prompt.previousCursorX;
-    __cursorY = prompt.previousCursorY;
+    activeTextView()->__cursorX = prompt.previousCursorX;
+    activeTextView()->__cursorY = prompt.previousCursorY;
 
-    DLOG("prompt close cx: %d", __cursorX);
+    DLOG("prompt close cx: %d", activeTextView()->__cursorX);
   }
 
   void executeMultiPurposeCommand(string& raw) {
@@ -1111,7 +1141,7 @@ struct Editor {
         searchTerm = term;
       }
     } else if (topCommand == "close" || topCommand == "c") {
-      config.fileName = nullopt;
+      activeTextView()->fileName = nullopt;
       loadFile();
     } else {
       DLOG("Top command <%s> not recognized", topCommand.c_str());
@@ -1133,50 +1163,56 @@ struct Editor {
     }
 
     // Fix horizontal scroll.
-    if (horizontalScroll > newCol) {
-      horizontalScroll = newCol;
-    } else if (horizontalScroll + textAreaCols() < newCol) {
-      horizontalScroll = newCol - textAreaCols() + 1;
+    if (activeTextView()->horizontalScroll > newCol) {
+      activeTextView()->horizontalScroll = newCol;
+    } else if (activeTextView()->horizontalScroll + textAreaCols() < newCol) {
+      activeTextView()->horizontalScroll = newCol - textAreaCols() + 1;
     }
 
-    setTextAreaCursorX(newCol - horizontalScroll);
+    setTextAreaCursorX(newCol - activeTextView()->horizontalScroll);
   }
 
   void updateMargins() {
-    int newLeftMargin = ceil(log10(lines.size() + 1)) + 1;
-    __cursorX += newLeftMargin - leftMargin;
+    int newLeftMargin = ceil(log10(activeTextView()->lines.size() + 1)) + 1;
+    activeTextView()->__cursorX += newLeftMargin - leftMargin;
     leftMargin = newLeftMargin;
   }
 
   bool hasActiveSelection() {
-    return selectionStart.has_value() && selectionEnd.has_value();
+    return activeTextView()->selectionStart.has_value() &&
+           activeTextView()->selectionEnd.has_value();
   }
   void toggleSelection() {
     hasActiveSelection() ? endSelection() : startSelectionInCurrentPosition();
   }
   void startSelectionInCurrentPosition() {
-    selectionStart = optional<SelectionEdge>({currentRow(), currentCol()});
+    activeTextView()->selectionStart =
+        optional<SelectionEdge>({currentRow(), currentCol()});
     endSelectionUpdatePositionToCurrent();
   }
   void endSelectionUpdatePositionToCurrent() {
-    selectionEnd = optional<SelectionEdge>({currentRow(), currentCol()});
+    activeTextView()->selectionEnd =
+        optional<SelectionEdge>({currentRow(), currentCol()});
   }
   bool isPositionInSelection(int row, int col) {
     if (!hasActiveSelection()) return false;
 
-    if (row < selectionStart.value().row) return false;
-    if (row == selectionStart.value().row && col < selectionStart.value().col)
+    if (row < activeTextView()->selectionStart.value().row) return false;
+    if (row == activeTextView()->selectionStart.value().row &&
+        col < activeTextView()->selectionStart.value().col)
       return false;
-    if (row == selectionEnd.value().row && col > selectionEnd.value().col)
+    if (row == activeTextView()->selectionEnd.value().row &&
+        col > activeTextView()->selectionEnd.value().col)
       return false;
-    if (row > selectionEnd.value().row) return false;
+    if (row > activeTextView()->selectionEnd.value().row) return false;
 
     return true;
   }
   optional<pair<int, int>> lineSelectionRange(int row) {
     if (!hasActiveSelection()) return nullopt;
 
-    SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+    SelectionRange selection{activeTextView()->selectionStart.value(),
+                             activeTextView()->selectionEnd.value()};
 
     if (row < selection.startRow) return nullopt;
     if (row > selection.endRow) return nullopt;
@@ -1193,13 +1229,13 @@ struct Editor {
     if (row == selection.endRow) {
       end = selection.endCol;
     } else {
-      end = lines[row].size();
+      end = activeTextView()->lines[row].size();
     }
 
     return pair<int, int>({start, end});
   }
   void endSelection() {
-    selectionStart = nullopt;
-    selectionEnd = nullopt;
+    activeTextView()->selectionStart = nullopt;
+    activeTextView()->selectionEnd = nullopt;
   }
 };
