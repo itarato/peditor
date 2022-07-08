@@ -43,16 +43,14 @@ struct Prompt {
   string prefix{};
   PromptCommand command{PromptCommand::Nothing};
   string message{};
-  int previousCursorX{0};
-  int previousCursorY{0};
+  Point previousCursor{};
 
-  void reset(string newPrefix, PromptCommand newCommand, int newPreviousCursorX,
-             int newPreviousCursorY) {
+  void reset(string newPrefix, PromptCommand newCommand,
+             Point newPreviousCursor) {
     prefix = newPrefix;
     message.clear();
     command = newCommand;
-    previousCursorX = newPreviousCursorX;
-    previousCursorY = newPreviousCursorY;
+    previousCursor = newPreviousCursor;
   }
 };
 
@@ -520,8 +518,8 @@ struct Editor {
   void contextAdjustEditorCursor() {
     switch (mode) {
       case EditorMode::TextEdit:
-        cursor.x = activeTextView()->textAreaCursorX() + leftMargin;
-        cursor.y = activeTextView()->textAreaCursorY();
+        cursor.x = activeTextView()->cursor.x + leftMargin;
+        cursor.y = activeTextView()->cursor.y;
         break;
       case EditorMode::Prompt:
         // Keep as is.
@@ -570,8 +568,8 @@ struct Editor {
         activeTextView()->fileName.value_or("<no file>").c_str(),
         (activeTextView()->isDirty ? " \x1b[94m(edited)\x1b[39m" : ""),
         activeTextView()->cols, activeTextView()->rows,
-        activeTextView()->textAreaCursorX(),
-        activeTextView()->textAreaCursorY(), rowPosPercentage);
+        activeTextView()->cursor.x, activeTextView()->cursor.y,
+        rowPosPercentage);
 
     out.append(buf);
 
@@ -591,8 +589,7 @@ struct Editor {
 
   void openPrompt(string prefix, PromptCommand command) {
     mode = EditorMode::Prompt;
-    prompt.reset(prefix, command, activeTextView()->cursor.x,
-                 activeTextView()->cursor.y);
+    prompt.reset(prefix, command, activeTextView()->cursor);
     cursor.x = prompt.prefix.size() + prompt.message.size() + 1;
     cursor.y = terminalRows() - 1;
   }
@@ -622,8 +619,7 @@ struct Editor {
 
   void closePrompt() {
     mode = EditorMode::TextEdit;
-    activeTextView()->setTextAreaCursorX(prompt.previousCursorX);
-    activeTextView()->setTextAreaCursorY(prompt.previousCursorY);
+    activeTextView()->cursor = prompt.previousCursor;
   }
 
   void executeMultiPurposeCommand(string& raw) {

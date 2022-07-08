@@ -173,7 +173,7 @@ struct TextView {
 
     if (currentCol() < 0) {
       cursor.y--;
-      if (onLineRow()) setTextAreaCursorX(currentLine().size());
+      if (onLineRow()) cursor.x = currentLine().size();
     }
 
     fixCursorPos();
@@ -187,7 +187,7 @@ struct TextView {
 
     if (currentCol() > currentLineSize()) {
       cursor.y++;
-      if (onLineRow()) setTextAreaCursorX(0);
+      if (onLineRow()) cursor.x = 0;
     }
 
     fixCursorPos();
@@ -225,7 +225,7 @@ struct TextView {
   }
 
   void cursorTo(int row, int col) {
-    setTextAreaCursorX(col);
+    cursor.x = col;
     cursor.y += row - currentRow();
 
     fixCursorPos();
@@ -263,19 +263,19 @@ struct TextView {
     // Fix vertical scroll.
     if (cursor.y < 0) {
       verticalScroll = currentRow();
-      setTextAreaCursorY(0);
-    } else if (textAreaCursorY() >= rows) {
+      cursor.y = 0;
+    } else if (cursor.y >= rows) {
       verticalScroll = currentRow() - rows + 1;
-      setTextAreaCursorY(rows - 1);
+      cursor.y = rows - 1;
     }
 
     // Fix horizontal scroll.
-    if (textAreaCursorX() < 0) {
+    if (cursor.x < 0) {
       horizontalScroll = currentCol();
-      setTextAreaCursorX(0);
-    } else if (textAreaCursorX() >= cols) {
+      cursor.x = 0;
+    } else if (cursor.x >= cols) {
       horizontalScroll = currentCol() - cols + 1;
-      setTextAreaCursorX(cols - 1);
+      cursor.x = cols - 1;
     }
   }
 
@@ -284,7 +284,7 @@ struct TextView {
   inline int nextRow() { return verticalScroll + cursor.y + 1; }
 
   // Text area related -> TODO: rename
-  inline int currentCol() { return horizontalScroll + textAreaCursorX(); }
+  inline int currentCol() { return horizontalScroll + cursor.x; }
 
   void setCol(int newCol) {
     // Fix line position first.
@@ -301,7 +301,7 @@ struct TextView {
       horizontalScroll = newCol - cols + 1;
     }
 
-    setTextAreaCursorX(newCol - horizontalScroll);
+    cursor.x = newCol - horizontalScroll;
   }
 
   inline string& currentLine() { return lines[currentRow()]; }
@@ -309,8 +309,8 @@ struct TextView {
   inline string& nextLine() { return lines[nextRow()]; }
   inline int currentLineSize() { return currentLine().size(); }
 
-  inline void restoreXMemory() { setTextAreaCursorX(xMemory); }
-  inline void saveXMemory() { xMemory = textAreaCursorX(); }
+  inline void restoreXMemory() { cursor.x = xMemory; }
+  inline void saveXMemory() { xMemory = cursor.x; }
 
   inline bool isEndOfCurrentLine() { return currentCol() >= currentLineSize(); }
   inline bool isBeginningOfCurrentLine() { return currentCol() <= 0; }
@@ -643,22 +643,4 @@ struct TextView {
   }
 
   // END SELECTIONS
-
-  inline int textAreaCursorX() { return cursor.x; }
-  inline int textAreaCursorY() { return cursor.y; }
-  // inline void setTextAreaCursorX(int newTextAreaCursor) {
-  //   cursor.x = newTextAreaCursor + leftMargin;
-  // }
-  // inline void setTextAreaCursorY(int newTextAreaCursor) {
-  //   // There is no top margin currently;
-  //   cursor.y = newTextAreaCursor;
-  // }
-  // TODO: DELETE
-  inline void setTextAreaCursorX(int newTextAreaCursor) {
-    cursor.x = newTextAreaCursor;
-  }
-  inline void setTextAreaCursorY(int newTextAreaCursor) {
-    // There is no top margin currently;
-    cursor.y = newTextAreaCursor;
-  }
 };
