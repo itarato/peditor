@@ -32,6 +32,10 @@ enum class CommandType {
   // Merge 2 lines to 1
   // Memory: split point
   MergeLine,
+
+  // Swap 2 lines
+  // Memory: indices
+  SwapLine,
 };
 
 struct Command {
@@ -42,27 +46,20 @@ struct Command {
 
   string memoryStr{};
   char memoryChr{'\0'};
-  bool isMemoryChar{true};
+
+  Command(CommandType type, int row) : type(type), row(row) {}
 
   Command(CommandType type, int row, int col)
       : type(type), row(row), col(col) {}
 
   Command(CommandType type, int row, int col, string memoryStr)
-      : type(type),
-        row(row),
-        col(col),
-        memoryStr(memoryStr),
-        isMemoryChar(false) {}
+      : type(type), row(row), col(col), memoryStr(memoryStr) {}
 
   Command(CommandType type, int row, string memoryStr)
-      : type(type), row(row), memoryStr(memoryStr), isMemoryChar(false) {}
+      : type(type), row(row), memoryStr(memoryStr) {}
 
   Command(CommandType type, int row, int col, char memoryChr)
-      : type(type),
-        row(row),
-        col(col),
-        memoryChr(memoryChr),
-        isMemoryChar(true) {}
+      : type(type), row(row), col(col), memoryChr(memoryChr) {}
 
   static inline Command makeInsertChar(int row, int col, char c) {
     return Command(CommandType::InsertChar, row, col, c);
@@ -90,5 +87,9 @@ struct Command {
 
   static inline Command makeInsertSlice(int row, int col, string memory) {
     return Command(CommandType::InsertSlice, row, col, memory);
+  }
+
+  static inline Command makeSwapLine(int row) {
+    return Command(CommandType::SwapLine, row);
   }
 };

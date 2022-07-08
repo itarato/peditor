@@ -545,9 +545,7 @@ struct Editor {
       int selectionLen =
           selectionEnd.value().row - selectionStart.value().row + 1;
 
-      auto currentIt = lines.begin();
-      advance(currentIt, selectionStart.value().row);
-      lineMoveForward(&currentIt, selectionLen);
+      lineMoveForward(selectionStart.value().row, selectionLen);
 
       selectionStart = {selectionStart.value().row + 1,
                         selectionStart.value().col};
@@ -555,17 +553,15 @@ struct Editor {
     } else {
       if (currentRow() >= (int)lines.size() - 1) return;
 
-      auto currentIt = lines.begin();
-      advance(currentIt, currentRow());
-      lineMoveForward(&currentIt, 1);
+      lineMoveForward(currentRow(), 1);
     }
 
     cursorTo(nextRow(), currentCol());
   }
 
-  void lineMoveForward(vector<string>::iterator* it, int lineCount) {
+  void lineMoveForward(int lineNo, int lineCount) {
     for (int offs = lineCount - 1; offs >= 0; offs--) {
-      iter_swap(*it + offs, *it + offs + 1);
+      execCommand(Command::makeSwapLine(lineNo + offs));
     }
   }
 
@@ -576,9 +572,7 @@ struct Editor {
       int selectionLen =
           selectionEnd.value().row - selectionStart.value().row + 1;
 
-      auto currentIt = lines.begin();
-      advance(currentIt, selectionStart.value().row);
-      lineMoveBackward(&currentIt, selectionLen);
+      lineMoveBackward(selectionStart.value().row, selectionLen);
 
       selectionStart = {selectionStart.value().row - 1,
                         selectionStart.value().col};
@@ -586,17 +580,15 @@ struct Editor {
     } else {
       if (currentRow() <= 0) return;
 
-      auto currentIt = lines.begin();
-      advance(currentIt, currentRow());
-      lineMoveBackward(&currentIt, 1);
+      lineMoveBackward(currentRow(), 1);
     }
 
     cursorTo(previousRow(), currentCol());
   }
 
-  void lineMoveBackward(vector<string>::iterator* it, int lineCount) {
+  void lineMoveBackward(int lineNo, int lineCount) {
     for (int offs = 0; offs < lineCount; offs++) {
-      iter_swap(*it + offs - 1, *it + offs);
+      execCommand(Command::makeSwapLine(lineNo + offs - 1));
     }
   }
 

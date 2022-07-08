@@ -41,6 +41,10 @@ void execute(Command *cmd, vector<string> *lines) {
     lines->insert(lineIt, newLine);
   } else if (cmd->type == CommandType::InsertSlice) {
     lines->at(cmd->row).insert(cmd->col, cmd->memoryStr);
+  } else if (cmd->type == CommandType::SwapLine) {
+    auto lineIt = lines->begin();
+    advance(lineIt, cmd->row);
+    iter_swap(lineIt, lineIt + 1);
   } else {
     reportAndExit("Unknown command.");
   }
@@ -77,6 +81,10 @@ void reverse(Command *cmd, vector<string> *lines) {
     lines->erase(lineIt);
   } else if (cmd->type == CommandType::InsertSlice) {
     lines->at(cmd->row).erase(cmd->col, cmd->memoryStr.size());
+  } else if (cmd->type == CommandType::SwapLine) {
+    auto lineIt = lines->begin();
+    advance(lineIt, cmd->row);
+    iter_swap(lineIt, lineIt + 1);
   } else {
     reportAndExit("Unknown revert command.");
   }
