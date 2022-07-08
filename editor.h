@@ -605,7 +605,7 @@ struct Editor {
       SelectionRange selection{selectionStart.value(), selectionEnd.value()};
       vector<LineSelection> lineSelections = selection.lineSelections();
       for (auto& sel : lineSelections) {
-        lineIndentRight(&lines[sel.lineNo]);
+        lineIndentRight(sel.lineNo);
       }
 
       selectionStart = {selectionStart.value().row,
@@ -613,16 +613,16 @@ struct Editor {
       selectionEnd = {selectionEnd.value().row,
                       selectionEnd.value().col + config.tabSize};
     } else {
-      lineIndentRight(&currentLine());
+      lineIndentRight(currentRow());
     }
 
     setCol(currentCol() + config.tabSize);
     saveXMemory();
   }
 
-  void lineIndentRight(string* line) {
+  void lineIndentRight(int lineNo) {
     string indent(config.tabSize, ' ');
-    line->insert(0, indent);
+    execCommand(Command::makeInsertSlice(lineNo, 0, indent));
   }
 
   void lineIndentLeft() {
@@ -630,7 +630,7 @@ struct Editor {
       SelectionRange selection{selectionStart.value(), selectionEnd.value()};
       vector<LineSelection> lineSelections = selection.lineSelections();
       for (auto& sel : lineSelections) {
-        int tabsRemoved = lineIndentLeft(&lines[sel.lineNo]);
+        int tabsRemoved = lineIndentLeft(sel.lineNo);
 
         if (sel.lineNo == currentRow()) setCol(currentCol() - tabsRemoved);
 
@@ -646,20 +646,24 @@ struct Editor {
       }
 
     } else {
-      int tabsRemoved = lineIndentLeft(&currentLine());
+      int tabsRemoved = lineIndentLeft(currentRow());
       setCol(currentCol() - tabsRemoved);
     }
 
     saveXMemory();
   }
 
-  int lineIndentLeft(string* line) {
-    auto it = find_if(line->begin(), line->end(),
-                      [](auto& c) { return !isspace(c); });
-    int leadingTabLen = distance(line->begin(), it);
+  int lineIndentLeft(int lineNo) {
+    auto& line = lines[lineNo];
+    auto it =
+        find_if(line.begin(), line.end(), [](auto& c) { return !isspace(c); });
+    int leadingTabLen = distance(line.begin(), it);
     int tabsRemoved = min(leadingTabLen, config.tabSize);
 
-    if (tabsRemoved != 0) line->erase(0, tabsRemoved);
+    if (tabsRemoved != 0) {
+      string indent(tabsRemoved, ' ');
+      execCommand(Command::makeDeleteSlice(lineNo, 0, indent));
+    }
 
     return tabsRemoved;
   }

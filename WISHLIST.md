@@ -1,6 +1,4 @@
 Normal:
-- line indent (left / right)
-- selection moves (left right up down)
 - help
 - visual feedback / popup
 
