@@ -43,6 +43,7 @@ Editor management:
         - Next find: `CTRL` + `n`
         - Previous find: `CTRL` + `b`
     - Search end: `search`
+    - Close file: `close`
 
 Text editing:
 

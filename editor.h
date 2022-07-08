@@ -106,29 +106,29 @@ struct Editor {
   }
 
   void loadFile() {
-    if (!config.fileName.has_value()) {
-      DLOG("Cannot load file - config does not have any.");
-      return;
-    }
+    lines.clear();
 
-    DLOG("Loading file: %s", config.fileName.value().c_str());
+    if (config.fileName.has_value()) {
+      DLOG("Loading file: %s", config.fileName.value().c_str());
 
-    ifstream f(config.fileName.value());
+      ifstream f(config.fileName.value());
 
-    if (!f.is_open()) {
-      DLOG("File %s does not exists. Creating one.",
-           config.fileName.value().c_str());
-      f.open("a");
-    } else {
-      lines.clear();
-      for (string line; getline(f, line);) {
-        lines.emplace_back(line);
+      if (!f.is_open()) {
+        DLOG("File %s does not exists. Creating one.",
+             config.fileName.value().c_str());
+        f.open("a");
+      } else {
+        for (string line; getline(f, line);) {
+          lines.emplace_back(line);
+        }
       }
+
+      f.close();
+
+      fileWatcher.watch(config.fileName.value());
+    } else {
+      DLOG("Cannot load file - config does not have any.");
     }
-
-    f.close();
-
-    fileWatcher.watch(config.fileName.value());
 
     config.reloadKeywordList();
     if (lines.empty()) lines.emplace_back("");
@@ -1110,6 +1110,9 @@ struct Editor {
       } else {
         searchTerm = term;
       }
+    } else if (topCommand == "close" || topCommand == "c") {
+      config.fileName = nullopt;
+      loadFile();
     } else {
       DLOG("Top command <%s> not recognized", topCommand.c_str());
     }

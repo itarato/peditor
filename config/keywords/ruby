@@ -39,3 +39,4 @@ until
 when
 while
 yield
+loop
