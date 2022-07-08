@@ -119,6 +119,11 @@ struct SelectionRange {
   }
 };
 
+struct Point {
+  int x{-1};
+  int y{-1};
+};
+
 struct SyntaxColorInfo {
   int pos;
   const char *code;
