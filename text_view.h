@@ -28,7 +28,7 @@ struct TextView {
   int horizontalScroll{0};
   int xMemory{0};
 
-  optional<string> fileName{nullopt};
+  optional<string> filePath{nullopt};
   unordered_set<string> keywords{};
 
   vector<string> lines{};
@@ -39,41 +39,24 @@ struct TextView {
   deque<Command> undos{};
   deque<Command> redos{};
 
-  int cols;
-  int rows;
+  int cols{-1};
+  int rows{-1};
+
+  TextView(int cols, int rows) : cols(cols), rows(rows) {
+    DLOG("def ctor %d %d", cursor.x, cursor.y);
+  }
 
   bool isDirty{false};
-
-  void saveFile() {
-    DLOG("Save file: %s", fileName.value().c_str());
-    ofstream f(fileName.value(), ios::out | ios::trunc);
-
-    for (int i = 0; i < (int)lines.size(); i++) {
-      f << lines[i];
-
-      if (i < (int)lines.size()) {
-        f << endl;
-      }
-    }
-
-    f.close();
-
-    isDirty = false;
-  }
-
-  void setFileName(string newFileName) {
-    fileName = optional<string>(newFileName);
-  }
 
   void reloadKeywordList() {
     keywords.clear();
 
-    if (!fileName.has_value()) {
+    if (!filePath.has_value()) {
       DLOG("No file, cannot load keyword list.");
       return;
     }
 
-    auto ext = filesystem::path(fileName.value()).extension();
+    auto ext = filesystem::path(filePath.value()).extension();
     auto it =
         find_if(fileTypeAssociationMap.begin(), fileTypeAssociationMap.end(),
                 [&](auto& kv) { return kv.first == ext; });
@@ -228,7 +211,10 @@ struct TextView {
     cursor.x = col;
     cursor.y += row - currentRow();
 
+    DLOG("Cursor A: %d %d", cursor.x, cursor.y);
+
     fixCursorPos();
+    DLOG("Cursor B: %d %d", cursor.x, cursor.y);
   }
 
   void cursorHome() {
@@ -582,6 +568,74 @@ struct TextView {
   }
 
   // END INSERTIONS
+
+  /***
+   * FILE OPS
+   */
+
+  void reloadContent() {
+    lines.clear();
+
+    if (filePath.has_value()) {
+      DLOG("Loading file: %s", filePath.value().c_str());
+
+      ifstream f(filePath.value());
+
+      if (!f.is_open()) {
+        DLOG("File %s does not exists. Creating one.",
+             filePath.value().c_str());
+        f.open("a");
+      } else {
+        for (string line; getline(f, line);) {
+          lines.emplace_back(line);
+        }
+      }
+
+      f.close();
+    } else {
+      DLOG("Cannot load file - config does not have any.");
+    }
+
+    reloadKeywordList();
+    if (lines.empty()) lines.emplace_back("");
+    cursorTo(0, 0);
+  }
+
+  void saveFile() {
+    DLOG("Save file: %s", filePath.value().c_str());
+    ofstream f(filePath.value(), ios::out | ios::trunc);
+
+    for (int i = 0; i < (int)lines.size(); i++) {
+      f << lines[i];
+
+      if (i < (int)lines.size()) {
+        f << endl;
+      }
+    }
+
+    f.close();
+
+    isDirty = false;
+  }
+
+  void setFileName(string newFileName) {
+    filePath = optional<string>(newFileName);
+  }
+
+  void closeFile() {
+    filePath = nullopt;
+    reloadContent();
+  }
+
+  optional<string> fileName() const {
+    if (filePath.has_value()) {
+      return filesystem::path(filePath.value()).filename();
+    } else {
+      return nullopt;
+    }
+  }
+
+  // END FILE OPS
 
   /***
    * SELECTIONS

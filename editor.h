@@ -59,6 +59,7 @@ struct Editor {
 
   int leftMargin{0};
   int bottomMargin{1};
+  int topMargin{0};
 
   Point cursor{};
 
@@ -77,62 +78,37 @@ struct Editor {
   optional<string> searchTerm{nullopt};
 
   vector<TextView> textViews{};
+  int currentTextViewIdx{0};
 
   Editor(Config config) : config(config) {}
 
   void init() {
-    textViews.emplace_back();
+    textViews.emplace_back(textViewCols(), textViewRows());
 
     preserveTermiosOriginalState();
     enableRawMode();
     refreshTerminalDimension();
 
-    // To have a non zero content to begin with.
-    activeTextView()->lines.emplace_back("");
-
-    loadFile();
+    activeTextView()->reloadContent();
   }
 
-  inline TextView* activeTextView() { return &(textViews[0]); }
-
-  void loadFile() {
-    activeTextView()->lines.clear();
-
-    if (activeTextView()->fileName.has_value()) {
-      DLOG("Loading file: %s", activeTextView()->fileName.value().c_str());
-
-      ifstream f(activeTextView()->fileName.value());
-
-      if (!f.is_open()) {
-        DLOG("File %s does not exists. Creating one.",
-             activeTextView()->fileName.value().c_str());
-        f.open("a");
-      } else {
-        for (string line; getline(f, line);) {
-          activeTextView()->lines.emplace_back(line);
-        }
-      }
-
-      f.close();
-
-      fileWatcher.watch(activeTextView()->fileName.value());
-    } else {
-      DLOG("Cannot load file - config does not have any.");
-    }
-
-    activeTextView()->reloadKeywordList();
-    if (activeTextView()->lines.empty())
-      activeTextView()->lines.emplace_back("");
-    activeTextView()->cursorTo(0, 0);
-  }
+  inline TextView* activeTextView() { return &(textViews[currentTextViewIdx]); }
 
   void saveFile() {
-    if (activeTextView()->fileName.has_value()) {
+    if (activeTextView()->filePath.has_value()) {
       activeTextView()->saveFile();
       fileWatcher.ignoreEventCycle();
     } else {
       openPrompt("New file needs a name > ", PromptCommand::SaveFileAs);
     }
+  }
+
+  void loadFile(string filePath) {
+    if (filePath.empty()) return;
+
+    activeTextView()->setFileName(filePath);
+    activeTextView()->reloadContent();
+    fileWatcher.watch(filePath);
   }
 
   void runLoop() {
@@ -456,6 +432,8 @@ struct Editor {
   void drawLines(string& out) {
     resetCursorLocation(out);
 
+    if (textViews.size() > 1) out.append(generateTextViewsTabsLine());
+
     SyntaxHighlightConfig syntaxHighlightConfig{&activeTextView()->keywords};
     TokenAnalyzer ta{syntaxHighlightConfig};
 
@@ -519,7 +497,7 @@ struct Editor {
     switch (mode) {
       case EditorMode::TextEdit:
         cursor.x = activeTextView()->cursor.x + leftMargin;
-        cursor.y = activeTextView()->cursor.y;
+        cursor.y = activeTextView()->cursor.y + topMargin;
         break;
       case EditorMode::Prompt:
         // Keep as is.
@@ -551,8 +529,16 @@ struct Editor {
 
   void refreshTerminalDimension() {
     terminalDimension = getTerminalDimension();
-    activeTextView()->rows = terminalDimension.first - bottomMargin;
-    activeTextView()->cols = terminalDimension.second - leftMargin;
+    activeTextView()->rows = textViewRows();
+    activeTextView()->cols = textViewCols();
+  }
+
+  inline int textViewRows() const {
+    return terminalDimension.first - bottomMargin - topMargin;
+  }
+
+  inline int textViewCols() const {
+    return terminalDimension.second - leftMargin;
   }
 
   string generateStatusLine() {
@@ -565,7 +551,7 @@ struct Editor {
     sprintf(
         buf,
         " pEditor v0 | File: %s%s | Textarea: %dx%d | Cursor: %dx %dy | %d%%",
-        activeTextView()->fileName.value_or("<no file>").c_str(),
+        activeTextView()->filePath.value_or("<no file>").c_str(),
         (activeTextView()->isDirty ? " \x1b[94m(edited)\x1b[39m" : ""),
         activeTextView()->cols, activeTextView()->rows,
         activeTextView()->cursor.x, activeTextView()->cursor.y,
@@ -587,6 +573,46 @@ struct Editor {
     return out;
   }
 
+  string generateTextViewsTabsLine() {
+    string out{};
+
+    int maxTitleSize = terminalCols() / textViews.size();
+
+    out.append("\x1b[7m\x1b[90m");
+
+    if (maxTitleSize < 5) {
+      // TODO add proper
+      out.append("-");
+    } else {
+      for (int i = 0; i < (int)textViews.size(); i++) {
+        if (i == currentTextViewIdx) {
+          out.append("\x1b[39m ");
+        } else {
+          out.append("\x1b[90m ");
+        }
+        // TODO only use filename part
+        out.append(textViews[i]
+                       .fileName()
+                       .value_or("<no file>")
+                       .substr(0, maxTitleSize - 3));
+
+        if (i < (int)textViews.size() - 1) {
+          out.append(" \x1b[90m:");
+        } else {
+          out.append(" \x1b[90m");
+        }
+      }
+    }
+
+    string suffix(terminalCols() - visibleCharCount(out), ' ');
+    out.append(suffix);
+
+    out.append("\x1b[0m");
+    out.append("\n\r");
+
+    return out;
+  }
+
   void openPrompt(string prefix, PromptCommand command) {
     mode = EditorMode::Prompt;
     prompt.reset(prefix, command, activeTextView()->cursor);
@@ -599,12 +625,11 @@ struct Editor {
 
     switch (prompt.command) {
       case PromptCommand::SaveFileAs:
-        activeTextView()->fileName = optional<string>(prompt.message);
+        activeTextView()->filePath = optional<string>(prompt.message);
         saveFile();
         break;
       case PromptCommand::OpenFile:
-        activeTextView()->fileName = optional<string>(prompt.message);
-        loadFile();
+        loadFile(prompt.message);
         break;
       case PromptCommand::MultiPurpose:
         executeMultiPurposeCommand(prompt.message);
@@ -652,8 +677,33 @@ struct Editor {
         searchTerm = term;
       }
     } else if (topCommand == "close" || topCommand == "c") {
-      activeTextView()->fileName = nullopt;
-      loadFile();
+      activeTextView()->closeFile();
+    } else if (topCommand == "new" || topCommand == "n") {
+      textViews.emplace_back(textViewCols(), textViewRows());
+      currentTextViewIdx = textViews.size() - 1;
+
+      DLOG("New window 1: %d %d", activeTextView()->cursor.x,
+           activeTextView()->cursor.y);
+
+      DLOG("IDX: %d", currentTextViewIdx);
+
+      string filePath;
+      iss >> filePath;
+
+      DLOG("New window2: %d %d", activeTextView()->cursor.x,
+           activeTextView()->cursor.y);
+      if (!filePath.empty()) {
+        loadFile(filePath);
+      } else {
+        activeTextView()->reloadContent();
+      }
+      DLOG("New window3: %d %d", activeTextView()->cursor.x,
+           activeTextView()->cursor.y);
+    } else if (topCommand == "view" || "v") {
+      int idx;
+      iss >> idx;
+
+      currentTextViewIdx = idx % textViews.size();
     } else {
       DLOG("Top command <%s> not recognized", topCommand.c_str());
     }
@@ -662,10 +712,11 @@ struct Editor {
   void executeFileHasBeenModifiedPrompt(string& cmd) {
     if (cmd != "r") return;
 
-    loadFile();
+    activeTextView()->reloadContent();
   }
 
   inline void updateMargins() {
     leftMargin = max(1, (int)ceil(log10(activeTextView()->lines.size()))) + 1;
+    topMargin = textViews.size() > 1 ? 1 : 0;
   }
 };

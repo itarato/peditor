@@ -36,10 +36,7 @@ int main(int argc, char** argv) {
 
   editor.init();
 
-  if (argc == 2) {
-    editor.activeTextView()->setFileName(argv[1]);
-    editor.loadFile();
-  }
+  if (argc == 2) editor.loadFile(argv[1]);
 
   initTerminalWindowChangeWatch();
 
