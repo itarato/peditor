@@ -143,6 +143,7 @@ enum class EscapeChar {
   CtrlDown,
   CtrlLeft,
   CtrlRight,
+  // Not cross platform / terminal safe.
   // ShiftUp,
   // ShiftDown,
   // ShiftLeft,
@@ -156,6 +157,17 @@ enum class EscapeChar {
   AltGT,
   AltShiftLT,
   AltShiftGT,
+  AltN,
+  Alt0,
+  Alt1,
+  Alt2,
+  Alt3,
+  Alt4,
+  Alt5,
+  Alt6,
+  Alt7,
+  Alt8,
+  Alt9,
 };
 
 struct TypedChar {

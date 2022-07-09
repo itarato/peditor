@@ -111,6 +111,10 @@ struct Editor {
     fileWatcher.watch(filePath);
   }
 
+  void changeActiveView(int idx) {
+    currentTextViewIdx = idx % textViews.size();
+  }
+
   void runLoop() {
     TypedChar tc;
 
@@ -256,6 +260,39 @@ struct Editor {
           break;
         case EscapeChar::AltShiftGT:
           activeTextView()->lineIndentRight(config.tabSize);
+          break;
+        case EscapeChar::AltN:
+          newTextView();
+          break;
+        case EscapeChar::Alt0:
+          changeActiveView(0);
+          break;
+        case EscapeChar::Alt1:
+          changeActiveView(1);
+          break;
+        case EscapeChar::Alt2:
+          changeActiveView(2);
+          break;
+        case EscapeChar::Alt3:
+          changeActiveView(3);
+          break;
+        case EscapeChar::Alt4:
+          changeActiveView(4);
+          break;
+        case EscapeChar::Alt5:
+          changeActiveView(5);
+          break;
+        case EscapeChar::Alt6:
+          changeActiveView(6);
+          break;
+        case EscapeChar::Alt7:
+          changeActiveView(7);
+          break;
+        case EscapeChar::Alt8:
+          changeActiveView(8);
+          break;
+        case EscapeChar::Alt9:
+          changeActiveView(9);
           break;
       }
     }
@@ -679,26 +716,11 @@ struct Editor {
     } else if (topCommand == "close" || topCommand == "c") {
       activeTextView()->closeFile();
     } else if (topCommand == "new" || topCommand == "n") {
-      textViews.emplace_back(textViewCols(), textViewRows());
-      currentTextViewIdx = textViews.size() - 1;
-
-      DLOG("New window 1: %d %d", activeTextView()->cursor.x,
-           activeTextView()->cursor.y);
-
-      DLOG("IDX: %d", currentTextViewIdx);
+      newTextView();
 
       string filePath;
       iss >> filePath;
-
-      DLOG("New window2: %d %d", activeTextView()->cursor.x,
-           activeTextView()->cursor.y);
-      if (!filePath.empty()) {
-        loadFile(filePath);
-      } else {
-        activeTextView()->reloadContent();
-      }
-      DLOG("New window3: %d %d", activeTextView()->cursor.x,
-           activeTextView()->cursor.y);
+      if (!filePath.empty()) loadFile(filePath);
     } else if (topCommand == "view" || "v") {
       int idx;
       iss >> idx;
@@ -718,5 +740,11 @@ struct Editor {
   inline void updateMargins() {
     leftMargin = max(1, (int)ceil(log10(activeTextView()->lines.size()))) + 1;
     topMargin = textViews.size() > 1 ? 1 : 0;
+  }
+
+  void newTextView() {
+    textViews.emplace_back(textViewCols(), textViewRows());
+    currentTextViewIdx = textViews.size() - 1;
+    activeTextView()->reloadContent();
   }
 };

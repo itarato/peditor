@@ -47,6 +47,8 @@ Editor management:
     - New view: `new`
     - New view with file: `new <FILEPATH>`
     - Change view: `view <INDEX>`
+- New view: `ALT` + `n`
+- Change view: `ALT` + `0`..`9`
 
 Text editing:
 
