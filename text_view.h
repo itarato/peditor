@@ -11,6 +11,7 @@
 
 #include "command.h"
 #include "debug.h"
+#include "file_watcher.h"
 #include "utility.h"
 
 using namespace std;
@@ -38,6 +39,8 @@ struct TextView {
 
   deque<Command> undos{};
   deque<Command> redos{};
+
+  FileWatcher fileWatcher{};
 
   int cols{-1};
   int rows{-1};
@@ -616,10 +619,13 @@ struct TextView {
     f.close();
 
     isDirty = false;
+
+    fileWatcher.ignoreEventCycle();
   }
 
-  void setFileName(string newFileName) {
-    filePath = optional<string>(newFileName);
+  void setFileName(string newFilePath) {
+    filePath = optional<string>(newFilePath);
+    fileWatcher.watch(newFilePath);
   }
 
   void closeFile() {

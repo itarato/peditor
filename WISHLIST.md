@@ -16,3 +16,4 @@ Stupid:
 Bugfix:
 - line move (indent or up/down) with selection -> when undo, the selection is not undone
     - maybe history should have selection + cursor location
+- last empty line is ignored on load

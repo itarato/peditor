@@ -73,8 +73,6 @@ struct Editor {
 
   vector<string> internalClipboard{};
 
-  FileWatcher fileWatcher{};
-
   optional<string> searchTerm{nullopt};
 
   vector<TextView> textViews{};
@@ -97,7 +95,6 @@ struct Editor {
   void saveFile() {
     if (activeTextView()->filePath.has_value()) {
       activeTextView()->saveFile();
-      fileWatcher.ignoreEventCycle();
     } else {
       openPrompt("New file needs a name > ", PromptCommand::SaveFileAs);
     }
@@ -108,7 +105,6 @@ struct Editor {
 
     activeTextView()->setFileName(filePath);
     activeTextView()->reloadContent();
-    fileWatcher.watch(filePath);
   }
 
   void changeActiveView(int idx) {
@@ -123,7 +119,7 @@ struct Editor {
 
       refreshScreen();
 
-      if (fileWatcher.hasBeenModified()) {
+      if (activeTextView()->fileWatcher.hasBeenModified()) {
         openPrompt("File change detected, press (r) for reload > ",
                    PromptCommand::FileHasBeenModified);
         continue;
