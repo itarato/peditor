@@ -44,6 +44,9 @@ Editor management:
         - Previous find: `CTRL` + `b`
     - Search end: `search`
     - Close file: `close`
+    - New view: `new`
+    - New view with file: `new <FILEPATH>`
+    - Change view: `view <INDEX>`
 
 Text editing:
 
