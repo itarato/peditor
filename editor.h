@@ -143,156 +143,151 @@ struct Editor {
   }
 
   void executeTextEditInput(TypedChar tc) {
-    if (tc.is_simple()) {
-      switch (tc.simple()) {
-        case ctrlKey('q'):
-          requestQuit();
-          break;
-        case ctrlKey('s'):
-          saveFile();
-          break;
-        case ctrlKey('w'):
-          openPrompt("Safe file to > ", PromptCommand::SaveFileAs);
-          break;
-        case ctrlKey('o'):
-          openPrompt("Open file > ", PromptCommand::OpenFile);
-          break;
-        case ctrlKey('p'):
-          openPrompt("> ", PromptCommand::MultiPurpose);
-          break;
-        case ctrlKey('d'):
-          activeTextView()->deleteLine();
-          break;
-        case ctrlKey('z'):
-          activeTextView()->undo();
-          break;
-        case ctrlKey('r'):
-          activeTextView()->redo();
-          break;
-        case ctrlKey('c'):
-          copyClipboardInternal();
-          break;
-        case ctrlKey('v'):
-          pasteClipboardInternal();
-          break;
-        case ctrlKey('x'):
-          activeTextView()->toggleSelection();
-          break;
-        case ctrlKey('n'):
-          jumpToNextSearchHit();
-          break;
-        case ctrlKey('b'):
-          jumpToPrevSearchHit();
-          break;
-        case BACKSPACE:
-          activeTextView()->insertBackspace();
-          break;
-        case CTRL_BACKSPACE:
-          activeTextView()->insertCtrlBackspace();
-          break;
-        case ENTER:
-          activeTextView()->insertEnter();
-          break;
-        case TAB:
-          activeTextView()->insertTab(config.tabSize);
-          break;
-        default:
-          if (iscntrl(tc.simple())) {
-            DLOG("Unhandled simple ctrl char: %d", (u_int8_t)tc.simple());
-          } else {
-            activeTextView()->insertCharacter(tc.simple());
-          }
-          break;
-      }
-    } else if (tc.is_escape()) {
-      switch (tc.escape()) {
-        case EscapeChar::Down:
-          activeTextView()->cursorDown();
-          break;
-        case EscapeChar::Up:
-          activeTextView()->cursorUp();
-          break;
-        case EscapeChar::Left:
-          activeTextView()->cursorLeft();
-          break;
-        case EscapeChar::Right:
-          activeTextView()->cursorRight();
-          break;
-        case EscapeChar::Home:
-          activeTextView()->cursorHome();
-          break;
-        case EscapeChar::End:
-          activeTextView()->cursorEnd();
-          break;
-        case EscapeChar::PageUp:
-          activeTextView()->cursorPageUp();
-          break;
-        case EscapeChar::PageDown:
-          activeTextView()->cursorPageDown();
-          break;
-        case EscapeChar::CtrlLeft:
-          activeTextView()->cursorWordJumpLeft();
-          break;
-        case EscapeChar::CtrlRight:
-          activeTextView()->cursosWordJumpRight();
-          break;
-        case EscapeChar::CtrlUp:
-          activeTextView()->scrollUp();
-          break;
-        case EscapeChar::CtrlDown:
-          activeTextView()->scrollDown();
-          break;
-        case EscapeChar::Delete:
-          activeTextView()->insertDelete();
-          break;
-        case EscapeChar::AltLT:
-          activeTextView()->lineIndentLeft(config.tabSize);
-          break;
-        case EscapeChar::AltGT:
-          activeTextView()->lineIndentRight(config.tabSize);
-          break;
-        case EscapeChar::AltShiftLT:
-        case EscapeChar::AltMinus:
-          activeTextView()->lineMoveBackward();
-          break;
-        case EscapeChar::AltShiftGT:
-        case EscapeChar::AltEqual:
-          activeTextView()->lineMoveForward();
-          break;
-        case EscapeChar::AltN:
-          newTextView();
-          break;
-        case EscapeChar::Alt0:
-          changeActiveView(0);
-          break;
-        case EscapeChar::Alt1:
-          changeActiveView(1);
-          break;
-        case EscapeChar::Alt2:
-          changeActiveView(2);
-          break;
-        case EscapeChar::Alt3:
-          changeActiveView(3);
-          break;
-        case EscapeChar::Alt4:
-          changeActiveView(4);
-          break;
-        case EscapeChar::Alt5:
-          changeActiveView(5);
-          break;
-        case EscapeChar::Alt6:
-          changeActiveView(6);
-          break;
-        case EscapeChar::Alt7:
-          changeActiveView(7);
-          break;
-        case EscapeChar::Alt8:
-          changeActiveView(8);
-          break;
-        case EscapeChar::Alt9:
-          changeActiveView(9);
-          break;
-      }
+    TextEditorAction action = config.textEditorActionForKeystroke(tc);
+
+    switch (action) {
+      case TextEditorAction::Quit:
+        requestQuit();
+        break;
+      case TextEditorAction::SaveFile:
+        saveFile();
+        break;
+      case TextEditorAction::SaveFileAs:
+        openPrompt("Safe file to > ", PromptCommand::SaveFileAs);
+        break;
+      case TextEditorAction::OpenFile:
+        openPrompt("Open file > ", PromptCommand::OpenFile);
+        break;
+      case TextEditorAction::MultiPurposeCommand:
+        openPrompt("> ", PromptCommand::MultiPurpose);
+        break;
+      case TextEditorAction::DeleteLine:
+        activeTextView()->deleteLine();
+        break;
+      case TextEditorAction::Undo:
+        activeTextView()->undo();
+        break;
+      case TextEditorAction::Redo:
+        activeTextView()->redo();
+        break;
+      case TextEditorAction::Copy:
+        copyClipboardInternal();
+        break;
+      case TextEditorAction::Paste:
+        pasteClipboardInternal();
+        break;
+      case TextEditorAction::SelectionToggle:
+        activeTextView()->toggleSelection();
+        break;
+      case TextEditorAction::JumpNextSearchHit:
+        jumpToNextSearchHit();
+        break;
+      case TextEditorAction::JumpPrevSearchHit:
+        jumpToPrevSearchHit();
+        break;
+      case TextEditorAction::Backspace:
+        activeTextView()->insertBackspace();
+        break;
+      case TextEditorAction::WordBackspace:
+        activeTextView()->insertCtrlBackspace();
+        break;
+      case TextEditorAction::Enter:
+        activeTextView()->insertEnter();
+        break;
+      case TextEditorAction::Tab:
+        activeTextView()->insertTab(config.tabSize);
+        break;
+      case TextEditorAction::Type:
+        if (iscntrl(tc.simple())) {
+          DLOG("Unhandled simple ctrl char: %d", (u_int8_t)tc.simple());
+        } else {
+          activeTextView()->insertCharacter(tc.simple());
+        }
+        break;
+      case TextEditorAction::CursorDown:
+        activeTextView()->cursorDown();
+        break;
+      case TextEditorAction::CursorUp:
+        activeTextView()->cursorUp();
+        break;
+      case TextEditorAction::CursorLeft:
+        activeTextView()->cursorLeft();
+        break;
+      case TextEditorAction::CursorRight:
+        activeTextView()->cursorRight();
+        break;
+      case TextEditorAction::CursorHome:
+        activeTextView()->cursorHome();
+        break;
+      case TextEditorAction::CursorEnd:
+        activeTextView()->cursorEnd();
+        break;
+      case TextEditorAction::CursorPageUp:
+        activeTextView()->cursorPageUp();
+        break;
+      case TextEditorAction::CursorPageDown:
+        activeTextView()->cursorPageDown();
+        break;
+      case TextEditorAction::CursorWordJumpLeft:
+        activeTextView()->cursorWordJumpLeft();
+        break;
+      case TextEditorAction::CursosWordJumpRight:
+        activeTextView()->cursosWordJumpRight();
+        break;
+      case TextEditorAction::ScrollUp:
+        activeTextView()->scrollUp();
+        break;
+      case TextEditorAction::ScrollDown:
+        activeTextView()->scrollDown();
+        break;
+      case TextEditorAction::InsertDelete:
+        activeTextView()->insertDelete();
+        break;
+      case TextEditorAction::LineIndentLeft:
+        activeTextView()->lineIndentLeft(config.tabSize);
+        break;
+      case TextEditorAction::LineIndentRight:
+        activeTextView()->lineIndentRight(config.tabSize);
+        break;
+      case TextEditorAction::LineMoveBackward:
+        activeTextView()->lineMoveBackward();
+        break;
+      case TextEditorAction::LineMoveForward:
+        activeTextView()->lineMoveForward();
+        break;
+      case TextEditorAction::NewTextView:
+        newTextView();
+        break;
+      case TextEditorAction::ChangeActiveView0:
+        changeActiveView(0);
+        break;
+      case TextEditorAction::ChangeActiveView1:
+        changeActiveView(1);
+        break;
+      case TextEditorAction::ChangeActiveView2:
+        changeActiveView(2);
+        break;
+      case TextEditorAction::ChangeActiveView3:
+        changeActiveView(3);
+        break;
+      case TextEditorAction::ChangeActiveView4:
+        changeActiveView(4);
+        break;
+      case TextEditorAction::ChangeActiveView5:
+        changeActiveView(5);
+        break;
+      case TextEditorAction::ChangeActiveView6:
+        changeActiveView(6);
+        break;
+      case TextEditorAction::ChangeActiveView7:
+        changeActiveView(7);
+        break;
+      case TextEditorAction::ChangeActiveView8:
+        changeActiveView(8);
+        break;
+      case TextEditorAction::ChangeActiveView9:
+        changeActiveView(9);
+        break;
     }
   }
 

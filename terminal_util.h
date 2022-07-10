@@ -43,8 +43,6 @@ vector<pair<string, EscapeChar>> escapeCharMap{
     {"[3~", EscapeChar::Delete},
     {",", EscapeChar::AltLT},
     {".", EscapeChar::AltGT},
-    {"<", EscapeChar::AltShiftLT},
-    {">", EscapeChar::AltShiftGT},
     {"n", EscapeChar::AltN},
     {"0", EscapeChar::Alt0},
     {"1", EscapeChar::Alt1},

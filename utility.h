@@ -140,6 +140,108 @@ struct SyntaxColorInfo {
   SyntaxColorInfo(int pos, const char *code) : pos(pos), code(code) {}
 };
 
+enum class TextEditorAction {
+  Type,
+  Quit,
+  SaveFile,
+  SaveFileAs,
+  OpenFile,
+  MultiPurposeCommand,
+  DeleteLine,
+  Undo,
+  Redo,
+  Copy,
+  Paste,
+  SelectionToggle,
+  JumpNextSearchHit,
+  JumpPrevSearchHit,
+  Backspace,
+  WordBackspace,
+  Enter,
+  Tab,
+
+  CursorDown,
+  CursorUp,
+  CursorLeft,
+  CursorRight,
+  CursorHome,
+  CursorEnd,
+  CursorPageUp,
+  CursorPageDown,
+  CursorWordJumpLeft,
+  CursosWordJumpRight,
+  ScrollUp,
+  ScrollDown,
+  InsertDelete,
+  LineIndentLeft,
+  LineIndentRight,
+  LineMoveBackward,
+  LineMoveForward,
+  NewTextView,
+  ChangeActiveView0,
+  ChangeActiveView1,
+  ChangeActiveView2,
+  ChangeActiveView3,
+  ChangeActiveView4,
+  ChangeActiveView5,
+  ChangeActiveView6,
+  ChangeActiveView7,
+  ChangeActiveView8,
+  ChangeActiveView9,
+};
+
+enum class InputStroke {
+  Generic,
+
+  CtrlQ,
+  CtrlS,
+  CtrlW,
+  CtrlO,
+  CtrlP,
+  CtrlD,
+  CtrlZ,
+  CtrlR,
+  CtrlC,
+  CtrlV,
+  CtrlX,
+  CtrlN,
+  CtrlB,
+
+  Backspace,
+  CtrlBackspace,
+  Enter,
+  Tab,
+
+  Down,
+  Up,
+  Left,
+  Right,
+  Home,
+  End,
+  CtrlUp,
+  CtrlDown,
+  CtrlLeft,
+  CtrlRight,
+  PageUp,
+  PageDown,
+  Delete,
+  AltLT,
+  AltGT,
+  AltMinus,
+  AltEqual,
+  AltN,
+  Alt0,
+  Alt1,
+  Alt2,
+  Alt3,
+  Alt4,
+  Alt5,
+  Alt6,
+  Alt7,
+  Alt8,
+  Alt9,
+};
+
 enum class EscapeChar {
   Up,
   Down,
@@ -161,8 +263,6 @@ enum class EscapeChar {
   Delete,
   AltLT,
   AltGT,
-  AltShiftLT,
-  AltShiftGT,
   AltN,
   Alt0,
   Alt1,
@@ -313,7 +413,8 @@ struct TokenAnalyzer {
 
 /**
  * @brief Returns the location in a character seqence of the next different
- * type character - alphabetic vs not-alphabetic. Eg if it's on a word, it shows
+ * type character - alphabetic vs not-alphabetic. Eg if it's on a word, it
+shows
  * the character after that word.
  * At the end of the string it returns the position after the last character.
  *
