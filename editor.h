@@ -246,16 +246,18 @@ struct Editor {
           activeTextView()->insertDelete();
           break;
         case EscapeChar::AltLT:
-          activeTextView()->lineMoveBackward();
-          break;
-        case EscapeChar::AltGT:
-          activeTextView()->lineMoveForward();
-          break;
-        case EscapeChar::AltShiftLT:
           activeTextView()->lineIndentLeft(config.tabSize);
           break;
-        case EscapeChar::AltShiftGT:
+        case EscapeChar::AltGT:
           activeTextView()->lineIndentRight(config.tabSize);
+          break;
+        case EscapeChar::AltShiftLT:
+        case EscapeChar::AltMinus:
+          activeTextView()->lineMoveBackward();
+          break;
+        case EscapeChar::AltShiftGT:
+        case EscapeChar::AltEqual:
+          activeTextView()->lineMoveForward();
           break;
         case EscapeChar::AltN:
           newTextView();

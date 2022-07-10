@@ -56,6 +56,8 @@ vector<pair<string, EscapeChar>> escapeCharMap{
     {"7", EscapeChar::Alt7},
     {"8", EscapeChar::Alt8},
     {"9", EscapeChar::Alt9},
+    {"-", EscapeChar::AltMinus},
+    {"=", EscapeChar::AltEqual},
 };
 
 void enableRawMode() {

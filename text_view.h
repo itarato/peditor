@@ -494,7 +494,10 @@ struct TextView : ITextViewState {
     history.newBlock(this);
 
     if (hasActiveSelection()) {
-      if (selectionEnd.value().row >= (int)lines.size() - 1) return;
+      if (selectionEnd.value().row >= (int)lines.size() - 1) {
+        history.closeBlock(this);
+        return;
+      }
 
       int selectionLen =
           selectionEnd.value().row - selectionStart.value().row + 1;
@@ -505,7 +508,10 @@ struct TextView : ITextViewState {
                         selectionStart.value().col};
       selectionEnd = {selectionEnd.value().row + 1, selectionEnd.value().col};
     } else {
-      if (currentRow() >= (int)lines.size() - 1) return;
+      if (currentRow() >= (int)lines.size() - 1) {
+        history.closeBlock(this);
+        return;
+      }
 
       lineMoveForward(currentRow(), 1);
     }
@@ -525,7 +531,10 @@ struct TextView : ITextViewState {
     history.newBlock(this);
 
     if (hasActiveSelection()) {
-      if (selectionStart.value().row <= 0) return;
+      if (selectionStart.value().row <= 0) {
+        history.closeBlock(this);
+        return;
+      }
 
       int selectionLen =
           selectionEnd.value().row - selectionStart.value().row + 1;
@@ -536,7 +545,10 @@ struct TextView : ITextViewState {
                         selectionStart.value().col};
       selectionEnd = {selectionEnd.value().row - 1, selectionEnd.value().col};
     } else {
-      if (currentRow() <= 0) return;
+      if (currentRow() <= 0) {
+        history.closeBlock(this);
+        return;
+      }
 
       lineMoveBackward(currentRow(), 1);
     }

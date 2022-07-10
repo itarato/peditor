@@ -174,6 +174,8 @@ enum class EscapeChar {
   Alt7,
   Alt8,
   Alt9,
+  AltMinus,
+  AltEqual,
 };
 
 struct TypedChar {
