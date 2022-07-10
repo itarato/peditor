@@ -12,18 +12,17 @@
 #include "command.h"
 #include "debug.h"
 #include "file_watcher.h"
+#include "history.h"
 #include "text_manipulator.h"
 #include "utility.h"
 
 using namespace std;
 
-#define UNDO_LIMIT 64
-
 static unordered_map<const char*, const char*> fileTypeAssociationMap{
     {".c++", "c++"}, {".cpp", "c++"}, {".hpp", "c++"},   {".h", "c++"},
     {".c", "c++"},   {".rb", "ruby"}, {".hs", "haskell"}};
 
-struct TextView {
+struct TextView : ITextViewState {
   Point cursor{0, 0};
 
   int verticalScroll{0};
@@ -38,8 +37,7 @@ struct TextView {
   optional<SelectionEdge> selectionStart{nullopt};
   optional<SelectionEdge> selectionEnd{nullopt};
 
-  deque<Command> undos{};
-  deque<Command> redos{};
+  History history{};
 
   FileWatcher fileWatcher{};
 
@@ -49,6 +47,10 @@ struct TextView {
   TextView(int cols, int rows) : cols(cols), rows(rows) {
     DLOG("def ctor %d %d", cursor.x, cursor.y);
   }
+
+  Point getCursor() { return cursor; }
+  optional<SelectionEdge> getSelectionStart() { return selectionStart; }
+  optional<SelectionEdge> getSelectionEnd() { return selectionEnd; }
 
   bool isDirty{false};
 
@@ -92,37 +94,32 @@ struct TextView {
   }
 
   void undo() {
-    if (undos.empty()) return;
+    if (history.undos.empty()) return;
 
-    Command cmd = undos.back();
-    undos.pop_back();
+    HistoryUnit historyUnit = history.useUndo();
 
-    TextManipulator::reverse(&cmd, &lines);
+    for (auto cmdIt = historyUnit.commands.rbegin();
+         cmdIt != historyUnit.commands.rend(); cmdIt++) {
+      TextManipulator::reverse(&*cmdIt, &lines);
+    }
 
-    selectionStart = cmd.beforeSelectionStart;
-    selectionEnd = cmd.beforeSelectionEnd;
-    cursor = cmd.beforeCursor;
-
-    // fixCursorPos();
-
-    redos.push_back(cmd);
+    selectionStart = historyUnit.beforeSelectionStart;
+    selectionEnd = historyUnit.beforeSelectionEnd;
+    cursor = historyUnit.beforeCursor;
   }
 
   void redo() {
-    if (redos.empty()) return;
+    if (history.redos.empty()) return;
 
-    Command cmd = redos.back();
-    redos.pop_back();
+    HistoryUnit historyUnit = history.useRedo();
 
-    TextManipulator::execute(&cmd, &lines);
+    for (auto& cmd : historyUnit.commands) {
+      TextManipulator::execute(&cmd, &lines);
+    }
 
-    selectionStart = cmd.afterSelectionStart;
-    selectionEnd = cmd.afterSelectionEnd;
-    cursor = cmd.afterCursor;
-
-    // fixCursorPos();
-
-    undos.push_back(cmd);
+    selectionStart = historyUnit.afterSelectionStart;
+    selectionEnd = historyUnit.afterSelectionEnd;
+    cursor = historyUnit.afterCursor;
   }
 
   void cursorWordJumpLeft() {
@@ -316,24 +313,11 @@ struct TextView {
   inline bool isBeginningOfCurrentLine() { return currentCol() <= 0; }
 
   void execCommand(Command&& cmd) {
-    DLOG("EXEC cmd: %d", cmd.type);
-
-    cmd.beforeSelectionStart = selectionStart;
-    cmd.beforeSelectionEnd = selectionEnd;
-    cmd.beforeCursor = cursor;
-
     TextManipulator::execute(&cmd, &lines);
 
-    cmd.afterSelectionStart = selectionStart;
-    cmd.afterSelectionEnd = selectionEnd;
-    cmd.afterCursor = cursor;
-
-    undos.push_back(cmd);
+    history.record(move(cmd));
 
     isDirty = true;
-
-    redos.clear();
-    while (undos.size() > UNDO_LIMIT) undos.pop_front();
   }
 
   /***
@@ -344,14 +328,20 @@ struct TextView {
     if (hasActiveSelection()) insertBackspace();
 
     if (currentRow() < (int)lines.size() && currentCol() <= currentLineSize()) {
+      history.newBlock(this);
+
       execCommand(Command::makeInsertChar(currentRow(), currentCol(), c));
 
       cursorRight();
+
+      history.closeBlock(this);
     }
   }
 
   void insertBackspace() {
     if (hasActiveSelection()) {
+      history.newBlock(this);
+
       SelectionRange selection{selectionStart.value(), selectionEnd.value()};
 
       // Remove all lines
@@ -386,14 +376,22 @@ struct TextView {
       // Put cursor to beginning
       cursorTo(selection.startRow, selection.startCol);
       endSelection();
+
+      history.closeBlock(this);
     } else if (currentCol() <= currentLineSize() && currentCol() > 0) {
+      history.newBlock(this);
       execCommand(Command::makeDeleteChar(currentRow(), currentCol() - 1,
                                           currentLine()[currentCol() - 1]));
       cursorLeft();
+      history.closeBlock(this);
     } else if (currentCol() == 0 && currentRow() > 0) {
+      history.newBlock(this);
+
       int oldLineLen = lines[currentRow() - 1].size();
       execCommand(Command::makeMergeLine(previousRow(), previousLine().size()));
       cursorTo(previousRow(), oldLineLen);
+
+      history.closeBlock(this);
     }
   }
 
@@ -401,6 +399,8 @@ struct TextView {
     if (hasActiveSelection()) {
       insertBackspace();
     } else if (currentCol() > 0) {
+      history.newBlock(this);
+
       int colStart = prevWordJumpLocation(currentLine(), currentCol()) + 1;
       if (currentCol() - colStart >= 0) {
         execCommand(Command::makeDeleteSlice(
@@ -409,6 +409,8 @@ struct TextView {
 
         setCol(colStart);
       }
+
+      history.closeBlock(this);
     } else {
       cursorLeft();
     }
@@ -420,15 +422,21 @@ struct TextView {
     if (hasActiveSelection()) {
       insertBackspace();
     } else if (currentCol() < currentLineSize()) {
+      history.newBlock(this);
       execCommand(Command::makeDeleteChar(currentRow(), currentCol(),
                                           currentLine()[currentCol()]));
+      history.closeBlock(this);
     } else if (currentRow() < (int)lines.size() - 1) {
+      history.newBlock(this);
       execCommand(Command::makeMergeLine(currentRow(), currentCol()));
+      history.closeBlock(this);
     }
   }
 
   void insertEnter() {
     if (hasActiveSelection()) insertBackspace();
+
+    history.newBlock(this);
 
     execCommand(Command::makeSplitLine(currentRow(), currentCol()));
 
@@ -441,21 +449,32 @@ struct TextView {
     setCol(tabsLen);
     saveXMemory();
     cursorDown();
+
+    history.closeBlock(this);
   }
 
   void insertTab(int tabSize) {
+    if (hasActiveSelection()) insertBackspace();
+
     if (currentCol() <= currentLineSize()) {
       int spacesToFill = tabSize - (currentCol() % tabSize);
 
       if (spacesToFill > 0) {
         string tabs(spacesToFill, ' ');
+
+        history.newBlock(this);
+
         execCommand(Command::makeInsertSlice(currentRow(), currentCol(), tabs));
         setCol(currentCol() + spacesToFill);
+
+        history.closeBlock(this);
       }
     }
   }
 
   void deleteLine() {
+    history.newBlock(this);
+
     if (lines.size() == 1) {
       execCommand(Command::makeDeleteSlice(0, 0, lines[0]));
     } else {
@@ -467,14 +486,13 @@ struct TextView {
     } else {
       setCol(currentCol());
     }
-  }
 
-  void __lineIndentRight(int lineNo, int tabSize) {
-    string indent(tabSize, ' ');
-    execCommand(Command::makeInsertSlice(lineNo, 0, indent));
+    history.closeBlock(this);
   }
 
   void lineMoveForward() {
+    history.newBlock(this);
+
     if (hasActiveSelection()) {
       if (selectionEnd.value().row >= (int)lines.size() - 1) return;
 
@@ -493,6 +511,8 @@ struct TextView {
     }
 
     cursorTo(nextRow(), currentCol());
+
+    history.closeBlock(this);
   }
 
   void lineMoveForward(int lineNo, int lineCount) {
@@ -502,6 +522,8 @@ struct TextView {
   }
 
   void lineMoveBackward() {
+    history.newBlock(this);
+
     if (hasActiveSelection()) {
       if (selectionStart.value().row <= 0) return;
 
@@ -520,6 +542,8 @@ struct TextView {
     }
 
     cursorTo(previousRow(), currentCol());
+
+    history.closeBlock(this);
   }
 
   void lineMoveBackward(int lineNo, int lineCount) {
@@ -529,6 +553,8 @@ struct TextView {
   }
 
   void lineIndentRight(int tabSize) {
+    history.newBlock(this);
+
     if (hasActiveSelection()) {
       SelectionRange selection{selectionStart.value(), selectionEnd.value()};
       vector<LineSelection> lineSelections = selection.lineSelections();
@@ -546,9 +572,18 @@ struct TextView {
 
     setCol(currentCol() + tabSize);
     saveXMemory();
+
+    history.closeBlock(this);
+  }
+
+  void __lineIndentRight(int lineNo, int tabSize) {
+    string indent(tabSize, ' ');
+    execCommand(Command::makeInsertSlice(lineNo, 0, indent));
   }
 
   void lineIndentLeft(int tabSize) {
+    history.newBlock(this);
+
     if (hasActiveSelection()) {
       SelectionRange selection{selectionStart.value(), selectionEnd.value()};
       vector<LineSelection> lineSelections = selection.lineSelections();
@@ -574,6 +609,8 @@ struct TextView {
     }
 
     saveXMemory();
+
+    history.closeBlock(this);
   }
 
   int __lineIndentLeft(int lineNo, int tabSize) {

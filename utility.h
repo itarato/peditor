@@ -127,6 +127,12 @@ struct Point {
   Point(int x, int y) : x(x), y(y) {}
 };
 
+struct ITextViewState {
+  virtual Point getCursor() = 0;
+  virtual optional<SelectionEdge> getSelectionStart() = 0;
+  virtual optional<SelectionEdge> getSelectionEnd() = 0;
+};
+
 struct SyntaxColorInfo {
   int pos;
   const char *code;

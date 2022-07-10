@@ -49,14 +49,6 @@ struct Command {
   string memoryStr{};
   char memoryChr{'\0'};
 
-  optional<SelectionEdge> beforeSelectionStart;
-  optional<SelectionEdge> beforeSelectionEnd;
-  optional<SelectionEdge> afterSelectionStart;
-  optional<SelectionEdge> afterSelectionEnd;
-
-  Point beforeCursor;
-  Point afterCursor;
-
   Command(CommandType type, int row) : type(type), row(row) {}
 
   Command(CommandType type, int row, int col)

@@ -343,6 +343,8 @@ struct Editor {
   }
 
   void pasteClipboardInternal() {
+    activeTextView()->history.newBlock(activeTextView());
+
     for (auto it = internalClipboard.begin(); it != internalClipboard.end();
          it++) {
       if (it != internalClipboard.begin()) {
@@ -357,6 +359,8 @@ struct Editor {
     }
 
     activeTextView()->saveXMemory();
+
+    activeTextView()->history.closeBlock(activeTextView());
   }
 
   inline void requestQuit() { quitRequested = true; }
