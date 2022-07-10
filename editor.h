@@ -315,8 +315,6 @@ struct Editor {
     cursor.x = prompt.prefix.size() + prompt.message.size() + 1;
   }
 
-  bool hasInternalClipboardContent() { return !internalClipboard.empty(); }
-
   void copyClipboardInternal() {
     if (!activeTextView()->hasActiveSelection()) return;
 
@@ -345,8 +343,6 @@ struct Editor {
   }
 
   void pasteClipboardInternal() {
-    if (!hasInternalClipboardContent()) return;
-
     for (auto it = internalClipboard.begin(); it != internalClipboard.end();
          it++) {
       if (it != internalClipboard.begin()) {

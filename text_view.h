@@ -12,6 +12,7 @@
 #include "command.h"
 #include "debug.h"
 #include "file_watcher.h"
+#include "text_manipulator.h"
 #include "utility.h"
 
 using namespace std;
@@ -97,7 +98,12 @@ struct TextView {
     undos.pop_back();
 
     TextManipulator::reverse(&cmd, &lines);
-    fixCursorPos();
+
+    selectionStart = cmd.beforeSelectionStart;
+    selectionEnd = cmd.beforeSelectionEnd;
+    cursor = cmd.beforeCursor;
+
+    // fixCursorPos();
 
     redos.push_back(cmd);
   }
@@ -109,7 +115,12 @@ struct TextView {
     redos.pop_back();
 
     TextManipulator::execute(&cmd, &lines);
-    fixCursorPos();
+
+    selectionStart = cmd.afterSelectionStart;
+    selectionEnd = cmd.afterSelectionEnd;
+    cursor = cmd.afterCursor;
+
+    // fixCursorPos();
 
     undos.push_back(cmd);
   }
@@ -305,10 +316,20 @@ struct TextView {
   inline bool isBeginningOfCurrentLine() { return currentCol() <= 0; }
 
   void execCommand(Command&& cmd) {
-    undos.push_back(cmd);
     DLOG("EXEC cmd: %d", cmd.type);
 
+    cmd.beforeSelectionStart = selectionStart;
+    cmd.beforeSelectionEnd = selectionEnd;
+    cmd.beforeCursor = cursor;
+
     TextManipulator::execute(&cmd, &lines);
+
+    cmd.afterSelectionStart = selectionStart;
+    cmd.afterSelectionEnd = selectionEnd;
+    cmd.afterCursor = cursor;
+
+    undos.push_back(cmd);
+
     isDirty = true;
 
     redos.clear();
