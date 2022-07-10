@@ -103,8 +103,7 @@ struct Editor {
   void loadFile(string filePath) {
     if (filePath.empty()) return;
 
-    activeTextView()->setFileName(filePath);
-    activeTextView()->reloadContent();
+    activeTextView()->loadFile(filePath);
   }
 
   void changeActiveView(int idx) {

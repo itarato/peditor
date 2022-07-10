@@ -693,9 +693,11 @@ struct TextView : ITextViewState {
     fileWatcher.ignoreEventCycle();
   }
 
-  void setFileName(string newFilePath) {
+  void loadFile(string newFilePath) {
     filePath = optional<string>(newFilePath);
     fileWatcher.watch(newFilePath);
+
+    reloadContent();
   }
 
   void closeFile() {
