@@ -3,7 +3,7 @@ Peditor
 
 Toy text editor.
 
-[![asciicast](https://asciinema.org/a/LP3tSFwa2FxruDQ7nQ33PCw6F.svg)](https://asciinema.org/a/LP3tSFwa2FxruDQ7nQ33PCw6F)
+[![asciicast](https://asciinema.org/a/Io4jttaRgjHdJnQYFgPdihbnl.svg)](https://asciinema.org/a/Io4jttaRgjHdJnQYFgPdihbnl)
 
 
 ### Compile
@@ -61,5 +61,5 @@ Text editing:
 - Undo/redo: `CTRL` + `z`/`r`
 - Line delete: `CTRL` + `d`
 - Selection mode: `CTRL` + `x`
-- Line move (single or selection block): `ALT` + `<`/`>`
-- Indentation (single or selection block): `SHIFT` + `ALT` + `<`/`>`
+- Line move up / down (single or selection block): `ALT` + `-`/`=`
+- Indentation (single or selection block): `SHIFT` + `<`/`>`
