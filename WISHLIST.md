@@ -1,5 +1,5 @@
 Normal:
-- key re-binding
+- key re-binding (partially done, config file needed)
 - help
 
 Hard:

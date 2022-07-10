@@ -339,6 +339,7 @@ struct Editor {
     activeTextView()->endSelection();
   }
 
+  // TODO: This looks as it should be a TextView function.
   void pasteClipboardInternal() {
     activeTextView()->history.newBlock(activeTextView());
 
