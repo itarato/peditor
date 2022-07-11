@@ -1,7 +1,10 @@
+#include <fstream>
 #include <iostream>
+#include <regex>
 #include <unordered_set>
 #include <vector>
 
+#include "text_view.h"
 #include "utility.h"
 
 using namespace std;
@@ -301,36 +304,9 @@ void test_visibleStrSlice() {
   ASSERT_EQ(5, res.second);
 }
 
-int main() {
-  cout << "Tests\n";
+void test_text_view_basics() {
+  TextView tv{32, 24};
 
-  test_find_number_beginning();
-  test_find_number_middle();
-  test_find_number_end();
-
-  test_single_find_number_beginning();
-  test_single_find_number_middle();
-  test_single_find_number_end();
-
-  test_find_string();
-  test_find_string_middle();
-
-  test_find_single_quoted_string();
-
-  test_find_word();
-  test_does_not_find_unknown_word();
-
-  test_find_complex_examples();
-
-  test_parens();
-
-  test_next_word_jump_location();
-  test_prev_word_jump_location();
-
-  test_visibleCharCount();
-  test_visibleStrRightCut();
-
-  test_visibleStrSlice();
-
-  cout << endl;
+  ASSERT_EQ(24, tv.rows);
+  ASSERT_EQ(32, tv.cols);
 }
