@@ -21,8 +21,7 @@ EXTRA_FLAGS="-DVERBOSE" make
 ### Test
 
 ```bash
-make clean
-make runtests
+ruby tools/runtests.rb
 ```
 
 ### Use

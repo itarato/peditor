@@ -6,6 +6,7 @@ test_functions = template.scan(/(?<=void )test_[a-zA-Z0-9_]+/)
 
 test_file = File.open("./test.cpp", "w")
 
+test_file.write("// AUTO GENERATED FILE. DO NOT EDIT.\n\n")
 test_file.write(template)
 test_file.write("\nint main() {\n")
 test_file.write(test_functions.map { |fn| "  #{fn}();\n" }.join);
