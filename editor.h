@@ -501,6 +501,7 @@ struct Editor {
         out.push_back('~');
       }
 
+      clearRestOfLine(out);
       out.append("\n\r");
     }
 
@@ -545,9 +546,7 @@ struct Editor {
     // irrelevant.
     if (activeTextView()->cols <= 1) return;
 
-    hideCursor();
-
-    clearScreen(out);
+    hideCursor(out);
     drawLines(out);
 
     contextAdjustEditorCursor();

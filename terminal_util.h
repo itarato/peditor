@@ -98,7 +98,6 @@ void setCursorLocation(string &out, int row, int col) {
 }
 
 void clearScreen() { write(STDOUT_FILENO, "\x1b[2J", 4); }
-void clearScreen(string &out) { out.append("\x1b[2J"); }
 
 int getCursorPosition(int *rows, int *cols) {
   char buf[32];
@@ -178,6 +177,8 @@ TypedChar readKey() {
   }
 }
 
-void hideCursor() { write(STDOUT_FILENO, "\x1b[?25l", 6); }
+inline void hideCursor(string &out) { out.append("\x1b[?25l"); }
 
-void showCursor(string &out) { out.append("\x1b[?25h"); }
+inline void showCursor(string &out) { out.append("\x1b[?25h"); }
+
+inline void clearRestOfLine(string &out) { out.append("\x1b[0K"); }
