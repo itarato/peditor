@@ -344,6 +344,49 @@ struct TextView : ITextViewState {
     endSelection();
   }
 
+  void jumpToNextSearchHit(string& searchTerm) {
+    auto lineIt = lines.begin();
+    advance(lineIt, currentRow());
+    size_t from = currentCol() + 1;
+
+    while (lineIt != lines.end()) {
+      size_t pos = lineIt->find(searchTerm, from);
+
+      if (pos == string::npos) {
+        lineIt++;
+        from = 0;
+      } else {
+        cursorTo(distance(lines.begin(), lineIt), pos);
+        return;
+      }
+    }
+  }
+
+  void jumpToPrevSearchHit(string& searchTerm) {
+    auto lineIt = lines.rbegin();
+    advance(lineIt, lines.size() - currentRow() - 1);
+    size_t from;
+
+    if (currentCol() == 0) {
+      lineIt++;
+      from = lineIt->size();
+    } else {
+      from = currentCol() - 1;
+    }
+
+    while (lineIt != lines.rend()) {
+      size_t pos = lineIt->rfind(searchTerm, from);
+
+      if (pos == string::npos) {
+        lineIt++;
+        from = lineIt->size();
+      } else {
+        cursorTo(lines.size() - distance(lines.rbegin(), lineIt) - 1, pos);
+        return;
+      }
+    }
+  }
+
   // TODO: This looks as it should be a TextView function.
   void clipboardPaste(vector<string>& sharedClipboard) {
     history.newBlock(this);

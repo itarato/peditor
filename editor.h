@@ -312,55 +312,13 @@ struct Editor {
   inline void requestQuit() { quitRequested = true; }
 
   void jumpToNextSearchHit() {
-    if (!searchTerm.has_value()) return;
-
-    auto lineIt = activeTextView()->lines.begin();
-    advance(lineIt, activeTextView()->currentRow());
-    size_t from = activeTextView()->currentCol() + 1;
-
-    while (lineIt != activeTextView()->lines.end()) {
-      size_t pos = lineIt->find(searchTerm.value(), from);
-
-      if (pos == string::npos) {
-        lineIt++;
-        from = 0;
-      } else {
-        activeTextView()->cursorTo(
-            distance(activeTextView()->lines.begin(), lineIt), pos);
-        return;
-      }
-    }
+    if (searchTerm.has_value())
+      activeTextView()->jumpToNextSearchHit(searchTerm.value());
   }
 
   void jumpToPrevSearchHit() {
-    if (!searchTerm.has_value()) return;
-
-    auto lineIt = activeTextView()->lines.rbegin();
-    advance(lineIt, activeTextView()->lines.size() -
-                        activeTextView()->currentRow() - 1);
-    size_t from;
-
-    if (activeTextView()->currentCol() == 0) {
-      lineIt++;
-      from = lineIt->size();
-    } else {
-      from = activeTextView()->currentCol() - 1;
-    }
-
-    while (lineIt != activeTextView()->lines.rend()) {
-      size_t pos = lineIt->rfind(searchTerm.value(), from);
-
-      if (pos == string::npos) {
-        lineIt++;
-        from = lineIt->size();
-      } else {
-        activeTextView()->cursorTo(
-            activeTextView()->lines.size() -
-                distance(activeTextView()->lines.rbegin(), lineIt) - 1,
-            pos);
-        return;
-      }
-    }
+    if (searchTerm.has_value())
+      activeTextView()->jumpToPrevSearchHit(searchTerm.value());
   }
 
   inline int terminalRows() { return terminalDimension.first; }
