@@ -320,6 +320,49 @@ struct TextView : ITextViewState {
     isDirty = true;
   }
 
+  void clipboardCopy(vector<string>& sharedClipboard) {
+    if (!hasActiveSelection()) return;
+
+    SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+    vector<LineSelection> lineSelections = selection.lineSelections();
+
+    sharedClipboard.clear();
+
+    for (auto& lineSelection : lineSelections) {
+      if (lineSelection.isFullLine()) {
+        sharedClipboard.push_back(lines[selection.startRow]);
+      } else {
+        int start = lineSelection.isLeftBounded() ? lineSelection.startCol : 0;
+        int end = lineSelection.isRightBounded()
+                      ? lineSelection.endCol
+                      : lines[lineSelection.lineNo].size();
+        sharedClipboard.push_back(
+            lines[selection.startRow].substr(start, end - start));
+      }
+    }
+
+    endSelection();
+  }
+
+  // TODO: This looks as it should be a TextView function.
+  void clipboardPaste(vector<string>& sharedClipboard) {
+    history.newBlock(this);
+
+    for (auto it = sharedClipboard.begin(); it != sharedClipboard.end(); it++) {
+      if (it != sharedClipboard.begin()) {
+        execCommand(Command::makeSplitLine(currentRow(), currentCol()));
+        cursorTo(nextRow(), 0);
+      }
+
+      execCommand(Command::makeInsertSlice(currentRow(), currentCol(), *it));
+      setCol(currentCol() + it->size());
+    }
+
+    saveXMemory();
+
+    history.closeBlock(this);
+  }
+
   /***
    * INSERTIONS
    */

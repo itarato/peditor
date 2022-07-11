@@ -5,6 +5,11 @@ Toy text editor.
 
 [![asciicast](https://asciinema.org/a/Io4jttaRgjHdJnQYFgPdihbnl.svg)](https://asciinema.org/a/Io4jttaRgjHdJnQYFgPdihbnl)
 
+Limitations:
+- it's rubbish
+- some default keyboard shortcuts are not all OS/terminal compatible (some swallows it)
+- fully non Windows compatible
+- the file change watch relies on the inotify api which is only for Unix
 
 ### Compile
 

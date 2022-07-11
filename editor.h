@@ -71,12 +71,12 @@ struct Editor {
 
   Prompt prompt{};
 
-  vector<string> internalClipboard{};
+  vector<string> clipboard{};
 
   optional<string> searchTerm{nullopt};
 
   vector<TextView> textViews{};
-  int currentTextViewIdx{0};
+  int activeTextViewIdx{0};
 
   Editor(Config config) : config(config) {}
 
@@ -90,7 +90,7 @@ struct Editor {
     activeTextView()->reloadContent();
   }
 
-  inline TextView* activeTextView() { return &(textViews[currentTextViewIdx]); }
+  inline TextView* activeTextView() { return &(textViews[activeTextViewIdx]); }
 
   void saveFile() {
     if (activeTextView()->filePath.has_value()) {
@@ -106,9 +106,7 @@ struct Editor {
     activeTextView()->loadFile(filePath);
   }
 
-  void changeActiveView(int idx) {
-    currentTextViewIdx = idx % textViews.size();
-  }
+  void changeActiveView(int idx) { activeTextViewIdx = idx % textViews.size(); }
 
   void runLoop() {
     TypedChar tc;
@@ -170,10 +168,10 @@ struct Editor {
         activeTextView()->redo();
         break;
       case TextEditorAction::Copy:
-        copyClipboardInternal();
+        activeTextView()->clipboardCopy(clipboard);
         break;
       case TextEditorAction::Paste:
-        pasteClipboardInternal();
+        activeTextView()->clipboardPaste(clipboard);
         break;
       case TextEditorAction::SelectionToggle:
         activeTextView()->toggleSelection();
@@ -309,55 +307,6 @@ struct Editor {
     }
 
     cursor.x = prompt.prefix.size() + prompt.message.size() + 1;
-  }
-
-  void copyClipboardInternal() {
-    if (!activeTextView()->hasActiveSelection()) return;
-
-    SelectionRange selection{activeTextView()->selectionStart.value(),
-                             activeTextView()->selectionEnd.value()};
-    vector<LineSelection> lineSelections = selection.lineSelections();
-
-    internalClipboard.clear();
-
-    for (auto& lineSelection : lineSelections) {
-      if (lineSelection.isFullLine()) {
-        internalClipboard.push_back(
-            activeTextView()->lines[selection.startRow]);
-      } else {
-        int start = lineSelection.isLeftBounded() ? lineSelection.startCol : 0;
-        int end = lineSelection.isRightBounded()
-                      ? lineSelection.endCol
-                      : activeTextView()->lines[lineSelection.lineNo].size();
-        internalClipboard.push_back(
-            activeTextView()->lines[selection.startRow].substr(start,
-                                                               end - start));
-      }
-    }
-
-    activeTextView()->endSelection();
-  }
-
-  // TODO: This looks as it should be a TextView function.
-  void pasteClipboardInternal() {
-    activeTextView()->history.newBlock(activeTextView());
-
-    for (auto it = internalClipboard.begin(); it != internalClipboard.end();
-         it++) {
-      if (it != internalClipboard.begin()) {
-        activeTextView()->execCommand(Command::makeSplitLine(
-            activeTextView()->currentRow(), activeTextView()->currentCol()));
-        activeTextView()->cursorTo(activeTextView()->nextRow(), 0);
-      }
-
-      activeTextView()->execCommand(Command::makeInsertSlice(
-          activeTextView()->currentRow(), activeTextView()->currentCol(), *it));
-      activeTextView()->setCol(activeTextView()->currentCol() + it->size());
-    }
-
-    activeTextView()->saveXMemory();
-
-    activeTextView()->history.closeBlock(activeTextView());
   }
 
   inline void requestQuit() { quitRequested = true; }
@@ -582,9 +531,8 @@ struct Editor {
         " pEditor v0 | File: %s%s | Textarea: %dx%d | Cursor: %dx %dy | %d%%",
         activeTextView()->filePath.value_or("<no file>").c_str(),
         (activeTextView()->isDirty ? " \x1b[94m(edited)\x1b[39m" : ""),
-        activeTextView()->cols, activeTextView()->rows,
-        activeTextView()->cursor.x, activeTextView()->cursor.y,
-        rowPosPercentage);
+        textViewCols(), textViewRows(), activeTextView()->cursor.x,
+        activeTextView()->cursor.y, rowPosPercentage);
 
     out.append(buf);
 
@@ -614,7 +562,7 @@ struct Editor {
       out.append("-");
     } else {
       for (int i = 0; i < (int)textViews.size(); i++) {
-        if (i == currentTextViewIdx) {
+        if (i == activeTextViewIdx) {
           out.append("\x1b[39m ");
         } else {
           out.append("\x1b[90m ");
@@ -717,7 +665,7 @@ struct Editor {
       int idx;
       iss >> idx;
 
-      currentTextViewIdx = idx % textViews.size();
+      activeTextViewIdx = idx % textViews.size();
     } else {
       DLOG("Top command <%s> not recognized", topCommand.c_str());
     }
@@ -736,7 +684,7 @@ struct Editor {
 
   void newTextView() {
     textViews.emplace_back(textViewCols(), textViewRows());
-    currentTextViewIdx = textViews.size() - 1;
+    activeTextViewIdx = textViews.size() - 1;
     activeTextView()->reloadContent();
   }
 };
