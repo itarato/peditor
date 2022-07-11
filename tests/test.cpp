@@ -309,4 +309,19 @@ void test_text_view_basics() {
 
   ASSERT_EQ(24, tv.rows);
   ASSERT_EQ(32, tv.cols);
+  ASSERT_EQ(false, tv.isDirty);
+
+  // TODO: more
+}
+
+void test_text_view_movements() {
+  TextView tv{32, 24};
+  tv.loadFile("misc/sample");
+
+  ASSERT_EQ(0, tv.cursor.x);
+  ASSERT_EQ(0, tv.cursor.y);
+
+  tv.cursorDown();
+  ASSERT_EQ(0, tv.cursor.x);
+  ASSERT_EQ(1, tv.cursor.y);
 }
