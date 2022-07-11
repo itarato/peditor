@@ -1,4 +1,5 @@
 Normal:
+- testability
 - key re-binding (partially done, config file needed)
 - help
 
