@@ -331,7 +331,6 @@ struct Editor {
 
     for (int lineNo = 0; lineNo < textViewRows(); lineNo++) {
       activeTextView()->drawLine(out, lineNo, &ta, searchTerm);
-
       out.append("\n\r");
     }
 
