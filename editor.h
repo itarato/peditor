@@ -19,6 +19,7 @@
 #include "config.h"
 #include "debug.h"
 #include "file_watcher.h"
+#include "split_unit.h"
 #include "terminal_util.h"
 #include "text_manipulator.h"
 #include "text_view.h"
@@ -58,6 +59,9 @@ struct Editor {
   int bottomMargin{1};
   int topMargin{0};
 
+  vector<SplitUnit> splitUnits;
+  int activeSplitUnitIdx{0};
+
   Point cursor{};
 
   pair<int, int> terminalDimension{};
@@ -72,13 +76,10 @@ struct Editor {
 
   optional<string> searchTerm{nullopt};
 
-  vector<TextView> textViews{};
-  int activeTextViewIdx{0};
-
   Editor(Config config) : config(config) {}
 
   void init() {
-    textViews.emplace_back(textViewCols(), textViewRows());
+    splitUnits.emplace_back(textViewCols(), textViewRows());
 
     preserveTermiosOriginalState();
     enableRawMode();
@@ -87,7 +88,12 @@ struct Editor {
     activeTextView()->reloadContent();
   }
 
-  inline TextView* activeTextView() { return &(textViews[activeTextViewIdx]); }
+  inline SplitUnit* activeSplitUnit() {
+    return &(splitUnits[activeSplitUnitIdx]);
+  }
+  inline TextView* activeTextView() {
+    return activeSplitUnit()->activeTextView();
+  }
 
   void saveFile() {
     if (activeTextView()->filePath.has_value()) {
@@ -103,7 +109,10 @@ struct Editor {
     activeTextView()->loadFile(filePath);
   }
 
-  void changeActiveView(int idx) { activeTextViewIdx = idx % textViews.size(); }
+  void changeActiveView(int idx) {
+    activeSplitUnit()->activeTextViewIdx =
+        idx % activeSplitUnit()->textViews.size();
+  }
 
   void runLoop() {
     TypedChar tc;
@@ -324,7 +333,8 @@ struct Editor {
   void drawLines(string& out) {
     resetCursorLocation(out);
 
-    if (textViews.size() > 1) out.append(generateTextViewsTabsLine());
+    if (activeSplitUnit()->textViews.size() > 1)
+      out.append(generateTextViewsTabsLine());
 
     SyntaxHighlightConfig syntaxHighlightConfig{&activeTextView()->keywords};
     TokenAnalyzer ta{syntaxHighlightConfig};
@@ -433,7 +443,7 @@ struct Editor {
   string generateTextViewsTabsLine() {
     string out{};
 
-    int maxTitleSize = terminalCols() / textViews.size();
+    int maxTitleSize = terminalCols() / activeSplitUnit()->textViews.size();
 
     out.append("\x1b[7m\x1b[90m");
 
@@ -441,19 +451,20 @@ struct Editor {
       // TODO add proper
       out.append("-");
     } else {
-      for (int i = 0; i < (int)textViews.size(); i++) {
-        if (i == activeTextViewIdx) {
+      for (int i = 0; i < (int)activeSplitUnit()->textViews.size(); i++) {
+        if (i == activeSplitUnit()->activeTextViewIdx) {
           out.append("\x1b[39m ");
         } else {
           out.append("\x1b[90m ");
         }
         // TODO only use filename part
-        out.append(textViews[i]
+        out.append(activeSplitUnit()
+                       ->textViews[i]
                        .fileName()
                        .value_or("<no file>")
                        .substr(0, maxTitleSize - 3));
 
-        if (i < (int)textViews.size() - 1) {
+        if (i < (int)activeSplitUnit()->textViews.size() - 1) {
           out.append(" \x1b[90m:");
         } else {
           out.append(" \x1b[90m");
@@ -542,7 +553,8 @@ struct Editor {
       int idx;
       iss >> idx;
 
-      activeTextViewIdx = idx % textViews.size();
+      activeSplitUnit()->activeTextViewIdx =
+          idx % activeSplitUnit()->textViews.size();
     } else {
       DLOG("Top command <%s> not recognized", topCommand.c_str());
     }
@@ -556,16 +568,17 @@ struct Editor {
 
   inline void updateMargins() {
     leftMargin = 0;
-    topMargin = textViews.size() > 1 ? 1 : 0;
+    topMargin = activeSplitUnit()->textViews.size() > 1 ? 1 : 0;
 
-    for (auto& textView : textViews) {
+    for (auto& textView : activeSplitUnit()->textViews) {
       textView.updateMargins();
     }
   }
 
   void newTextView() {
-    textViews.emplace_back(textViewCols(), textViewRows());
-    activeTextViewIdx = textViews.size() - 1;
+    activeSplitUnit()->textViews.emplace_back(textViewCols(), textViewRows());
+    activeSplitUnit()->activeTextViewIdx =
+        activeSplitUnit()->textViews.size() - 1;
     activeTextView()->reloadContent();
   }
 };
