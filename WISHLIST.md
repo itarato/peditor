@@ -1,5 +1,6 @@
 Normal:
-- testability
+- fuzzy file search on open
+- split window
 - key re-binding (partially done, config file needed)
 - help
 
