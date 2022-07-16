@@ -43,14 +43,11 @@ struct Prompt {
   string prefix{};
   PromptCommand command{PromptCommand::Nothing};
   string message{};
-  Point previousCursor{};
 
-  void reset(string newPrefix, PromptCommand newCommand,
-             Point newPreviousCursor) {
+  void reset(string newPrefix, PromptCommand newCommand) {
     prefix = newPrefix;
     message.clear();
     command = newCommand;
-    previousCursor = newPreviousCursor;
   }
 };
 
@@ -550,7 +547,7 @@ struct Editor {
 
   void openPrompt(string prefix, PromptCommand command) {
     mode = EditorMode::Prompt;
-    prompt.reset(prefix, command, activeTextView()->cursor);
+    prompt.reset(prefix, command);
     cursor.x = prompt.prefix.size() + prompt.message.size() + 1;
     cursor.y = terminalRows() - 1;
   }
@@ -577,10 +574,7 @@ struct Editor {
     }
   }
 
-  void closePrompt() {
-    mode = EditorMode::TextEdit;
-    activeTextView()->cursor = prompt.previousCursor;
-  }
+  inline void closePrompt() { mode = EditorMode::TextEdit; }
 
   void executeMultiPurposeCommand(string& raw) {
     istringstream iss{raw};

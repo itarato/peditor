@@ -14,4 +14,3 @@ Stupid:
 - visual feedback / popup
 
 Bugfix:
-- last empty line is ignored on load
