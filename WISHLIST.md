@@ -1,5 +1,6 @@
 Normal:
 - fuzzy file search on open
+- comment coloring
 - split window
 - key re-binding (partially done, config file needed)
 - help

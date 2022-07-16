@@ -13,6 +13,7 @@
 #include "debug.h"
 #include "file_watcher.h"
 #include "history.h"
+#include "terminal_util.h"
 #include "text_manipulator.h"
 #include "utility.h"
 
@@ -28,6 +29,7 @@ struct TextView : ITextViewState {
   int verticalScroll{0};
   int horizontalScroll{0};
   int xMemory{0};
+  int leftMargin{0};
 
   optional<string> filePath{nullopt};
   unordered_set<string> keywords{};
@@ -53,6 +55,9 @@ struct TextView : ITextViewState {
   optional<SelectionEdge> getSelectionEnd() { return selectionEnd; }
 
   bool isDirty{false};
+
+  inline int textAreaCols() const { return cols - leftMargin; }
+  inline int textAreaRows() const { return rows; }
 
   void reloadKeywordList() {
     keywords.clear();
@@ -191,7 +196,7 @@ struct TextView : ITextViewState {
   }
 
   void cursorPageDown() {
-    cursor.y += rows;
+    cursor.y += textAreaRows();
     restoreXMemory();
 
     if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
@@ -200,7 +205,7 @@ struct TextView : ITextViewState {
   }
 
   void cursorPageUp() {
-    cursor.y -= rows;
+    cursor.y -= textAreaRows();
     restoreXMemory();
 
     if (hasActiveSelection()) endSelectionUpdatePositionToCurrent();
@@ -261,18 +266,18 @@ struct TextView : ITextViewState {
     if (cursor.y < 0) {
       verticalScroll = currentRow();
       cursor.y = 0;
-    } else if (cursor.y >= rows) {
-      verticalScroll = currentRow() - rows + 1;
-      cursor.y = rows - 1;
+    } else if (cursor.y >= textAreaRows()) {
+      verticalScroll = currentRow() - textAreaRows() + 1;
+      cursor.y = textAreaRows() - 1;
     }
 
     // Fix horizontal scroll.
     if (cursor.x < 0) {
       horizontalScroll = currentCol();
       cursor.x = 0;
-    } else if (cursor.x >= cols) {
-      horizontalScroll = currentCol() - cols + 1;
-      cursor.x = cols - 1;
+    } else if (cursor.x >= textAreaCols()) {
+      horizontalScroll = currentCol() - textAreaCols() + 1;
+      cursor.x = textAreaCols() - 1;
     }
   }
 
@@ -294,8 +299,8 @@ struct TextView : ITextViewState {
     // Fix horizontal scroll.
     if (horizontalScroll > newCol) {
       horizontalScroll = newCol;
-    } else if (horizontalScroll + cols < newCol) {
-      horizontalScroll = newCol - cols + 1;
+    } else if (horizontalScroll + textAreaCols() < newCol) {
+      horizontalScroll = newCol - textAreaCols() + 1;
     }
 
     cursor.x = newCol - horizontalScroll;
@@ -861,4 +866,87 @@ struct TextView : ITextViewState {
   }
 
   // END SELECTIONS
+
+  void drawLine(string& out, int lineIdx, TokenAnalyzer* ta,
+                optional<string>& searchTerm) {
+    int lineNo = lineIdx + verticalScroll;
+
+    if (size_t(lineNo) < lines.size()) {
+      // TODO: include horizontalScroll
+      string& line = lines[lineNo];
+      string decoratedLine = decorateLine(line, ta, lineNo, searchTerm);
+
+      char formatBuf[32];
+      sprintf(formatBuf, "\x1b[33m%%%dd\x1b[0m ", leftMargin - 1);
+
+      char marginBuf[32];
+      sprintf(marginBuf, formatBuf, lineNo);
+
+      out.append(marginBuf);
+
+      if (!decoratedLine.empty()) {
+        pair<int, int> visibleBorders =
+            visibleStrSlice(decoratedLine, horizontalScroll, textAreaCols());
+
+        if (visibleBorders.first == -1) {
+          out.append("\x1b[2m<\x1b[22m");
+        } else {
+          out.append(decoratedLine.substr(
+              visibleBorders.first,
+              visibleBorders.second - visibleBorders.first + 1));
+        }
+      }
+    } else {
+      out.push_back('~');
+    }
+
+    clearRestOfLine(out);
+  }
+
+  string decorateLine(string& line, TokenAnalyzer* ta, int lineNo,
+                      optional<string>& searchTerm) {
+    string out{};
+
+    int offset{0};
+    auto lineIt = line.begin();
+
+    vector<SyntaxColorInfo> markers = ta->colorizeTokens(line);
+
+    auto selection = lineSelectionRange(lineNo);
+    if (selection.has_value()) {
+      markers.emplace_back(selection.value().first, BACKGROUND_REVERSE);
+      markers.emplace_back(selection.value().second, RESET_REVERSE);
+    }
+
+    if (searchTerm.has_value()) {
+      auto _searchTermMarkers = searchTermMarkers(line, searchTerm.value());
+      copy(_searchTermMarkers.begin(), _searchTermMarkers.end(),
+           back_inserter(markers));
+    }
+
+    sort(markers.begin(), markers.end(),
+         [](SyntaxColorInfo& lhs, SyntaxColorInfo& rhs) {
+           return lhs.pos < rhs.pos;
+         });
+
+    for (auto& color : markers) {
+      string prefix = "\x1b[";
+      prefix.append(color.code);
+      prefix.push_back('m');
+
+      copy(lineIt, lineIt + (color.pos - offset), back_inserter(out));
+      advance(lineIt, color.pos - offset);
+      offset = color.pos;
+
+      out.append(prefix);
+    }
+
+    copy(lineIt, line.end(), back_inserter(out));
+
+    return out;
+  }
+
+  inline void updateMargins() {
+    leftMargin = max(1, (int)ceil(log10(lines.size()))) + 1;
+  }
 };

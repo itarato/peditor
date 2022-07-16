@@ -318,50 +318,8 @@ struct Editor {
       activeTextView()->jumpToPrevSearchHit(searchTerm.value());
   }
 
-  inline int terminalRows() { return terminalDimension.first; }
-  inline int terminalCols() { return terminalDimension.second; }
-
-  string decorateLine(string& line, TokenAnalyzer* ta, int lineNo) {
-    string out{};
-
-    int offset{0};
-    auto lineIt = line.begin();
-
-    vector<SyntaxColorInfo> markers = ta->colorizeTokens(line);
-
-    auto selection = activeTextView()->lineSelectionRange(lineNo);
-    if (selection.has_value()) {
-      markers.emplace_back(selection.value().first, BACKGROUND_REVERSE);
-      markers.emplace_back(selection.value().second, RESET_REVERSE);
-    }
-
-    if (searchTerm.has_value()) {
-      auto _searchTermMarkers = searchTermMarkers(line, searchTerm.value());
-      copy(_searchTermMarkers.begin(), _searchTermMarkers.end(),
-           back_inserter(markers));
-    }
-
-    sort(markers.begin(), markers.end(),
-         [](SyntaxColorInfo& lhs, SyntaxColorInfo& rhs) {
-           return lhs.pos < rhs.pos;
-         });
-
-    for (auto& color : markers) {
-      string prefix = "\x1b[";
-      prefix.append(color.code);
-      prefix.push_back('m');
-
-      copy(lineIt, lineIt + (color.pos - offset), back_inserter(out));
-      advance(lineIt, color.pos - offset);
-      offset = color.pos;
-
-      out.append(prefix);
-    }
-
-    copy(lineIt, line.end(), back_inserter(out));
-
-    return out;
-  }
+  inline int terminalRows() const { return terminalDimension.first; }
+  inline int terminalCols() const { return terminalDimension.second; }
 
   void drawLines(string& out) {
     resetCursorLocation(out);
@@ -371,40 +329,9 @@ struct Editor {
     SyntaxHighlightConfig syntaxHighlightConfig{&activeTextView()->keywords};
     TokenAnalyzer ta{syntaxHighlightConfig};
 
-    for (int lineNo = activeTextView()->verticalScroll;
-         lineNo < activeTextView()->verticalScroll + activeTextView()->rows;
-         lineNo++) {
-      if (size_t(lineNo) < activeTextView()->lines.size()) {
-        // TODO: include horizontalScroll
-        string& line = activeTextView()->lines[lineNo];
-        string decoratedLine = decorateLine(line, &ta, lineNo);
+    for (int lineNo = 0; lineNo < textViewRows(); lineNo++) {
+      activeTextView()->drawLine(out, lineNo, &ta, searchTerm);
 
-        char formatBuf[32];
-        sprintf(formatBuf, "\x1b[33m%%%dd\x1b[0m ", leftMargin - 1);
-
-        char marginBuf[32];
-        sprintf(marginBuf, formatBuf, lineNo);
-
-        out.append(marginBuf);
-
-        if (!decoratedLine.empty()) {
-          pair<int, int> visibleBorders =
-              visibleStrSlice(decoratedLine, activeTextView()->horizontalScroll,
-                              activeTextView()->cols);
-
-          if (visibleBorders.first == -1) {
-            out.append("\x1b[2m<\x1b[22m");
-          } else {
-            out.append(decoratedLine.substr(
-                visibleBorders.first,
-                visibleBorders.second - visibleBorders.first + 1));
-          }
-        }
-      } else {
-        out.push_back('~');
-      }
-
-      clearRestOfLine(out);
       out.append("\n\r");
     }
 
@@ -431,7 +358,8 @@ struct Editor {
   void contextAdjustEditorCursor() {
     switch (mode) {
       case EditorMode::TextEdit:
-        cursor.x = activeTextView()->cursor.x + leftMargin;
+        cursor.x = activeTextView()->cursor.x + leftMargin +
+                   activeTextView()->leftMargin;
         cursor.y = activeTextView()->cursor.y + topMargin;
         break;
       case EditorMode::Prompt:
@@ -470,9 +398,7 @@ struct Editor {
     return terminalDimension.first - bottomMargin - topMargin;
   }
 
-  inline int textViewCols() const {
-    return terminalDimension.second - leftMargin;
-  }
+  inline int textViewCols() { return terminalDimension.second - leftMargin; }
 
   string generateStatusLine() {
     string out{};
@@ -630,8 +556,12 @@ struct Editor {
   }
 
   inline void updateMargins() {
-    leftMargin = max(1, (int)ceil(log10(activeTextView()->lines.size()))) + 1;
+    leftMargin = 0;
     topMargin = textViews.size() > 1 ? 1 : 0;
+
+    for (auto& textView : textViews) {
+      textView.updateMargins();
+    }
   }
 
   void newTextView() {
