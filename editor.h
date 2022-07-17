@@ -336,7 +336,7 @@ struct Editor {
       out.append(generateTextViewsTabsLine());
 
     for (int lineIdx = 0; lineIdx < textViewRows(); lineIdx++) {
-      activeTextView()->drawLine(out, lineIdx, searchTerm);
+      activeSplitUnit()->drawLine(out, lineIdx, searchTerm);
       out.append("\n\r");
     }
 

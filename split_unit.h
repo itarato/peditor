@@ -25,4 +25,8 @@ struct SplitUnit {
   }
 
   inline bool hasMultipleTabs() const { return textViews.size() > 1; }
+
+  void drawLine(string& out, int lineIdx, optional<string>& searchTerm) {
+    activeTextView()->drawLine(out, lineIdx, searchTerm);
+  }
 };
