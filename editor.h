@@ -79,7 +79,8 @@ struct Editor {
   Editor(Config config) : config(config) {}
 
   void init() {
-    splitUnits.emplace_back(textViewCols(), textViewRows());
+    splitUnits.emplace_back(splitAreaCols(), textViewRows());
+    // splitUnits.emplace_back(splitAreaCols(), textViewRows());
 
     preserveTermiosOriginalState();
     enableRawMode();
@@ -331,7 +332,9 @@ struct Editor {
 
   void drawLines(string& out) {
     for (int lineIdx = 0; lineIdx < textViewRows(); lineIdx++) {
-      activeSplitUnit()->drawLine(out, lineIdx, searchTerm);
+      for (auto& splitUnit : splitUnits) {
+        splitUnit.drawLine(out, lineIdx, searchTerm);
+      }
       out.append("\n\r");
     }
 
@@ -392,16 +395,16 @@ struct Editor {
     write(STDOUT_FILENO, out.c_str(), out.size());
   }
 
-  void updateDimensions() {
-    terminalDimension = getTerminalDimension();
-    activeSplitUnit()->updateDimensions(textViewCols(), textViewRows());
-  }
-
   inline int textViewRows() const {
     return terminalDimension.first - bottomMargin - topMargin;
   }
 
-  inline int textViewCols() { return terminalDimension.second - leftMargin; }
+  inline int splitAreaCols() const {
+    return terminalDimension.second - leftMargin;
+  }
+  inline int textViewCols(int idx) const {
+    return splitAreaCols() / splitUnits.size();
+  }
 
   string generateStatusLine() {
     string out{};
@@ -415,7 +418,7 @@ struct Editor {
         " pEditor v0 | File: %s%s | Textarea: %dx%d | Cursor: %dx %dy | %d%%",
         activeTextView()->filePath.value_or("<no file>").c_str(),
         (activeTextView()->isDirty ? " \x1b[94m(edited)\x1b[39m" : ""),
-        textViewCols(), textViewRows(), activeTextView()->cursor.x,
+        splitAreaCols(), textViewRows(), activeTextView()->cursor.x,
         activeTextView()->cursor.y, rowPosPercentage);
 
     out.append(buf);
@@ -526,7 +529,16 @@ struct Editor {
     for (auto& splitUnit : splitUnits) splitUnit.updateMargins();
   }
 
+  void updateDimensions() {
+    terminalDimension = getTerminalDimension();
+
+    for (int i = 0; i < (int)splitUnits.size(); i++) {
+      splitUnits[i].updateDimensions(textViewCols(i), textViewRows());
+    }
+  }
+
   inline void newTextView() {
-    activeSplitUnit()->newTextView(textViewCols(), textViewRows());
+    activeSplitUnit()->newTextView(textViewCols(activeSplitUnitIdx),
+                                   textViewRows());
   }
 };
