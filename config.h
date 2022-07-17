@@ -38,6 +38,8 @@ static unordered_map<EscapeChar, InputStroke> escapeCharToInputStrokeMap{
     {EscapeChar::Alt9, InputStroke::Alt9},
     {EscapeChar::AltMinus, InputStroke::AltMinus},
     {EscapeChar::AltEqual, InputStroke::AltEqual},
+    {EscapeChar::AltS, InputStroke::AltS},
+    {EscapeChar::AltK, InputStroke::AltK},
 };
 
 struct Config {
@@ -94,6 +96,8 @@ struct Config {
       {InputStroke::Alt8, TextEditorAction::ChangeActiveView7},
       {InputStroke::Alt9, TextEditorAction::ChangeActiveView8},
       {InputStroke::Alt0, TextEditorAction::ChangeActiveView9},
+      {InputStroke::AltS, TextEditorAction::NewSplitUnit},
+      {InputStroke::AltK, TextEditorAction::CloseSplitUnit},
   };
 
   TextEditorAction textEditorActionForKeystroke(TypedChar tc) {

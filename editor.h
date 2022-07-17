@@ -297,6 +297,12 @@ struct Editor {
       case TextEditorAction::ChangeActiveView9:
         changeActiveView(9);
         break;
+      case TextEditorAction::NewSplitUnit:
+        newSplitUnit();
+        break;
+      case TextEditorAction::CloseSplitUnit:
+        closeSplitUnit();
+        break;
     }
   }
 
@@ -365,17 +371,23 @@ struct Editor {
   }
 
   void contextAdjustEditorCursor() {
-    switch (mode) {
-      case EditorMode::TextEdit:
-        // FIXME: Left side split pane sizes needs to be added
-        cursor.x = activeTextView()->cursor.x + leftMargin +
-                   activeTextView()->leftMargin;
-        cursor.y = activeTextView()->cursor.y + activeSplitUnit()->topMargin +
-                   topMargin;
-        break;
-      case EditorMode::Prompt:
-        // Keep as is.
-        break;
+    if (mode == EditorMode::TextEdit) {
+      // FIXME: Left side split pane sizes needs to be added
+
+      int currentSplitUnitIdx = 0;
+      int splitUnitXOffset = 0;
+      while (currentSplitUnitIdx < activeSplitUnitIdx) {
+        splitUnitXOffset += textViewCols(currentSplitUnitIdx++);
+      }
+
+      cursor.x = splitUnitXOffset + activeTextView()->cursor.x + leftMargin +
+                 activeTextView()->leftMargin;
+      cursor.y =
+          activeTextView()->cursor.y + activeSplitUnit()->topMargin + topMargin;
+    } else if (mode == EditorMode::Prompt) {
+      // Keep as is.
+    } else {
+      reportAndExit("Missing mode handling");
     }
   }
 
@@ -543,5 +555,19 @@ struct Editor {
     changeActiveSplitUnit(splitUnits.size() - 1);
 
     updateDimensions();
+  }
+
+  void closeSplitUnit() {
+    if (splitUnits.size() <= 1) {
+      requestQuit();
+      return;
+    }
+
+    auto splitIt = splitUnits.begin();
+    advance(splitIt, activeSplitUnitIdx);
+    splitUnits.erase(splitIt);
+
+    updateDimensions();
+    changeActiveSplitUnit(activeSplitUnitIdx);
   }
 };

@@ -195,6 +195,8 @@ enum class TextEditorAction {
   ChangeActiveView7,
   ChangeActiveView8,
   ChangeActiveView9,
+  NewSplitUnit,
+  CloseSplitUnit,
 };
 
 enum class InputStroke {
@@ -249,6 +251,8 @@ enum class InputStroke {
   Alt7,
   Alt8,
   Alt9,
+  AltS,
+  AltK,
 };
 
 enum class EscapeChar {
@@ -282,6 +286,8 @@ enum class EscapeChar {
   Alt9,
   AltMinus,
   AltEqual,
+  AltS,
+  AltK,
 };
 
 struct TypedChar {
