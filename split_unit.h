@@ -24,6 +24,15 @@ struct SplitUnit {
     updateDimensions(cols, rows);
   }
 
+  void closeTextView() {
+    auto viewIt = textViews.begin();
+    advance(viewIt, activeTextViewIdx);
+    textViews.erase(viewIt);
+
+    updateDimensions(cols, rows);
+    setActiveTextViewIdx(activeTextViewIdx);
+  }
+
   void setActiveTextViewIdx(int newValue) {
     activeTextViewIdx = newValue % textViews.size();
   }

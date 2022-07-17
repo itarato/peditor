@@ -97,7 +97,7 @@ struct Config {
       {InputStroke::Alt9, TextEditorAction::ChangeActiveView8},
       {InputStroke::Alt0, TextEditorAction::ChangeActiveView9},
       {InputStroke::AltS, TextEditorAction::NewSplitUnit},
-      {InputStroke::AltK, TextEditorAction::CloseSplitUnit},
+      {InputStroke::AltK, TextEditorAction::CloseTextView},
   };
 
   TextEditorAction textEditorActionForKeystroke(TypedChar tc) {

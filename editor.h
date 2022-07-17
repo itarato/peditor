@@ -300,8 +300,8 @@ struct Editor {
       case TextEditorAction::NewSplitUnit:
         newSplitUnit();
         break;
-      case TextEditorAction::CloseSplitUnit:
-        closeSplitUnit();
+      case TextEditorAction::CloseTextView:
+        closeTextView();
         break;
     }
   }
@@ -548,6 +548,14 @@ struct Editor {
   }
 
   inline void newTextView() { activeSplitUnit()->newTextView(); }
+
+  void closeTextView() {
+    if (activeSplitUnit()->hasMultipleTabs()) {
+      activeSplitUnit()->closeTextView();
+    } else {
+      closeSplitUnit();
+    }
+  }
 
   void newSplitUnit() {
     splitUnits.emplace_back();

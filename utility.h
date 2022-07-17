@@ -196,7 +196,7 @@ enum class TextEditorAction {
   ChangeActiveView8,
   ChangeActiveView9,
   NewSplitUnit,
-  CloseSplitUnit,
+  CloseTextView,
 };
 
 enum class InputStroke {
