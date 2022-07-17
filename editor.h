@@ -363,9 +363,11 @@ struct Editor {
   void contextAdjustEditorCursor() {
     switch (mode) {
       case EditorMode::TextEdit:
+        // FIXME: Left side split pane sizes needs to be added
         cursor.x = activeTextView()->cursor.x + leftMargin +
                    activeTextView()->leftMargin;
-        cursor.y = activeTextView()->cursor.y + topMargin;
+        cursor.y = activeTextView()->cursor.y + activeSplitUnit()->topMargin +
+                   topMargin;
         break;
       case EditorMode::Prompt:
         // Keep as is.
@@ -563,14 +565,10 @@ struct Editor {
 
   inline void updateMargins() {
     leftMargin = 0;
-    topMargin = activeSplitUnit()->hasMultipleTabs() ? 1 : 0;
+    topMargin = 0;
+    bottomMargin = 1;
 
-    for (auto& splitUnit : splitUnits) {
-      for (auto& textView : splitUnit.textViews) {
-        // TODO: We can limit to only visible ones.
-        textView.updateMargins();
-      }
-    }
+    for (auto& splitUnit : splitUnits) splitUnit.updateMargins();
   }
 
   inline void newTextView() {

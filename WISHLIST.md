@@ -16,3 +16,4 @@ Stupid:
 - visual feedback / popup
 
 Bugfix:
+- \" is tokenized in a string as a closing "

@@ -9,6 +9,7 @@ using namespace std;
 struct SplitUnit {
   vector<TextView> textViews{};
   int activeTextViewIdx{0};
+  int topMargin{0};
 
   SplitUnit(int cols, int rows) { textViews.emplace_back(cols, rows); }
 
@@ -28,5 +29,13 @@ struct SplitUnit {
 
   void drawLine(string& out, int lineIdx, optional<string>& searchTerm) {
     activeTextView()->drawLine(out, lineIdx, searchTerm);
+  }
+
+  void updateMargins() {
+    topMargin = hasMultipleTabs() ? 1 : 0;
+    for (auto& textView : textViews) {
+      // TODO: We can limit to only visible ones.
+      textView.updateMargins();
+    }
   }
 };
