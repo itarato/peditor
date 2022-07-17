@@ -35,9 +35,6 @@ struct SplitUnit {
   void drawLine(string& out, int lineIdx, optional<string>& searchTerm) {
     if (lineIdx == 0 && hasMultipleTabs()) {
       generateTextViewsTabsLine(out);
-
-      DLOG("Printed tabs");
-
       return;
     }
 
