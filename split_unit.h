@@ -51,8 +51,9 @@ struct SplitUnit {
     out.append("\x1b[7m\x1b[90m");
 
     if (maxTitleSize < 5) {
-      // TODO add proper
-      out.append("-");
+      out.append("\x1b[39m ");
+      out.append(
+          activeTextView()->fileName().value_or("<no file>").substr(0, cols));
     } else {
       for (int i = 0; i < (int)textViews.size(); i++) {
         if (i == activeTextViewIdx) {
