@@ -881,7 +881,6 @@ struct TextView : ITextViewState {
     int lineNo = lineIdx + verticalScroll;
 
     if (size_t(lineNo) < lines.size()) {
-      // TODO: include horizontalScroll
       string& line = lines[lineNo];
       string decoratedLine = decorateLine(line, lineNo, searchTerm);
 
@@ -956,5 +955,10 @@ struct TextView : ITextViewState {
 
   inline void updateMargins() {
     leftMargin = max(1, (int)ceil(log10(lines.size()))) + 1;
+  }
+
+  void updateDimensions(int newCols, int newRows) {
+    cols = newCols;
+    rows = newRows;
   }
 };

@@ -83,7 +83,7 @@ struct Editor {
 
     preserveTermiosOriginalState();
     enableRawMode();
-    refreshTerminalDimension();
+    updateDimensions();
 
     activeTextView()->reloadContent();
   }
@@ -330,11 +330,6 @@ struct Editor {
   inline int terminalCols() const { return terminalDimension.second; }
 
   void drawLines(string& out) {
-    resetCursorLocation(out);
-
-    if (activeSplitUnit()->hasMultipleTabs())
-      out.append(generateTextViewsTabsLine());
-
     for (int lineIdx = 0; lineIdx < textViewRows(); lineIdx++) {
       activeSplitUnit()->drawLine(out, lineIdx, searchTerm);
       out.append("\n\r");
@@ -378,13 +373,15 @@ struct Editor {
   void refreshScreen() {
     string out{};
 
-    refreshTerminalDimension();
+    updateDimensions();
 
     // TODO: do something better here, don't check the text view - it might be
-    // irrelevant.
+    // irrelevant. Make all drawing (split unit, text view, etc) self aware of
+    // this - and skip if cannot draw.
     if (activeTextView()->cols <= 1) return;
 
     hideCursor(out);
+    resetCursorLocation(out);
     drawLines(out);
 
     contextAdjustEditorCursor();
@@ -395,10 +392,9 @@ struct Editor {
     write(STDOUT_FILENO, out.c_str(), out.size());
   }
 
-  void refreshTerminalDimension() {
+  void updateDimensions() {
     terminalDimension = getTerminalDimension();
-    activeTextView()->rows = textViewRows();
-    activeTextView()->cols = textViewCols();
+    activeSplitUnit()->updateDimensions(textViewCols(), textViewRows());
   }
 
   inline int textViewRows() const {
@@ -434,47 +430,6 @@ struct Editor {
       string filler(terminalCols() - visibleLen, ' ');
       out.append(filler);
     }
-
-    return out;
-  }
-
-  string generateTextViewsTabsLine() {
-    string out{};
-
-    int maxTitleSize = terminalCols() / activeSplitUnit()->textViews.size();
-
-    out.append("\x1b[7m\x1b[90m");
-
-    if (maxTitleSize < 5) {
-      // TODO add proper
-      out.append("-");
-    } else {
-      for (int i = 0; i < (int)activeSplitUnit()->textViews.size(); i++) {
-        if (i == activeSplitUnit()->activeTextViewIdx) {
-          out.append("\x1b[39m ");
-        } else {
-          out.append("\x1b[90m ");
-        }
-        // TODO only use filename part
-        out.append(activeSplitUnit()
-                       ->textViews[i]
-                       .fileName()
-                       .value_or("<no file>")
-                       .substr(0, maxTitleSize - 3));
-
-        if (i < (int)activeSplitUnit()->textViews.size() - 1) {
-          out.append(" \x1b[90m:");
-        } else {
-          out.append(" \x1b[90m");
-        }
-      }
-    }
-
-    string suffix(terminalCols() - visibleCharCount(out), ' ');
-    out.append(suffix);
-
-    out.append("\x1b[0m");
-    out.append("\n\r");
 
     return out;
   }
