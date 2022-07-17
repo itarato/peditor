@@ -53,8 +53,8 @@ Editor management:
     - Change view: `view <INDEX>`
 - New view: `ALT` + `n`
 - Change view: `ALT` + `0`..`9`
-- Split pane: `ALT` + `s`
-- Close split pane: `ALT` + `k`
+- New split pane: `ALT` + `s`
+- Close text view (split pane): `ALT` + `k`
 - Change split pane: `CTRL` + `ALT` + `left`/`right`
 
 Text editing:
