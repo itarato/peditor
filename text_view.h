@@ -46,16 +46,19 @@ struct TextView : ITextViewState {
 
   FileWatcher fileWatcher{};
 
-  int cols{-1};
-  int rows{-1};
+  int cols{0};
+  int rows{0};
 
   TokenAnalyzer tokenAnalyzer;
 
+  TextView() : tokenAnalyzer(TokenAnalyzer(SyntaxHighlightConfig(&keywords))) {
+    reloadContent();
+  }
   TextView(int cols, int rows)
       : cols(cols),
         rows(rows),
         tokenAnalyzer(TokenAnalyzer(SyntaxHighlightConfig(&keywords))) {
-    DLOG("def ctor %d %d", cursor.x, cursor.y);
+    reloadContent();
   }
 
   Point getCursor() { return cursor; }
@@ -237,10 +240,7 @@ struct TextView : ITextViewState {
     cursor.x = col;
     cursor.y += row - currentRow();
 
-    DLOG("Cursor A: %d %d", cursor.x, cursor.y);
-
     fixCursorPos();
-    DLOG("Cursor B: %d %d", cursor.x, cursor.y);
   }
 
   void cursorHome() {
@@ -771,8 +771,10 @@ struct TextView : ITextViewState {
     }
 
     reloadKeywordList();
+
     if (lines.empty()) lines.emplace_back("");
-    cursorTo(0, 0);
+
+    cursor.set(0, 0);
   }
 
   void saveFile() {
@@ -878,6 +880,8 @@ struct TextView : ITextViewState {
   // END SELECTIONS
 
   void drawLine(string& out, int lineIdx, optional<string>& searchTerm) {
+    string lineStr{};
+
     int lineNo = lineIdx + verticalScroll;
 
     if (size_t(lineNo) < lines.size()) {
@@ -890,25 +894,34 @@ struct TextView : ITextViewState {
       char marginBuf[32];
       sprintf(marginBuf, formatBuf, lineNo);
 
-      out.append(marginBuf);
+      lineStr.append(marginBuf);
 
       if (!decoratedLine.empty()) {
         pair<int, int> visibleBorders =
             visibleStrSlice(decoratedLine, horizontalScroll, textAreaCols());
 
         if (visibleBorders.first == -1) {
-          out.append("\x1b[2m<\x1b[22m");
+          lineStr.append("\x1b[2m<\x1b[22m");
         } else {
-          out.append(decoratedLine.substr(
+          lineStr.append(decoratedLine.substr(
               visibleBorders.first,
               visibleBorders.second - visibleBorders.first + 1));
         }
       }
     } else {
-      out.push_back('~');
+      lineStr.push_back('~');
     }
 
-    clearRestOfLine(out);
+    int paddingSize = cols - visibleCharCount(lineStr);
+    if (paddingSize > 0) {
+      string paddingSpaces(paddingSize, ' ');
+      lineStr.append(paddingSpaces);
+    } else if (paddingSize < 0) {
+      DLOG("ERROR - line overflow. Cols: %d Line len: %d", cols,
+           visibleCharCount(lineStr));
+    }
+
+    out.append(lineStr);
   }
 
   string decorateLine(string& line, int lineNo, optional<string>& searchTerm) {
@@ -953,12 +966,10 @@ struct TextView : ITextViewState {
     return out;
   }
 
-  inline void updateMargins() {
-    leftMargin = max(1, (int)ceil(log10(lines.size()))) + 1;
-  }
-
   void updateDimensions(int newCols, int newRows) {
     cols = newCols;
     rows = newRows;
+
+    leftMargin = max(1, (int)ceil(log10(lines.size()))) + 1;
   }
 };

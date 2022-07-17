@@ -11,19 +11,16 @@ struct SplitUnit {
   int activeTextViewIdx{0};
   int topMargin{0};
 
-  int cols;
-  int rows;
+  int cols{0};
+  int rows{0};
 
-  SplitUnit(int cols, int rows) : cols(cols), rows(rows) {
-    textViews.emplace_back(cols, rows);
-  }
+  SplitUnit() { textViews.emplace_back(); }
 
   inline TextView* activeTextView() { return &(textViews[activeTextViewIdx]); }
 
-  void newTextView(int cols, int rows) {
-    textViews.emplace_back(cols, rows);
+  void newTextView() {
+    textViews.emplace_back(textViewCols(), textViewRows());
     activeTextViewIdx = textViews.size() - 1;
-    activeTextView()->reloadContent();
   }
 
   void setActiveTextViewIdx(int newValue) {
@@ -77,20 +74,17 @@ struct SplitUnit {
     out.append("\x1b[0m");
   }
 
-  void updateMargins() {
-    topMargin = hasMultipleTabs() ? 1 : 0;
-    for (auto& textView : textViews) {
-      // TODO: We can limit to only visible ones.
-      textView.updateMargins();
-    }
-  }
+  inline int textViewCols() const { return cols; }
+  inline int textViewRows() const { return rows - topMargin; }
 
   void updateDimensions(int newCols, int newRows) {
     cols = newCols;
     rows = newRows;
 
+    topMargin = hasMultipleTabs() ? 1 : 0;
+
     for (auto& textView : textViews) {
-      textView.updateDimensions(newCols, newRows - topMargin);
+      textView.updateDimensions(textViewCols(), textViewRows());
     }
   }
 };

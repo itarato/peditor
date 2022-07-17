@@ -79,14 +79,12 @@ struct Editor {
   Editor(Config config) : config(config) {}
 
   void init() {
-    splitUnits.emplace_back(splitAreaCols(), textViewRows());
-    // splitUnits.emplace_back(splitAreaCols(), textViewRows());
-
     preserveTermiosOriginalState();
     enableRawMode();
+
     updateDimensions();
 
-    activeTextView()->reloadContent();
+    newSplitUnit();
   }
 
   inline SplitUnit* activeSplitUnit() {
@@ -114,12 +112,14 @@ struct Editor {
     activeSplitUnit()->setActiveTextViewIdx(idx);
   }
 
+  void changeActiveSplitUnit(int idx) {
+    activeSplitUnitIdx = idx % splitUnits.size();
+  }
+
   void runLoop() {
     TypedChar tc;
 
     while (!quitRequested) {
-      updateMargins();
-
       refreshScreen();
 
       if (activeTextView()->fileWatcher.hasBeenModified()) {
@@ -236,6 +236,12 @@ struct Editor {
         break;
       case TextEditorAction::CursosWordJumpRight:
         activeTextView()->cursosWordJumpRight();
+        break;
+      case TextEditorAction::SplitUnitToPrev:
+        changeActiveSplitUnit(activeSplitUnitIdx - 1);
+        break;
+      case TextEditorAction::SplitUnitToNext:
+        changeActiveSplitUnit(activeSplitUnitIdx + 1);
         break;
       case TextEditorAction::ScrollUp:
         activeTextView()->scrollUp();
@@ -398,12 +404,11 @@ struct Editor {
   inline int textViewRows() const {
     return terminalDimension.first - bottomMargin - topMargin;
   }
-
-  inline int splitAreaCols() const {
-    return terminalDimension.second - leftMargin;
-  }
   inline int textViewCols(int idx) const {
     return splitAreaCols() / splitUnits.size();
+  }
+  inline int splitAreaCols() const {
+    return terminalDimension.second - leftMargin;
   }
 
   string generateStatusLine() {
@@ -484,8 +489,6 @@ struct Editor {
       int lineNo;
       iss >> lineNo;
 
-      DLOG("Line jump to: %d", lineNo);
-
       activeTextView()->cursorTo(lineNo, activeTextView()->currentCol());
     } else if (topCommand == "search" || topCommand == "s") {
       string term;
@@ -521,24 +524,24 @@ struct Editor {
     activeTextView()->reloadContent();
   }
 
-  inline void updateMargins() {
+  void updateDimensions() {
+    terminalDimension = getTerminalDimension();
     leftMargin = 0;
     topMargin = 0;
     bottomMargin = 1;
-
-    for (auto& splitUnit : splitUnits) splitUnit.updateMargins();
-  }
-
-  void updateDimensions() {
-    terminalDimension = getTerminalDimension();
 
     for (int i = 0; i < (int)splitUnits.size(); i++) {
       splitUnits[i].updateDimensions(textViewCols(i), textViewRows());
     }
   }
 
-  inline void newTextView() {
-    activeSplitUnit()->newTextView(textViewCols(activeSplitUnitIdx),
-                                   textViewRows());
+  inline void newTextView() { activeSplitUnit()->newTextView(); }
+
+  void newSplitUnit() {
+    splitUnits.emplace_back();
+
+    changeActiveSplitUnit(splitUnits.size() - 1);
+
+    updateDimensions();
   }
 };

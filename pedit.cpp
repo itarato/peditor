@@ -27,7 +27,7 @@ void initTerminalWindowChangeWatch() {
 }
 
 int main(int argc, char** argv) {
-  DLOG("peditor start");
+  DLOG("pEditor start");
 
   Config config{};
 
@@ -42,7 +42,7 @@ int main(int argc, char** argv) {
 
   editor.runLoop();
 
-  DLOG("peditor end");
+  DLOG("pEditor end");
 
   return EXIT_SUCCESS;
 }

@@ -125,6 +125,11 @@ struct Point {
 
   Point() {}
   Point(int x, int y) : x(x), y(y) {}
+
+  void set(int newX, int newY) {
+    x = newX;
+    y = newY;
+  }
 };
 
 struct ITextViewState {
@@ -170,6 +175,8 @@ enum class TextEditorAction {
   CursorPageDown,
   CursorWordJumpLeft,
   CursosWordJumpRight,
+  SplitUnitToPrev,
+  SplitUnitToNext,
   ScrollUp,
   ScrollDown,
   InsertDelete,
@@ -222,6 +229,8 @@ enum class InputStroke {
   CtrlDown,
   CtrlLeft,
   CtrlRight,
+  CtrlAltLeft,
+  CtrlAltRight,
   PageUp,
   PageDown,
   Delete,
@@ -251,11 +260,8 @@ enum class EscapeChar {
   CtrlDown,
   CtrlLeft,
   CtrlRight,
-  // Not cross platform / terminal safe.
-  // ShiftUp,
-  // ShiftDown,
-  // ShiftLeft,
-  // ShiftRight,
+  CtrlAltLeft,
+  CtrlAltRight,
   Home,
   End,
   PageUp,
