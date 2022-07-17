@@ -30,11 +30,11 @@ struct SplitUnit {
     textViews.erase(viewIt);
 
     updateDimensions(cols, rows);
-    setActiveTextViewIdx(activeTextViewIdx);
+    setActiveTextViewIdx(activeTextViewIdx - 1);
   }
 
   void setActiveTextViewIdx(int newValue) {
-    activeTextViewIdx = newValue % textViews.size();
+    activeTextViewIdx = (newValue + textViews.size()) % textViews.size();
   }
 
   inline bool hasMultipleTabs() const { return textViews.size() > 1; }

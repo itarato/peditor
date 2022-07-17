@@ -908,6 +908,8 @@ struct TextView : ITextViewState {
               visibleBorders.second - visibleBorders.first + 1));
         }
       }
+
+      lineStr.append("\x1b[0m");
     } else {
       lineStr.push_back('~');
     }

@@ -112,8 +112,8 @@ struct Editor {
     activeSplitUnit()->setActiveTextViewIdx(idx);
   }
 
-  void changeActiveSplitUnit(int idx) {
-    activeSplitUnitIdx = idx % splitUnits.size();
+  void setActiveSplitUnit(int idx) {
+    activeSplitUnitIdx = (idx + splitUnits.size()) % splitUnits.size();
   }
 
   void runLoop() {
@@ -238,10 +238,10 @@ struct Editor {
         activeTextView()->cursosWordJumpRight();
         break;
       case TextEditorAction::SplitUnitToPrev:
-        changeActiveSplitUnit(activeSplitUnitIdx - 1);
+        setActiveSplitUnit(activeSplitUnitIdx - 1);
         break;
       case TextEditorAction::SplitUnitToNext:
-        changeActiveSplitUnit(activeSplitUnitIdx + 1);
+        setActiveSplitUnit(activeSplitUnitIdx + 1);
         break;
       case TextEditorAction::ScrollUp:
         activeTextView()->scrollUp();
@@ -560,7 +560,7 @@ struct Editor {
   void newSplitUnit() {
     splitUnits.emplace_back();
 
-    changeActiveSplitUnit(splitUnits.size() - 1);
+    setActiveSplitUnit(splitUnits.size() - 1);
 
     updateDimensions();
   }
@@ -576,6 +576,6 @@ struct Editor {
     splitUnits.erase(splitIt);
 
     updateDimensions();
-    changeActiveSplitUnit(activeSplitUnitIdx);
+    setActiveSplitUnit(activeSplitUnitIdx - 1);
   }
 };
