@@ -110,8 +110,7 @@ struct Editor {
   }
 
   void changeActiveView(int idx) {
-    activeSplitUnit()->activeTextViewIdx =
-        idx % activeSplitUnit()->textViews.size();
+    activeSplitUnit()->setActiveTextViewIdx(idx);
   }
 
   void runLoop() {
@@ -333,14 +332,11 @@ struct Editor {
   void drawLines(string& out) {
     resetCursorLocation(out);
 
-    if (activeSplitUnit()->textViews.size() > 1)
+    if (activeSplitUnit()->hasMultipleTabs())
       out.append(generateTextViewsTabsLine());
 
-    SyntaxHighlightConfig syntaxHighlightConfig{&activeTextView()->keywords};
-    TokenAnalyzer ta{syntaxHighlightConfig};
-
-    for (int lineNo = 0; lineNo < textViewRows(); lineNo++) {
-      activeTextView()->drawLine(out, lineNo, &ta, searchTerm);
+    for (int lineIdx = 0; lineIdx < textViewRows(); lineIdx++) {
+      activeTextView()->drawLine(out, lineIdx, searchTerm);
       out.append("\n\r");
     }
 
@@ -553,8 +549,7 @@ struct Editor {
       int idx;
       iss >> idx;
 
-      activeSplitUnit()->activeTextViewIdx =
-          idx % activeSplitUnit()->textViews.size();
+      changeActiveView(idx);
     } else {
       DLOG("Top command <%s> not recognized", topCommand.c_str());
     }
@@ -568,17 +563,17 @@ struct Editor {
 
   inline void updateMargins() {
     leftMargin = 0;
-    topMargin = activeSplitUnit()->textViews.size() > 1 ? 1 : 0;
+    topMargin = activeSplitUnit()->hasMultipleTabs() ? 1 : 0;
 
-    for (auto& textView : activeSplitUnit()->textViews) {
-      textView.updateMargins();
+    for (auto& splitUnit : splitUnits) {
+      for (auto& textView : splitUnit.textViews) {
+        // TODO: We can limit to only visible ones.
+        textView.updateMargins();
+      }
     }
   }
 
-  void newTextView() {
-    activeSplitUnit()->textViews.emplace_back(textViewCols(), textViewRows());
-    activeSplitUnit()->activeTextViewIdx =
-        activeSplitUnit()->textViews.size() - 1;
-    activeTextView()->reloadContent();
+  inline void newTextView() {
+    activeSplitUnit()->newTextView(textViewCols(), textViewRows());
   }
 };

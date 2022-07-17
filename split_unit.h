@@ -13,4 +13,16 @@ struct SplitUnit {
   SplitUnit(int cols, int rows) { textViews.emplace_back(cols, rows); }
 
   inline TextView* activeTextView() { return &(textViews[activeTextViewIdx]); }
+
+  void newTextView(int cols, int rows) {
+    textViews.emplace_back(cols, rows);
+    activeTextViewIdx = textViews.size() - 1;
+    activeTextView()->reloadContent();
+  }
+
+  void setActiveTextViewIdx(int newValue) {
+    activeTextViewIdx = newValue % textViews.size();
+  }
+
+  inline bool hasMultipleTabs() const { return textViews.size() > 1; }
 };

@@ -335,9 +335,9 @@ enum class TokenState {
 };
 
 struct TokenAnalyzer {
-  SyntaxHighlightConfig &config;
+  SyntaxHighlightConfig config;
 
-  TokenAnalyzer(SyntaxHighlightConfig &config) : config(config) {}
+  TokenAnalyzer(SyntaxHighlightConfig config) : config(config) {}
 
   vector<SyntaxColorInfo> colorizeTokens(string &input) {
     string current{};

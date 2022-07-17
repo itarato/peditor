@@ -33,6 +33,8 @@ struct TextView : ITextViewState {
   int leftMargin{0};
 
   optional<string> filePath{nullopt};
+  // TODO: This can be redundant if multiple views exist with same file type.
+  // Move to an editor mapped data.
   unordered_set<string> keywords{};
 
   vector<string> lines{};
@@ -47,7 +49,12 @@ struct TextView : ITextViewState {
   int cols{-1};
   int rows{-1};
 
-  TextView(int cols, int rows) : cols(cols), rows(rows) {
+  TokenAnalyzer tokenAnalyzer;
+
+  TextView(int cols, int rows)
+      : cols(cols),
+        rows(rows),
+        tokenAnalyzer(TokenAnalyzer(SyntaxHighlightConfig(&keywords))) {
     DLOG("def ctor %d %d", cursor.x, cursor.y);
   }
 
@@ -93,6 +100,8 @@ struct TextView : ITextViewState {
       keywords.insert(line);
     }
     f.close();
+
+    tokenAnalyzer = TokenAnalyzer(SyntaxHighlightConfig(&keywords));
   }
 
   bool onLineRow() {
@@ -868,14 +877,13 @@ struct TextView : ITextViewState {
 
   // END SELECTIONS
 
-  void drawLine(string& out, int lineIdx, TokenAnalyzer* ta,
-                optional<string>& searchTerm) {
+  void drawLine(string& out, int lineIdx, optional<string>& searchTerm) {
     int lineNo = lineIdx + verticalScroll;
 
     if (size_t(lineNo) < lines.size()) {
       // TODO: include horizontalScroll
       string& line = lines[lineNo];
-      string decoratedLine = decorateLine(line, ta, lineNo, searchTerm);
+      string decoratedLine = decorateLine(line, lineNo, searchTerm);
 
       char formatBuf[32];
       sprintf(formatBuf, "\x1b[33m%%%dd\x1b[0m ", leftMargin - 1);
@@ -904,14 +912,13 @@ struct TextView : ITextViewState {
     clearRestOfLine(out);
   }
 
-  string decorateLine(string& line, TokenAnalyzer* ta, int lineNo,
-                      optional<string>& searchTerm) {
+  string decorateLine(string& line, int lineNo, optional<string>& searchTerm) {
     string out{};
 
     int offset{0};
     auto lineIt = line.begin();
 
-    vector<SyntaxColorInfo> markers = ta->colorizeTokens(line);
+    vector<SyntaxColorInfo> markers = tokenAnalyzer.colorizeTokens(line);
 
     auto selection = lineSelectionRange(lineNo);
     if (selection.has_value()) {
