@@ -13,6 +13,7 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "command.h"
@@ -43,12 +44,40 @@ enum class PromptCommand {
 struct Prompt {
   string prefix{};
   PromptCommand command{PromptCommand::Nothing};
-  string message{};
+  string rawMessage{};
+
+  bool isAutoCompleteOn{false};
+  vector<string> messageOptions{};
 
   void reset(string newPrefix, PromptCommand newCommand) {
     prefix = newPrefix;
-    message.clear();
+    rawMessage.clear();
     command = newCommand;
+    isAutoCompleteOn = false;
+  }
+
+  void reset(string newPrefix, PromptCommand newCommand,
+             vector<string>&& newMessageOptions) {
+    reset(newPrefix, newCommand);
+
+    isAutoCompleteOn = true;
+    messageOptions = move(newMessageOptions);
+  }
+
+  string message() {
+    if (isAutoCompleteOn) {
+      auto filePaths = directoryFiles();
+      auto matches = poormansFuzzySearch(rawMessage, filePaths, 1);
+
+      return matches.empty() ? rawMessage : matches[0];
+    } else {
+      return rawMessage;
+    }
+  }
+
+  inline int messageVisibleSize() {
+    string s{message()};
+    return visibleCharCount(s);
   }
 };
 
@@ -159,7 +188,7 @@ struct Editor {
         openPrompt("Safe file to > ", PromptCommand::SaveFileAs);
         break;
       case TextEditorAction::OpenFile:
-        openPrompt("Open file > ", PromptCommand::OpenFile);
+        executeOpenFile();
         break;
       case TextEditorAction::MultiPurposeCommand:
         openPrompt("> ", PromptCommand::MultiPurpose);
@@ -317,14 +346,14 @@ struct Editor {
           finalizeAndClosePrompt();
           return;
         }
-        if (tc.simple() == BACKSPACE && !prompt.message.empty())
-          prompt.message.pop_back();
+        if (tc.simple() == BACKSPACE && !prompt.rawMessage.empty())
+          prompt.rawMessage.pop_back();
       } else {
-        prompt.message.push_back(tc.simple());
+        prompt.rawMessage.push_back(tc.simple());
       }
     }
 
-    cursor.x = prompt.prefix.size() + prompt.message.size() + 1;
+    cursor.x = prompt.prefix.size() + prompt.messageVisibleSize() + 1;
   }
 
   inline void requestQuit() { quitRequested = true; }
@@ -359,10 +388,10 @@ struct Editor {
         out.append("\x1b[0m\x1b[44m");
         out.append("\x1b[97m ");
         out.append(prompt.prefix);
-        out.append(prompt.message);
-        out.append(string(
-            terminalCols() - prompt.prefix.size() - prompt.message.size() - 1,
-            ' '));
+        out.append(prompt.message());
+        out.append(string(terminalCols() - prompt.prefix.size() -
+                              prompt.messageVisibleSize() - 1,
+                          ' '));
         out.append("\x1b[0m");
         break;
       case EditorMode::TextEdit:
@@ -471,7 +500,15 @@ struct Editor {
   void openPrompt(string prefix, PromptCommand command) {
     mode = EditorMode::Prompt;
     prompt.reset(prefix, command);
-    cursor.x = prompt.prefix.size() + prompt.message.size() + 1;
+    cursor.x = prompt.prefix.size() + prompt.messageVisibleSize() + 1;
+    cursor.y = terminalRows() - 1;
+  }
+
+  void openPrompt(string prefix, PromptCommand command,
+                  vector<string>&& messageOptions) {
+    mode = EditorMode::Prompt;
+    prompt.reset(prefix, command, move(messageOptions));
+    cursor.x = prompt.prefix.size() + prompt.messageVisibleSize() + 1;
     cursor.y = terminalRows() - 1;
   }
 
@@ -480,17 +517,17 @@ struct Editor {
 
     switch (prompt.command) {
       case PromptCommand::SaveFileAs:
-        activeTextView()->filePath = optional<string>(prompt.message);
+        activeTextView()->filePath = optional<string>(prompt.message());
         saveFile();
         break;
       case PromptCommand::OpenFile:
-        loadFile(prompt.message);
+        loadFile(prompt.message());
         break;
       case PromptCommand::MultiPurpose:
-        executeMultiPurposeCommand(prompt.message);
+        executeMultiPurposeCommand(prompt.message());
         break;
       case PromptCommand::FileHasBeenModified:
-        executeFileHasBeenModifiedPrompt(prompt.message);
+        executeFileHasBeenModifiedPrompt(prompt.message());
         break;
       case PromptCommand::Nothing:
         break;
@@ -499,7 +536,11 @@ struct Editor {
 
   inline void closePrompt() { mode = EditorMode::TextEdit; }
 
-  void executeMultiPurposeCommand(string& raw) {
+  void executeOpenFile() {
+    openPrompt("Open file > ", PromptCommand::OpenFile, directoryFiles());
+  }
+
+  void executeMultiPurposeCommand(string raw) {
     istringstream iss{raw};
     string topCommand;
     iss >> topCommand;
@@ -544,7 +585,7 @@ struct Editor {
     }
   }
 
-  void executeFileHasBeenModifiedPrompt(string& cmd) {
+  void executeFileHasBeenModifiedPrompt(string cmd) {
     if (cmd != "r") return;
 
     activeTextView()->reloadContent();

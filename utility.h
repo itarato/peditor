@@ -4,6 +4,7 @@
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <iterator>
 #include <optional>
 #include <string>
@@ -581,6 +582,60 @@ vector<SyntaxColorInfo> searchTermMarkers(string &line, string &searchTerm) {
     out.emplace_back(i + (int)searchTerm.size(), DEFAULT_BACKGROUND);
 
     from = i + searchTerm.size();
+  }
+
+  return out;
+}
+
+vector<string> directoryFiles(string path) {
+  vector<string> out{};
+
+  for (auto &p : filesystem::directory_iterator(path)) {
+    if (p.path().filename().c_str()[0] == '.') continue;
+
+    if (p.is_directory()) {
+      auto subDirFiles = directoryFiles(p.path());
+      copy(subDirFiles.begin(), subDirFiles.end(), back_insert_iterator(out));
+    } else if (p.is_regular_file()) {
+      out.push_back(p.path().c_str());
+    }
+  }
+
+  return out;
+}
+
+vector<string> directoryFiles() {
+  // This is massively ineffective:
+  // - needs to be cached
+  // - needs to be reloaded by watching directory changes
+  return directoryFiles("./");
+}
+
+bool poormansFuzzyMatch(string term, string word) {
+  if (term.empty()) return true;
+
+  int termIdx{(int)term.size() - 1};
+
+  for (auto wordIt = word.rbegin(); wordIt != word.rend(); wordIt++) {
+    if (term[termIdx] == *wordIt) {
+      termIdx--;
+
+      if (termIdx < 0) return true;
+    }
+  }
+
+  return false;
+}
+
+vector<string> poormansFuzzySearch(string term, vector<string> options,
+                                   int maxResult) {
+  vector<string> out{};
+
+  for (auto &option : options) {
+    if (poormansFuzzyMatch(term, option)) {
+      out.push_back(option);
+      if ((int)out.size() >= maxResult) break;
+    }
   }
 
   return out;
