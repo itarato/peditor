@@ -612,7 +612,7 @@ vector<string> directoryFiles() {
 }
 
 bool poormansFuzzyMatch(string term, string word) {
-  if (term.empty()) return true;
+  if (term.empty()) return false;
 
   int termIdx{(int)term.size() - 1};
 
@@ -635,6 +635,26 @@ vector<string> poormansFuzzySearch(string term, vector<string> options,
     if (poormansFuzzyMatch(term, option)) {
       out.push_back(option);
       if ((int)out.size() >= maxResult) break;
+    }
+  }
+
+  return out;
+}
+
+string highlightPoormanFuzzyMatch(string &term, string &word) {
+  string out{};
+
+  int termIdx{(int)term.size() - 1};
+
+  for (auto wordIt = word.rbegin(); wordIt != word.rend(); wordIt++) {
+    if (termIdx >= 0 && term[termIdx] == *wordIt) {
+      termIdx--;
+
+      out.insert(0, "\x1b[27m\x1b[39m");
+      out.insert(0, 1, *wordIt);
+      out.insert(0, "\x1b[7m\x1b[93m");
+    } else {
+      out.insert(0, 1, *wordIt);
     }
   }
 

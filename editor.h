@@ -64,12 +64,18 @@ struct Prompt {
     messageOptions = move(newMessageOptions);
   }
 
-  string message() {
+  string message(bool withHighlights = false) {
     if (isAutoCompleteOn) {
       auto filePaths = directoryFiles();
       auto matches = poormansFuzzySearch(rawMessage, filePaths, 1);
 
-      return matches.empty() ? rawMessage : matches[0];
+      if (matches.empty()) {
+        return rawMessage;
+      } else if (withHighlights) {
+        return highlightPoormanFuzzyMatch(rawMessage, matches[0]);
+      } else {
+        return matches[0];
+      }
     } else {
       return rawMessage;
     }
@@ -388,7 +394,7 @@ struct Editor {
         out.append("\x1b[0m\x1b[44m");
         out.append("\x1b[97m ");
         out.append(prompt.prefix);
-        out.append(prompt.message());
+        out.append(prompt.message(true));
         out.append(string(terminalCols() - prompt.prefix.size() -
                               prompt.messageVisibleSize() - 1,
                           ' '));
