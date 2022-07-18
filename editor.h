@@ -344,8 +344,12 @@ struct Editor {
 
   void drawLines(string& out) {
     for (int lineIdx = 0; lineIdx < textViewRows(); lineIdx++) {
-      for (auto& splitUnit : splitUnits) {
-        splitUnit.drawLine(out, lineIdx, searchTerm);
+      for (int i = 0; i < (int)splitUnits.size(); i++) {
+        splitUnits[i].drawLine(out, lineIdx, searchTerm);
+
+        if (i < (int)splitUnits.size() - 1) {
+          out.append("\x1b[2m\x1b[90m|\x1b[0m");
+        }
       }
       out.append("\n\r");
     }
@@ -377,7 +381,7 @@ struct Editor {
       int currentSplitUnitIdx = 0;
       int splitUnitXOffset = 0;
       while (currentSplitUnitIdx < activeSplitUnitIdx) {
-        splitUnitXOffset += textViewCols(currentSplitUnitIdx++);
+        splitUnitXOffset += textViewCols(currentSplitUnitIdx++) + 1;
       }
 
       cursor.x = splitUnitXOffset + activeTextView()->cursor.x + leftMargin +
@@ -417,6 +421,16 @@ struct Editor {
     return terminalDimension.first - bottomMargin - topMargin;
   }
   inline int textViewCols(int idx) const {
+    // -1 to account to borders
+    int nonLastSplitUnitCols = splitAreaCols() / splitUnits.size() - 1;
+
+    if (idx == (int)splitUnits.size() - 1) {
+      return splitAreaCols() -
+             ((nonLastSplitUnitCols + 1) * (splitUnits.size() - 1));
+    } else {
+      return nonLastSplitUnitCols;
+    }
+
     return splitAreaCols() / splitUnits.size();
   }
   inline int splitAreaCols() const {

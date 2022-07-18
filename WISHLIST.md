@@ -1,6 +1,8 @@
 Normal:
 - fuzzy file search on open
 - comment coloring
+- jump on search typing (allow fuzzy search)
+- not-saved indicator on tabs/split panes
 - split window
 - key re-binding (partially done, config file needed)
 - help
