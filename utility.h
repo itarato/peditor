@@ -641,6 +641,7 @@ vector<string> poormansFuzzySearch(string term, vector<string> options,
   return out;
 }
 
+// FIXME: This is a bit tied to prompt (due to coloring scheme).
 string highlightPoormanFuzzyMatch(string &term, string &word) {
   string out{};
 
