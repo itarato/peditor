@@ -43,6 +43,12 @@
 
 using namespace std;
 
+// FIXME: Unused.
+struct CodeComments {
+  vector<string> oneLiners{"//"};
+  vector<pair<string, string>> bounded{{"/*", "*/"}};
+};
+
 struct SyntaxHighlightConfig {
   const char *numberColor{MAGENTA};
   const char *stringColor{LIGHTYELLOW};
@@ -352,40 +358,49 @@ struct TokenAnalyzer {
 
   TokenAnalyzer(SyntaxHighlightConfig config) : config(config) {}
 
-  vector<SyntaxColorInfo> colorizeTokens(string &input) {
+  vector<vector<SyntaxColorInfo>> colorizeTokens(vector<string> &inputLines) {
     string current{};
-    vector<SyntaxColorInfo> out{};
+    vector<vector<SyntaxColorInfo>> out{};
 
-    for (auto it = input.begin(); it != input.end();) {
-      current.clear();
-      auto start = distance(input.begin(), it);
+    for (auto lineIt = inputLines.begin(); lineIt != inputLines.end();
+         lineIt++) {
+      vector<SyntaxColorInfo> lineOut{};
 
-      if (isWordStart(*it)) {
-        while (it != input.end() && isWord(*it)) current.push_back(*it++);
-        registerColorMarks(current, start, TokenState::Word, &out);
-      } else if (isNumber(*it)) {
-        while (it != input.end() && isNumber(*it)) current.push_back(*it++);
-        registerColorMarks(current, start, TokenState::Number, &out);
-      } else if (*it == '\'') {
-        current.push_back(*it++);
+      for (auto it = lineIt->begin(); it != lineIt->end();) {
+        current.clear();
+        auto start = distance(lineIt->begin(), it);
 
-        while (it != input.end() && *it != '\'') current.push_back(*it++);
-        if (it != input.end()) current.push_back(*it++);
+        if (isWordStart(*it)) {
+          while (it != lineIt->end() && isWord(*it)) current.push_back(*it++);
+          registerColorMarks(current, start, TokenState::Word, &lineOut);
+        } else if (isNumber(*it)) {
+          while (it != lineIt->end() && isNumber(*it)) current.push_back(*it++);
+          registerColorMarks(current, start, TokenState::Number, &lineOut);
+        } else if (*it == '\'') {
+          current.push_back(*it++);
 
-        registerColorMarks(current, start, TokenState::QuotedString, &out);
-      } else if (*it == '"') {
-        current.push_back(*it++);
+          while (it != lineIt->end() && *it != '\'') current.push_back(*it++);
+          if (it != lineIt->end()) current.push_back(*it++);
 
-        while (it != input.end() && *it != '"') current.push_back(*it++);
-        if (it != input.end()) current.push_back(*it++);
+          registerColorMarks(current, start, TokenState::QuotedString,
+                             &lineOut);
+        } else if (*it == '"') {
+          current.push_back(*it++);
 
-        registerColorMarks(current, start, TokenState::QuotedString, &out);
-      } else if (isParen(*it)) {
-        while (it != input.end() && isParen(*it)) current.push_back(*it++);
-        registerColorMarks(current, start, TokenState::Paren, &out);
-      } else {
-        it++;
+          while (it != lineIt->end() && *it != '"') current.push_back(*it++);
+          if (it != lineIt->end()) current.push_back(*it++);
+
+          registerColorMarks(current, start, TokenState::QuotedString,
+                             &lineOut);
+        } else if (isParen(*it)) {
+          while (it != lineIt->end() && isParen(*it)) current.push_back(*it++);
+          registerColorMarks(current, start, TokenState::Paren, &lineOut);
+        } else {
+          it++;
+        }
       }
+
+      out.push_back(lineOut);
     }
 
     return out;
