@@ -720,6 +720,8 @@ struct MultiLineCharIterator {
     }
 
     state = MultiLineCharIteratorState::OnCharacter;
+
+    return true;
   }
 
   const char *current() const {
@@ -731,5 +733,7 @@ struct MultiLineCharIterator {
       case MultiLineCharIteratorState::OnCharacter:
         return &lines[lineIdx][charIdx];
     }
+
+    return nullptr;
   }
 };

@@ -325,3 +325,71 @@ void test_text_view_movements() {
   ASSERT_EQ(0, tv.cursor.x);
   ASSERT_EQ(1, tv.cursor.y);
 }
+
+void test_MultiLineCharIterator_basic() {
+  vector<string> lines{
+      "ab",
+      "cd",
+  };
+
+  MultiLineCharIterator it{lines};
+
+  ASSERT_EQ('a', *it.current());
+  ASSERT_EQ('a', *it.current());
+
+  it.next();
+  ASSERT_EQ('b', *it.current());
+
+  it.next();
+  ASSERT_EQ('\n', *it.current());
+  ASSERT_EQ(it.newline, *it.current());
+
+  it.next();
+  ASSERT_EQ('c', *it.current());
+
+  it.next();
+  ASSERT_EQ('d', *it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, *it.current());
+
+  it.next();
+  ASSERT_EQ(it.end, *it.current());
+
+  it.next();
+  ASSERT_EQ(it.end, *it.current());
+}
+
+void test_MultiLineCharIterator_empty_lines() {
+  vector<string> lines{
+      "", "a", "", "", "b", "",
+  };
+
+  MultiLineCharIterator it{lines};
+
+  ASSERT_EQ(it.newline, *it.current());
+
+  it.next();
+  ASSERT_EQ('a', *it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, *it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, *it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, *it.current());
+
+  it.next();
+  ASSERT_EQ('b', *it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, *it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, *it.current());
+
+  it.next();
+  ASSERT_EQ(it.end, *it.current());
+}
