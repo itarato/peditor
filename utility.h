@@ -379,7 +379,9 @@ struct TokenAnalyzer {
         } else if (*it == '\'') {
           current.push_back(*it++);
 
+          // Collect until closing quote or end.
           while (it != lineIt->end() && *it != '\'') current.push_back(*it++);
+          // Add closing quote (in case it wasn't overrunning the line).
           if (it != lineIt->end()) current.push_back(*it++);
 
           registerColorMarks(current, start, TokenState::QuotedString,
