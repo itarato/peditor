@@ -240,6 +240,19 @@ void test_comments() {
   ASSERT_EQ(6, (int)result[0][1].pos);
 }
 
+void test_multiline_comments() {
+  vector<string> raw = {"  /*ab", "cd*/  "};
+  SyntaxHighlightConfig conf{nullptr};
+
+  TokenAnalyzer ta{conf};
+  auto result = ta.colorizeTokens(raw);
+
+  ASSERT_EQ(2, (int)result.size());
+
+  ASSERT_EQ(2, (int)result[0][0].pos);
+  ASSERT_EQ(4, (int)result[1][0].pos);
+}
+
 void test_next_word_jump_location() {
   string s;
 
