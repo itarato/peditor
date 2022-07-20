@@ -46,6 +46,8 @@ struct TextView : ITextViewState {
 
   FileWatcher fileWatcher{};
 
+  vector<vector<SyntaxColorInfo>> syntaxColoring{};
+
   int cols{0};
   int rows{0};
 
@@ -333,6 +335,12 @@ struct TextView : ITextViewState {
     history.record(move(cmd));
 
     isDirty = true;
+
+    reloadSyntaxColoring();
+  }
+
+  inline void reloadSyntaxColoring() {
+    syntaxColoring = tokenAnalyzer.colorizeTokens(lines);
   }
 
   void clipboardCopy(vector<string>& sharedClipboard) {
@@ -771,6 +779,7 @@ struct TextView : ITextViewState {
     }
 
     reloadKeywordList();
+    reloadSyntaxColoring();
 
     if (lines.empty()) lines.emplace_back("");
 
@@ -932,7 +941,10 @@ struct TextView : ITextViewState {
     int offset{0};
     auto lineIt = line.begin();
 
-    vector<SyntaxColorInfo> markers = tokenAnalyzer.colorizeTokens(line);
+    vector<SyntaxColorInfo> markers{};
+    if (lineNo <= (int)syntaxColoring.size() - 1) {
+      markers = syntaxColoring[lineNo];
+    }
 
     auto selection = lineSelectionRange(lineNo);
     if (selection.has_value()) {
