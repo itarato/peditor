@@ -678,3 +678,58 @@ string highlightPoormanFuzzyMatch(string &term, string &word) {
 
   return out;
 }
+
+enum class MultiLineCharIteratorState {
+  OnCharacter,
+  OnNewLine,
+  OnEnd,
+};
+
+struct MultiLineCharIterator {
+  vector<string> &lines;
+  const char end{'\0'};
+  const char newline{'\n'};
+
+  MultiLineCharIteratorState state{MultiLineCharIteratorState::OnNewLine};
+
+  int lineIdx{-1};
+  int charIdx{-1};
+
+  MultiLineCharIterator(vector<string> &lines) : lines(lines) { next(); }
+
+  bool next() {
+    if (state == MultiLineCharIteratorState::OnEnd) {
+      return false;
+    } else if (state == MultiLineCharIteratorState::OnNewLine) {
+      lineIdx++;
+      charIdx = 0;
+    } else if (state == MultiLineCharIteratorState::OnCharacter) {
+      charIdx++;
+    } else {
+      reportAndExit("Unhandled MultiLineCharIteratorState");
+    }
+
+    if (lineIdx >= (int)lines.size()) {
+      state = MultiLineCharIteratorState::OnEnd;
+      return true;
+    }
+
+    if (charIdx >= (int)lines[lineIdx].size()) {
+      state = MultiLineCharIteratorState::OnNewLine;
+      return true;
+    }
+
+    state = MultiLineCharIteratorState::OnCharacter;
+  }
+
+  const char *current() const {
+    switch (state) {
+      case MultiLineCharIteratorState::OnNewLine:
+        return &newline;
+      case MultiLineCharIteratorState::OnEnd:
+        return &end;
+      case MultiLineCharIteratorState::OnCharacter:
+        return &lines[lineIdx][charIdx];
+    }
+  }
+};
