@@ -362,47 +362,46 @@ struct TokenAnalyzer {
     string current{};
     vector<vector<SyntaxColorInfo>> out{};
 
-    for (auto lineIt = inputLines.begin(); lineIt != inputLines.end();
-         lineIt++) {
-      vector<SyntaxColorInfo> lineOut{};
+    for (int i = 0; i < inputLines.size(); i++) out.emplace_back();
 
-      for (auto it = lineIt->begin(); it != lineIt->end();) {
-        current.clear();
-        auto start = distance(lineIt->begin(), it);
+    MultiLineCharIterator it{inputLines};
 
-        if (isWordStart(*it)) {
-          while (it != lineIt->end() && isWord(*it)) current.push_back(*it++);
-          registerColorMarks(current, start, TokenState::Word, &lineOut);
-        } else if (isNumber(*it)) {
-          while (it != lineIt->end() && isNumber(*it)) current.push_back(*it++);
-          registerColorMarks(current, start, TokenState::Number, &lineOut);
-        } else if (*it == '\'') {
-          current.push_back(*it++);
+    for (MultiLineCharIterator it{inputLines}; *it.current() != it.end;
+         it.next()) {
+      current.clear();
+      auto start = distance(lineIt->begin(), it);
 
-          // Collect until closing quote or end.
-          while (it != lineIt->end() && *it != '\'') current.push_back(*it++);
-          // Add closing quote (in case it wasn't overrunning the line).
-          if (it != lineIt->end()) current.push_back(*it++);
+      if (isWordStart(*it)) {
+        while (it != lineIt->end() && isWord(*it)) current.push_back(*it++);
+        registerColorMarks(current, start, TokenState::Word, &out[it.lineIdx]);
+      } else if (isNumber(*it)) {
+        while (it != lineIt->end() && isNumber(*it)) current.push_back(*it++);
+        registerColorMarks(current, start, TokenState::Number,
+                           &out[it.lineIdx]);
+      } else if (*it == '\'') {
+        current.push_back(*it++);
 
-          registerColorMarks(current, start, TokenState::QuotedString,
-                             &lineOut);
-        } else if (*it == '"') {
-          current.push_back(*it++);
+        // Collect until closing quote or end.
+        while (it != lineIt->end() && *it != '\'') current.push_back(*it++);
+        // Add closing quote (in case it wasn't overrunning the line).
+        if (it != lineIt->end()) current.push_back(*it++);
 
-          while (it != lineIt->end() && *it != '"') current.push_back(*it++);
-          if (it != lineIt->end()) current.push_back(*it++);
+        registerColorMarks(current, start, TokenState::QuotedString,
+                           &out[it.lineIdx]);
+      } else if (*it == '"') {
+        current.push_back(*it++);
 
-          registerColorMarks(current, start, TokenState::QuotedString,
-                             &lineOut);
-        } else if (isParen(*it)) {
-          while (it != lineIt->end() && isParen(*it)) current.push_back(*it++);
-          registerColorMarks(current, start, TokenState::Paren, &lineOut);
-        } else {
-          it++;
-        }
+        while (it != lineIt->end() && *it != '"') current.push_back(*it++);
+        if (it != lineIt->end()) current.push_back(*it++);
+
+        registerColorMarks(current, start, TokenState::QuotedString,
+                           &out[it.lineIdx]);
+      } else if (isParen(*it)) {
+        while (it != lineIt->end() && isParen(*it)) current.push_back(*it++);
+        registerColorMarks(current, start, TokenState::Paren, &out[it.lineIdx]);
+      } else {
+        it++;
       }
-
-      out.push_back(lineOut);
     }
 
     return out;
