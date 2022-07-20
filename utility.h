@@ -137,6 +137,14 @@ struct Point {
     x = newX;
     y = newY;
   }
+
+  void set(Point newPoint) {
+    x = newPoint.x;
+    y = newPoint.y;
+  }
+
+  inline Point dx(int delta) { return Point{x + delta, y}; }
+  inline Point dy(int delta) { return Point{x, y + delta}; }
 };
 
 struct ITextViewState {
@@ -337,12 +345,78 @@ void reportAndExit(const char *s) {
   exit(EXIT_FAILURE);
 }
 
+enum class MultiLineCharIteratorState {
+  OnCharacter,
+  OnNewLine,
+  OnEnd,
+};
+
+struct MultiLineCharIterator {
+  vector<string> &lines;
+  const char end{'\0'};
+  const char newline{'\n'};
+  Point idx{-1, -1};
+
+  MultiLineCharIteratorState state{MultiLineCharIteratorState::OnNewLine};
+
+  MultiLineCharIterator(vector<string> &lines) : lines(lines) { next(); }
+
+  bool next() {
+    if (state == MultiLineCharIteratorState::OnEnd) {
+      return false;
+    } else if (state == MultiLineCharIteratorState::OnNewLine) {
+      idx.y++;
+      idx.x = 0;
+    } else if (state == MultiLineCharIteratorState::OnCharacter) {
+      idx.x++;
+    } else {
+      reportAndExit("Unhandled MultiLineCharIteratorState");
+    }
+
+    if (idx.y >= (int)lines.size()) {
+      state = MultiLineCharIteratorState::OnEnd;
+      return true;
+    }
+
+    if (idx.x >= (int)lines[idx.y].size()) {
+      state = MultiLineCharIteratorState::OnNewLine;
+      return true;
+    }
+
+    state = MultiLineCharIteratorState::OnCharacter;
+
+    return true;
+  }
+
+  const char current() const {
+    switch (state) {
+      case MultiLineCharIteratorState::OnNewLine:
+        return newline;
+      case MultiLineCharIteratorState::OnEnd:
+        return end;
+      case MultiLineCharIteratorState::OnCharacter:
+        return lines[idx.y][idx.x];
+    }
+
+    return end;
+  }
+
+  const bool isEnded() const {
+    return state == MultiLineCharIteratorState::OnEnd;
+  }
+
+  const bool isRealChar() const {
+    return state == MultiLineCharIteratorState::OnCharacter;
+  }
+};
+
 inline bool isParen(char c) {
   return c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}';
 }
 inline bool isWordStart(char c) { return isalpha(c) || c == '_'; }
 inline bool isWord(char c) { return isalnum(c) || c == '_'; }
 inline bool isNumber(char c) { return isdigit(c); }
+inline bool isQuote(char c) { return c == '"' || c == '\''; }
 
 enum class TokenState {
   Unknown,
@@ -362,45 +436,43 @@ struct TokenAnalyzer {
     string current{};
     vector<vector<SyntaxColorInfo>> out{};
 
-    for (int i = 0; i < inputLines.size(); i++) out.emplace_back();
+    for (int i = 0; i < (int)inputLines.size(); i++) out.emplace_back();
 
-    MultiLineCharIterator it{inputLines};
-
-    for (MultiLineCharIterator it{inputLines}; *it.current() != it.end;
-         it.next()) {
+    for (MultiLineCharIterator it{inputLines}; !it.isEnded();) {
       current.clear();
-      auto start = distance(lineIt->begin(), it);
+      Point start = it.idx;
+      Point end = it.idx;
 
-      if (isWordStart(*it)) {
-        while (it != lineIt->end() && isWord(*it)) current.push_back(*it++);
-        registerColorMarks(current, start, TokenState::Word, &out[it.lineIdx]);
-      } else if (isNumber(*it)) {
-        while (it != lineIt->end() && isNumber(*it)) current.push_back(*it++);
-        registerColorMarks(current, start, TokenState::Number,
-                           &out[it.lineIdx]);
-      } else if (*it == '\'') {
-        current.push_back(*it++);
+      if (isWordStart(it.current())) {
+        while (!it.isEnded() && isWord(it.current())) consume(current, it, end);
+        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Word,
+                           out);
+      } else if (isNumber(it.current())) {
+        while (!it.isEnded() && isNumber(it.current()))
+          consume(current, it, end);
+        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Number,
+                           out);
+      } else if (isQuote(it.current())) {
+        char quoteType{it.current()};
+
+        // First quote.
+        consume(current, it, end);
 
         // Collect until closing quote or end.
-        while (it != lineIt->end() && *it != '\'') current.push_back(*it++);
+        while (!it.isEnded() && it.current() != quoteType)
+          consume(current, it, end);
+
         // Add closing quote (in case it wasn't overrunning the line).
-        if (it != lineIt->end()) current.push_back(*it++);
+        consume(current, it, end);
 
-        registerColorMarks(current, start, TokenState::QuotedString,
-                           &out[it.lineIdx]);
-      } else if (*it == '"') {
-        current.push_back(*it++);
-
-        while (it != lineIt->end() && *it != '"') current.push_back(*it++);
-        if (it != lineIt->end()) current.push_back(*it++);
-
-        registerColorMarks(current, start, TokenState::QuotedString,
-                           &out[it.lineIdx]);
-      } else if (isParen(*it)) {
-        while (it != lineIt->end() && isParen(*it)) current.push_back(*it++);
-        registerColorMarks(current, start, TokenState::Paren, &out[it.lineIdx]);
+        registerColorMarks(current, start, end, TokenState::QuotedString, out);
+      } else if (isParen(it.current())) {
+        while (!it.isEnded() && isParen(it.current()))
+          consume(current, it, end);
+        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Paren,
+                           out);
       } else {
-        it++;
+        it.next();
       }
     }
 
@@ -408,6 +480,17 @@ struct TokenAnalyzer {
   }
 
  private:
+  void consume(string &current, MultiLineCharIterator &it, Point &end) {
+    if (it.isEnded()) return;
+
+    if (it.isRealChar()) {
+      current.push_back(it.current());
+      end.set(it.idx);
+    }
+
+    it.next();
+  }
+
   const char *analyzeToken(TokenState state, string &token) {
     unordered_set<string>::iterator wordIt;
 
@@ -430,12 +513,13 @@ struct TokenAnalyzer {
     }
   }
 
-  void registerColorMarks(string &word, int start, TokenState state,
-                          vector<SyntaxColorInfo> *out) {
+  void registerColorMarks(string &word, Point start, Point end,
+                          TokenState state,
+                          vector<vector<SyntaxColorInfo>> &out) {
     const char *colorResult = analyzeToken(state, word);
     if (colorResult) {
-      out->emplace_back(start, colorResult);
-      out->emplace_back(start + word.size(), DEFAULT_FOREGROUND);
+      out[start.y].emplace_back(start.x, colorResult);
+      out[end.y].emplace_back(end.x + 1, DEFAULT_FOREGROUND);
     }
   }
 };
@@ -677,62 +761,3 @@ string highlightPoormanFuzzyMatch(string &term, string &word) {
 
   return out;
 }
-
-enum class MultiLineCharIteratorState {
-  OnCharacter,
-  OnNewLine,
-  OnEnd,
-};
-
-struct MultiLineCharIterator {
-  vector<string> &lines;
-  const char end{'\0'};
-  const char newline{'\n'};
-
-  MultiLineCharIteratorState state{MultiLineCharIteratorState::OnNewLine};
-
-  int lineIdx{-1};
-  int charIdx{-1};
-
-  MultiLineCharIterator(vector<string> &lines) : lines(lines) { next(); }
-
-  bool next() {
-    if (state == MultiLineCharIteratorState::OnEnd) {
-      return false;
-    } else if (state == MultiLineCharIteratorState::OnNewLine) {
-      lineIdx++;
-      charIdx = 0;
-    } else if (state == MultiLineCharIteratorState::OnCharacter) {
-      charIdx++;
-    } else {
-      reportAndExit("Unhandled MultiLineCharIteratorState");
-    }
-
-    if (lineIdx >= (int)lines.size()) {
-      state = MultiLineCharIteratorState::OnEnd;
-      return true;
-    }
-
-    if (charIdx >= (int)lines[lineIdx].size()) {
-      state = MultiLineCharIteratorState::OnNewLine;
-      return true;
-    }
-
-    state = MultiLineCharIteratorState::OnCharacter;
-
-    return true;
-  }
-
-  const char *current() const {
-    switch (state) {
-      case MultiLineCharIteratorState::OnNewLine:
-        return &newline;
-      case MultiLineCharIteratorState::OnEnd:
-        return &end;
-      case MultiLineCharIteratorState::OnCharacter:
-        return &lines[lineIdx][charIdx];
-    }
-
-    return nullptr;
-  }
-};

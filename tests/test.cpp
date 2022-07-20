@@ -199,6 +199,18 @@ void test_parens() {
   ASSERT_EQ(4, (int)result[0][1].pos);
 }
 
+void test_unmatched_quotes() {
+  vector<string> raw = {"\"a"};
+  SyntaxHighlightConfig conf{nullptr};
+
+  TokenAnalyzer ta{conf};
+  auto result = ta.colorizeTokens(raw);
+
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(0, (int)result[0][0].pos);
+  ASSERT_EQ(2, (int)result[0][1].pos);
+}
+
 void test_next_word_jump_location() {
   string s;
 
@@ -334,30 +346,30 @@ void test_MultiLineCharIterator_basic() {
 
   MultiLineCharIterator it{lines};
 
-  ASSERT_EQ('a', *it.current());
-  ASSERT_EQ('a', *it.current());
+  ASSERT_EQ('a', it.current());
+  ASSERT_EQ('a', it.current());
 
   it.next();
-  ASSERT_EQ('b', *it.current());
+  ASSERT_EQ('b', it.current());
 
   it.next();
-  ASSERT_EQ('\n', *it.current());
-  ASSERT_EQ(it.newline, *it.current());
+  ASSERT_EQ('\n', it.current());
+  ASSERT_EQ(it.newline, it.current());
 
   it.next();
-  ASSERT_EQ('c', *it.current());
+  ASSERT_EQ('c', it.current());
 
   it.next();
-  ASSERT_EQ('d', *it.current());
+  ASSERT_EQ('d', it.current());
 
   it.next();
-  ASSERT_EQ(it.newline, *it.current());
+  ASSERT_EQ(it.newline, it.current());
 
   it.next();
-  ASSERT_EQ(it.end, *it.current());
+  ASSERT_EQ(it.end, it.current());
 
   it.next();
-  ASSERT_EQ(it.end, *it.current());
+  ASSERT_EQ(it.end, it.current());
 }
 
 void test_MultiLineCharIterator_empty_lines() {
@@ -367,29 +379,29 @@ void test_MultiLineCharIterator_empty_lines() {
 
   MultiLineCharIterator it{lines};
 
-  ASSERT_EQ(it.newline, *it.current());
+  ASSERT_EQ(it.newline, it.current());
 
   it.next();
-  ASSERT_EQ('a', *it.current());
+  ASSERT_EQ('a', it.current());
 
   it.next();
-  ASSERT_EQ(it.newline, *it.current());
+  ASSERT_EQ(it.newline, it.current());
 
   it.next();
-  ASSERT_EQ(it.newline, *it.current());
+  ASSERT_EQ(it.newline, it.current());
 
   it.next();
-  ASSERT_EQ(it.newline, *it.current());
+  ASSERT_EQ(it.newline, it.current());
 
   it.next();
-  ASSERT_EQ('b', *it.current());
+  ASSERT_EQ('b', it.current());
 
   it.next();
-  ASSERT_EQ(it.newline, *it.current());
+  ASSERT_EQ(it.newline, it.current());
 
   it.next();
-  ASSERT_EQ(it.newline, *it.current());
+  ASSERT_EQ(it.newline, it.current());
 
   it.next();
-  ASSERT_EQ(it.end, *it.current());
+  ASSERT_EQ(it.end, it.current());
 }
