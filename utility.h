@@ -54,7 +54,9 @@ struct SyntaxHighlightConfig {
   const char *stringColor{LIGHTYELLOW};
   const char *parenColor{CYAN};
   const char *keywordColor{LIGHTCYAN};
+  const char *commentColor{DARKGRAY};
   unordered_set<string> *keywords;
+  CodeComments comments{};
 
   SyntaxHighlightConfig(unordered_set<string> *keywords) : keywords(keywords) {}
 };
@@ -401,12 +403,29 @@ struct MultiLineCharIterator {
     return end;
   }
 
+  inline string peek(int n) const { return lines[idx.y].substr(idx.x, n); }
+
+  bool isPeekMatch(string &s) const {
+    if (idx.x + s.size() > lines[idx.y].size()) return false;
+
+    for (int i = 0; i < (int)s.size() && (i + idx.x) < (int)lines[idx.y].size();
+         i++) {
+      if (s[i] != lines[idx.y][idx.x + i]) return false;
+    }
+
+    return true;
+  }
+
   const bool isEnded() const {
     return state == MultiLineCharIteratorState::OnEnd;
   }
 
   const bool isRealChar() const {
     return state == MultiLineCharIteratorState::OnCharacter;
+  }
+
+  const bool isNewLine() const {
+    return state == MultiLineCharIteratorState::OnNewLine;
   }
 };
 
@@ -425,6 +444,7 @@ enum class TokenState {
   Number,
   QuotedString,
   Paren,
+  Comment,
 };
 
 struct TokenAnalyzer {
@@ -472,6 +492,45 @@ struct TokenAnalyzer {
         registerColorMarks(current, start, it.idx.dx(-1), TokenState::Paren,
                            out);
       } else {
+        bool hasMatch{false};
+
+        for (auto &oneLinerComment : config.comments.oneLiners) {
+          if (it.isPeekMatch(oneLinerComment)) {
+            hasMatch = true;
+
+            while (!it.isEnded() && !it.isNewLine()) consume(it, end);
+
+            registerColorMarks(current, start, end, TokenState::Comment, out);
+
+            break;
+          }
+        }
+        if (hasMatch) continue;
+
+        for (auto &bounded : config.comments.bounded) {
+          if (it.isPeekMatch(bounded.first)) {
+            hasMatch = true;
+
+            // Consume first half of comment boundary.
+            for (int i = 0; i < (int)bounded.first.size(); i++)
+              consume(it, end);
+
+            while (!it.isEnded() && !it.isPeekMatch(bounded.second))
+              consume(it, end);
+
+            if (it.isPeekMatch(bounded.second)) {
+              // Consume first half of comment boundary.
+              for (int i = 0; i < (int)bounded.second.size(); i++)
+                consume(it, end);
+            }
+
+            registerColorMarks(current, start, end, TokenState::Comment, out);
+
+            break;
+          }
+        }
+        if (hasMatch) continue;
+
         it.next();
       }
     }
@@ -488,6 +547,12 @@ struct TokenAnalyzer {
       end.set(it.idx);
     }
 
+    it.next();
+  }
+
+  void consume(MultiLineCharIterator &it, Point &end) {
+    if (it.isEnded()) return;
+    if (it.isRealChar()) end.set(it.idx);
     it.next();
   }
 
@@ -508,6 +573,8 @@ struct TokenAnalyzer {
         return config.stringColor;
       case TokenState::Paren:
         return config.parenColor;
+      case TokenState::Comment:
+        return config.commentColor;
       default:
         return nullptr;
     }
