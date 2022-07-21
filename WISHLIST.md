@@ -16,3 +16,4 @@ Stupid:
 
 Bugfix:
 - \" is tokenized in a string as a closing "
+- horizontal scroll messes up syntax highlight markers

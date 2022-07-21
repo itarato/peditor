@@ -2,7 +2,11 @@ template_file = File.open("./tests/test.cpp")
 template = template_file.read
 template_file.close
 
-test_functions = template.scan(/(?<=void )test_[a-zA-Z0-9_]+/)
+if ENV['ONLY']
+  test_functions = ENV['ONLY'].split(',')
+else
+  test_functions = template.scan(/(?<=void )test_[a-zA-Z0-9_]+/)
+end
 
 test_file = File.open("./test.cpp", "w")
 

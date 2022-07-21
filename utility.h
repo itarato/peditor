@@ -54,7 +54,9 @@ struct SyntaxHighlightConfig {
   const char *stringColor{LIGHTYELLOW};
   const char *parenColor{CYAN};
   const char *keywordColor{LIGHTCYAN};
+  const char *commentColor{DARKGRAY};
   unordered_set<string> *keywords;
+  CodeComments comments{};
 
   SyntaxHighlightConfig(unordered_set<string> *keywords) : keywords(keywords) {}
 };
@@ -137,6 +139,14 @@ struct Point {
     x = newX;
     y = newY;
   }
+
+  void set(Point newPoint) {
+    x = newPoint.x;
+    y = newPoint.y;
+  }
+
+  inline Point dx(int delta) { return Point{x + delta, y}; }
+  inline Point dy(int delta) { return Point{x, y + delta}; }
 };
 
 struct ITextViewState {
@@ -150,6 +160,11 @@ struct SyntaxColorInfo {
   const char *code;
 
   SyntaxColorInfo(int pos, const char *code) : pos(pos), code(code) {}
+
+  // TODO: Make this more stable.
+  inline bool isClosingTag() const {
+    return strcmp(code, DEFAULT_FOREGROUND) == 0;
+  }
 };
 
 enum class TextEditorAction {
@@ -337,12 +352,95 @@ void reportAndExit(const char *s) {
   exit(EXIT_FAILURE);
 }
 
+enum class MultiLineCharIteratorState {
+  OnCharacter,
+  OnNewLine,
+  OnEnd,
+};
+
+struct MultiLineCharIterator {
+  vector<string> &lines;
+  const char end{'\0'};
+  const char newline{'\n'};
+  Point idx{-1, -1};
+
+  MultiLineCharIteratorState state{MultiLineCharIteratorState::OnNewLine};
+
+  MultiLineCharIterator(vector<string> &lines) : lines(lines) { next(); }
+
+  bool next() {
+    if (state == MultiLineCharIteratorState::OnEnd) {
+      return false;
+    } else if (state == MultiLineCharIteratorState::OnNewLine) {
+      idx.y++;
+      idx.x = 0;
+    } else if (state == MultiLineCharIteratorState::OnCharacter) {
+      idx.x++;
+    } else {
+      reportAndExit("Unhandled MultiLineCharIteratorState");
+    }
+
+    if (idx.y >= (int)lines.size()) {
+      state = MultiLineCharIteratorState::OnEnd;
+      return true;
+    }
+
+    if (idx.x >= (int)lines[idx.y].size()) {
+      state = MultiLineCharIteratorState::OnNewLine;
+      return true;
+    }
+
+    state = MultiLineCharIteratorState::OnCharacter;
+
+    return true;
+  }
+
+  const char current() const {
+    switch (state) {
+      case MultiLineCharIteratorState::OnNewLine:
+        return newline;
+      case MultiLineCharIteratorState::OnEnd:
+        return end;
+      case MultiLineCharIteratorState::OnCharacter:
+        return lines[idx.y][idx.x];
+    }
+
+    return end;
+  }
+
+  inline string peek(int n) const { return lines[idx.y].substr(idx.x, n); }
+
+  bool isPeekMatch(string &s) const {
+    if (idx.x + s.size() > lines[idx.y].size()) return false;
+
+    for (int i = 0; i < (int)s.size() && (i + idx.x) < (int)lines[idx.y].size();
+         i++) {
+      if (s[i] != lines[idx.y][idx.x + i]) return false;
+    }
+
+    return true;
+  }
+
+  const bool isEnded() const {
+    return state == MultiLineCharIteratorState::OnEnd;
+  }
+
+  const bool isRealChar() const {
+    return state == MultiLineCharIteratorState::OnCharacter;
+  }
+
+  const bool isNewLine() const {
+    return state == MultiLineCharIteratorState::OnNewLine;
+  }
+};
+
 inline bool isParen(char c) {
   return c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}';
 }
 inline bool isWordStart(char c) { return isalpha(c) || c == '_'; }
 inline bool isWord(char c) { return isalnum(c) || c == '_'; }
 inline bool isNumber(char c) { return isdigit(c); }
+inline bool isQuote(char c) { return c == '"' || c == '\''; }
 
 enum class TokenState {
   Unknown,
@@ -351,6 +449,7 @@ enum class TokenState {
   Number,
   QuotedString,
   Paren,
+  Comment,
 };
 
 struct TokenAnalyzer {
@@ -362,51 +461,110 @@ struct TokenAnalyzer {
     string current{};
     vector<vector<SyntaxColorInfo>> out{};
 
-    for (auto lineIt = inputLines.begin(); lineIt != inputLines.end();
-         lineIt++) {
-      vector<SyntaxColorInfo> lineOut{};
+    for (int i = 0; i < (int)inputLines.size(); i++) out.emplace_back();
 
-      for (auto it = lineIt->begin(); it != lineIt->end();) {
-        current.clear();
-        auto start = distance(lineIt->begin(), it);
+    for (MultiLineCharIterator it{inputLines}; !it.isEnded();) {
+      current.clear();
+      Point start = it.idx;
+      Point end = it.idx;
 
-        if (isWordStart(*it)) {
-          while (it != lineIt->end() && isWord(*it)) current.push_back(*it++);
-          registerColorMarks(current, start, TokenState::Word, &lineOut);
-        } else if (isNumber(*it)) {
-          while (it != lineIt->end() && isNumber(*it)) current.push_back(*it++);
-          registerColorMarks(current, start, TokenState::Number, &lineOut);
-        } else if (*it == '\'') {
-          current.push_back(*it++);
+      if (isWordStart(it.current())) {
+        while (!it.isEnded() && isWord(it.current())) consume(current, it, end);
+        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Word,
+                           out);
+      } else if (isNumber(it.current())) {
+        while (!it.isEnded() && isNumber(it.current()))
+          consume(current, it, end);
+        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Number,
+                           out);
+      } else if (isQuote(it.current())) {
+        char quoteType{it.current()};
 
-          while (it != lineIt->end() && *it != '\'') current.push_back(*it++);
-          if (it != lineIt->end()) current.push_back(*it++);
+        // First quote.
+        consume(current, it, end);
 
-          registerColorMarks(current, start, TokenState::QuotedString,
-                             &lineOut);
-        } else if (*it == '"') {
-          current.push_back(*it++);
-
-          while (it != lineIt->end() && *it != '"') current.push_back(*it++);
-          if (it != lineIt->end()) current.push_back(*it++);
-
-          registerColorMarks(current, start, TokenState::QuotedString,
-                             &lineOut);
-        } else if (isParen(*it)) {
-          while (it != lineIt->end() && isParen(*it)) current.push_back(*it++);
-          registerColorMarks(current, start, TokenState::Paren, &lineOut);
-        } else {
-          it++;
+        // Collect until closing quote or end.
+        while (!it.isEnded() && it.current() != quoteType) {
+          if (it.current() == '\\') {
+            it.next();
+            it.next();
+          } else {
+            consume(current, it, end);
+          }
         }
-      }
 
-      out.push_back(lineOut);
+        // Add closing quote (in case it wasn't overrunning the line).
+        consume(current, it, end);
+
+        registerColorMarks(current, start, end, TokenState::QuotedString, out);
+      } else if (isParen(it.current())) {
+        while (!it.isEnded() && isParen(it.current()))
+          consume(current, it, end);
+        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Paren,
+                           out);
+      } else {
+        bool hasMatch{false};
+
+        for (auto &oneLinerComment : config.comments.oneLiners) {
+          if (it.isPeekMatch(oneLinerComment)) {
+            hasMatch = true;
+
+            while (!it.isEnded() && !it.isNewLine()) consume(it, end);
+
+            registerColorMarks(current, start, end, TokenState::Comment, out);
+            break;
+          }
+        }
+        if (hasMatch) continue;
+
+        for (auto &bounded : config.comments.bounded) {
+          if (it.isPeekMatch(bounded.first)) {
+            hasMatch = true;
+
+            // Consume first half of comment boundary.
+            for (int i = 0; i < (int)bounded.first.size(); i++)
+              consume(it, end);
+
+            while (!it.isEnded() && !it.isPeekMatch(bounded.second))
+              consume(it, end);
+
+            if (it.isPeekMatch(bounded.second)) {
+              // Consume first half of comment boundary.
+              for (int i = 0; i < (int)bounded.second.size(); i++)
+                consume(it, end);
+            }
+
+            registerColorMarks(current, start, end, TokenState::Comment, out);
+            break;
+          }
+        }
+        if (hasMatch) continue;
+
+        it.next();
+      }
     }
 
     return out;
   }
 
  private:
+  void consume(string &current, MultiLineCharIterator &it, Point &end) {
+    if (it.isEnded()) return;
+
+    if (it.isRealChar()) {
+      current.push_back(it.current());
+      end.set(it.idx);
+    }
+
+    it.next();
+  }
+
+  void consume(MultiLineCharIterator &it, Point &end) {
+    if (it.isEnded()) return;
+    if (it.isRealChar()) end.set(it.idx);
+    it.next();
+  }
+
   const char *analyzeToken(TokenState state, string &token) {
     unordered_set<string>::iterator wordIt;
 
@@ -424,17 +582,25 @@ struct TokenAnalyzer {
         return config.stringColor;
       case TokenState::Paren:
         return config.parenColor;
+      case TokenState::Comment:
+        return config.commentColor;
       default:
         return nullptr;
     }
   }
 
-  void registerColorMarks(string &word, int start, TokenState state,
-                          vector<SyntaxColorInfo> *out) {
+  void registerColorMarks(string &word, Point start, Point end,
+                          TokenState state,
+                          vector<vector<SyntaxColorInfo>> &out) {
     const char *colorResult = analyzeToken(state, word);
     if (colorResult) {
-      out->emplace_back(start, colorResult);
-      out->emplace_back(start + word.size(), DEFAULT_FOREGROUND);
+      out[start.y].emplace_back(start.x, colorResult);
+
+      for (int i = start.y + 1; i <= end.y; i++) {
+        out[i].emplace_back(0, colorResult);
+      }
+
+      out[end.y].emplace_back(end.x + 1, DEFAULT_FOREGROUND);
     }
   }
 };

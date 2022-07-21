@@ -22,115 +22,115 @@ void assert_eq(T v1, T v2, int lineNo) {
 }
 
 void test_find_number_beginning() {
-  string raw = "123   ";
+  vector<string> raw = {"123   "};
   SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(0, (int)result[0].pos);
-  ASSERT_EQ(3, (int)result[1].pos);
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(0, (int)result[0][0].pos);
+  ASSERT_EQ(3, (int)result[0][1].pos);
 }
 
 void test_find_number_middle() {
-  string raw = "  123   ";
+  vector<string> raw = {"  123   "};
   SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(2, (int)result[0].pos);
-  ASSERT_EQ(5, (int)result[1].pos);
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(2, (int)result[0][0].pos);
+  ASSERT_EQ(5, (int)result[0][1].pos);
 }
 
 void test_find_number_end() {
-  string raw = "   123";
+  vector<string> raw = {"   123"};
   SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(3, (int)result[0].pos);
-  ASSERT_EQ(6, (int)result[1].pos);
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(3, (int)result[0][0].pos);
+  ASSERT_EQ(6, (int)result[0][1].pos);
 }
 
 void test_single_find_number_beginning() {
-  string raw = "1   ";
+  vector<string> raw = {"1   "};
   SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(0, (int)result[0].pos);
-  ASSERT_EQ(1, (int)result[1].pos);
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(0, (int)result[0][0].pos);
+  ASSERT_EQ(1, (int)result[0][1].pos);
 }
 
 void test_single_find_number_middle() {
-  string raw = "  1   ";
+  vector<string> raw = {"  1   "};
   SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(2, (int)result[0].pos);
-  ASSERT_EQ(3, (int)result[1].pos);
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(2, (int)result[0][0].pos);
+  ASSERT_EQ(3, (int)result[0][1].pos);
 }
 
 void test_single_find_number_end() {
-  string raw = "   1";
+  vector<string> raw = {"   1"};
   SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(3, (int)result[0].pos);
-  ASSERT_EQ(4, (int)result[1].pos);
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(3, (int)result[0][0].pos);
+  ASSERT_EQ(4, (int)result[0][1].pos);
 }
 
 void test_find_string() {
-  string raw = "\"abc\"";
+  vector<string> raw = {"\"abc\""};
   SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(0, (int)result[0].pos);
-  ASSERT_EQ(5, (int)result[1].pos);
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(0, (int)result[0][0].pos);
+  ASSERT_EQ(5, (int)result[0][1].pos);
 }
 
 void test_find_string_middle() {
-  string raw = " \"abc\" ";
+  vector<string> raw = {" \"abc\" "};
   SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(1, (int)result[0].pos);
-  ASSERT_EQ(6, (int)result[1].pos);
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(1, (int)result[0][0].pos);
+  ASSERT_EQ(6, (int)result[0][1].pos);
 }
 
 void test_find_single_quoted_string() {
-  string raw = "--'a'--";
+  vector<string> raw = {"--'a'--"};
   SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(2, (int)result[0].pos);
-  ASSERT_EQ(5, (int)result[1].pos);
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(2, (int)result[0][0].pos);
+  ASSERT_EQ(5, (int)result[0][1].pos);
 }
 
 void test_find_word() {
-  string raw = "for";
+  vector<string> raw = {"for"};
 
   unordered_set<string> keywords{
       "for",
@@ -140,13 +140,13 @@ void test_find_word() {
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(0, (int)result[0].pos);
-  ASSERT_EQ(3, (int)result[1].pos);
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(0, (int)result[0][0].pos);
+  ASSERT_EQ(3, (int)result[0][1].pos);
 }
 
 void test_does_not_find_unknown_word() {
-  string raw = "hello for ever";
+  vector<string> raw = {"hello for ever"};
 
   unordered_set<string> keywords{
       "for",
@@ -156,13 +156,13 @@ void test_does_not_find_unknown_word() {
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(6, (int)result[0].pos);
-  ASSERT_EQ(9, (int)result[1].pos);
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(6, (int)result[0][0].pos);
+  ASSERT_EQ(9, (int)result[0][1].pos);
 }
 
 void test_find_complex_examples() {
-  string raw = "for 123for x3 \"12'ab\"";
+  vector<string> raw = {"for 123for x3 \"12'ab\""};
 
   unordered_set<string> keywords{
       "for",
@@ -172,31 +172,85 @@ void test_find_complex_examples() {
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
-  ASSERT_EQ(8, (int)result.size());
+  ASSERT_EQ(8, (int)result[0].size());
 
-  ASSERT_EQ(0, (int)result[0].pos);
-  ASSERT_EQ(3, (int)result[1].pos);
+  ASSERT_EQ(0, (int)result[0][0].pos);
+  ASSERT_EQ(3, (int)result[0][1].pos);
 
-  ASSERT_EQ(4, (int)result[2].pos);
-  ASSERT_EQ(7, (int)result[3].pos);
+  ASSERT_EQ(4, (int)result[0][2].pos);
+  ASSERT_EQ(7, (int)result[0][3].pos);
 
-  ASSERT_EQ(7, (int)result[4].pos);
-  ASSERT_EQ(10, (int)result[5].pos);
+  ASSERT_EQ(7, (int)result[0][4].pos);
+  ASSERT_EQ(10, (int)result[0][5].pos);
 
-  ASSERT_EQ(14, (int)result[6].pos);
-  ASSERT_EQ(21, (int)result[7].pos);
+  ASSERT_EQ(14, (int)result[0][6].pos);
+  ASSERT_EQ(21, (int)result[0][7].pos);
 }
 
 void test_parens() {
-  string raw = "abc(";
+  vector<string> raw = {"abc("};
+  SyntaxHighlightConfig conf{nullptr};
+
+  TokenAnalyzer ta{conf};
+  auto result = ta.colorizeTokens(raw);
+
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(3, (int)result[0][0].pos);
+  ASSERT_EQ(4, (int)result[0][1].pos);
+}
+
+void test_unmatched_quotes() {
+  vector<string> raw = {"\"a"};
+  SyntaxHighlightConfig conf{nullptr};
+
+  TokenAnalyzer ta{conf};
+  auto result = ta.colorizeTokens(raw);
+
+  ASSERT_EQ(2, (int)result[0].size());
+  ASSERT_EQ(0, (int)result[0][0].pos);
+  ASSERT_EQ(2, (int)result[0][1].pos);
+}
+
+void test_multiline_quotes() {
+  vector<string> raw = {"\"a", "b\"   def"};
   SyntaxHighlightConfig conf{nullptr};
 
   TokenAnalyzer ta{conf};
   auto result = ta.colorizeTokens(raw);
 
   ASSERT_EQ(2, (int)result.size());
-  ASSERT_EQ(3, (int)result[0].pos);
-  ASSERT_EQ(4, (int)result[1].pos);
+
+  ASSERT_EQ(1, (int)result[0].size());
+  ASSERT_EQ(1, (int)result[1].size());
+
+  ASSERT_EQ(0, (int)result[0][0].pos);
+  ASSERT_EQ(2, (int)result[1][0].pos);
+}
+
+void test_comments() {
+  vector<string> raw = {"  //ab"};
+  SyntaxHighlightConfig conf{nullptr};
+
+  TokenAnalyzer ta{conf};
+  auto result = ta.colorizeTokens(raw);
+
+  ASSERT_EQ(2, (int)result[0].size());
+
+  ASSERT_EQ(2, (int)result[0][0].pos);
+  ASSERT_EQ(6, (int)result[0][1].pos);
+}
+
+void test_multiline_comments() {
+  vector<string> raw = {"  /*ab", "cd*/  "};
+  SyntaxHighlightConfig conf{nullptr};
+
+  TokenAnalyzer ta{conf};
+  auto result = ta.colorizeTokens(raw);
+
+  ASSERT_EQ(2, (int)result.size());
+
+  ASSERT_EQ(2, (int)result[0][0].pos);
+  ASSERT_EQ(4, (int)result[1][0].pos);
 }
 
 void test_next_word_jump_location() {
@@ -324,4 +378,89 @@ void test_text_view_movements() {
   tv.cursorDown();
   ASSERT_EQ(0, tv.cursor.x);
   ASSERT_EQ(1, tv.cursor.y);
+}
+
+void test_MultiLineCharIterator_basic() {
+  vector<string> lines{
+      "ab",
+      "cd",
+  };
+
+  MultiLineCharIterator it{lines};
+
+  ASSERT_EQ('a', it.current());
+  ASSERT_EQ('a', it.current());
+
+  it.next();
+  ASSERT_EQ('b', it.current());
+
+  it.next();
+  ASSERT_EQ('\n', it.current());
+  ASSERT_EQ(it.newline, it.current());
+
+  it.next();
+  ASSERT_EQ('c', it.current());
+
+  it.next();
+  ASSERT_EQ('d', it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, it.current());
+
+  it.next();
+  ASSERT_EQ(it.end, it.current());
+
+  it.next();
+  ASSERT_EQ(it.end, it.current());
+}
+
+void test_MultiLineCharIterator_empty_lines() {
+  vector<string> lines{
+      "", "a", "", "", "b", "",
+  };
+
+  MultiLineCharIterator it{lines};
+
+  ASSERT_EQ(it.newline, it.current());
+
+  it.next();
+  ASSERT_EQ('a', it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, it.current());
+
+  it.next();
+  ASSERT_EQ('b', it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, it.current());
+
+  it.next();
+  ASSERT_EQ(it.newline, it.current());
+
+  it.next();
+  ASSERT_EQ(it.end, it.current());
+}
+
+void test_MultiLineCharIterator_peek_match() {
+  vector<string> lines{"abc"};
+
+  MultiLineCharIterator it{lines};
+
+  string m;
+
+  m = "a";
+  ASSERT_EQ(true, it.isPeekMatch(m));
+
+  m = "ab";
+  ASSERT_EQ(true, it.isPeekMatch(m));
+
+  m = "abc";
+  ASSERT_EQ(true, it.isPeekMatch(m));
 }
