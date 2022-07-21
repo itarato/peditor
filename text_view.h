@@ -126,6 +126,8 @@ struct TextView : ITextViewState {
     selectionStart = historyUnit.beforeSelectionStart;
     selectionEnd = historyUnit.beforeSelectionEnd;
     cursor = historyUnit.beforeCursor;
+
+    reloadSyntaxColoring();
   }
 
   void redo() {
@@ -140,6 +142,8 @@ struct TextView : ITextViewState {
     selectionStart = historyUnit.afterSelectionStart;
     selectionEnd = historyUnit.afterSelectionEnd;
     cursor = historyUnit.afterCursor;
+
+    reloadSyntaxColoring();
   }
 
   void cursorWordJumpLeft() {
