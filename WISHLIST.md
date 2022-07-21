@@ -1,5 +1,4 @@
 Normal:
-- not-saved indicator on tabs/split panes
 - git diff indicators (on sidelines)
 
 Nice to have:
