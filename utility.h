@@ -160,6 +160,11 @@ struct SyntaxColorInfo {
   const char *code;
 
   SyntaxColorInfo(int pos, const char *code) : pos(pos), code(code) {}
+
+  // TODO: Make this more stable.
+  inline bool isClosingTag() const {
+    return strcmp(code, DEFAULT_FOREGROUND) == 0;
+  }
 };
 
 enum class TextEditorAction {
@@ -501,7 +506,6 @@ struct TokenAnalyzer {
             while (!it.isEnded() && !it.isNewLine()) consume(it, end);
 
             registerColorMarks(current, start, end, TokenState::Comment, out);
-
             break;
           }
         }
@@ -525,7 +529,6 @@ struct TokenAnalyzer {
             }
 
             registerColorMarks(current, start, end, TokenState::Comment, out);
-
             break;
           }
         }
@@ -586,6 +589,11 @@ struct TokenAnalyzer {
     const char *colorResult = analyzeToken(state, word);
     if (colorResult) {
       out[start.y].emplace_back(start.x, colorResult);
+
+      for (int i = start.y + 1; i <= end.y; i++) {
+        out[i].emplace_back(0, colorResult);
+      }
+
       out[end.y].emplace_back(end.x + 1, DEFAULT_FOREGROUND);
     }
   }

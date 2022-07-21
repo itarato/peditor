@@ -942,9 +942,8 @@ struct TextView : ITextViewState {
     auto lineIt = line.begin();
 
     vector<SyntaxColorInfo> markers{};
-    if (lineNo <= (int)syntaxColoring.size() - 1) {
+    if (lineNo <= (int)syntaxColoring.size() - 1)
       markers = syntaxColoring[lineNo];
-    }
 
     auto selection = lineSelectionRange(lineNo);
     if (selection.has_value()) {
