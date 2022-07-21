@@ -484,8 +484,14 @@ struct TokenAnalyzer {
         consume(current, it, end);
 
         // Collect until closing quote or end.
-        while (!it.isEnded() && it.current() != quoteType)
-          consume(current, it, end);
+        while (!it.isEnded() && it.current() != quoteType) {
+          if (it.current() == '\\') {
+            it.next();
+            it.next();
+          } else {
+            consume(current, it, end);
+          }
+        }
 
         // Add closing quote (in case it wasn't overrunning the line).
         consume(current, it, end);
