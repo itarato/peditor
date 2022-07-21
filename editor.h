@@ -519,6 +519,7 @@ struct Editor {
         searchTerm = nullopt;
       } else {
         searchTerm = term;
+        jumpToNextSearchHit();
       }
     } else if (topCommand == "close" || topCommand == "c") {
       activeTextView()->closeFile();
