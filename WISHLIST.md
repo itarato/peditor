@@ -15,4 +15,3 @@ Stupid:
 - visual feedback / popup
 
 Bugfix:
-- horizontal scroll messes up syntax highlight markers

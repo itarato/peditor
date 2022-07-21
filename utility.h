@@ -751,6 +751,46 @@ pair<int, int> visibleStrSlice(string &s, int offset, int len) {
   return pair<int, int>{start, end};
 }
 
+string visibleSubstr(string &s, int pos, int len) {
+  string out{};
+  out.reserve(s.size());
+
+  bool isEscape{false};
+
+  int i{0};
+
+  // Skip left cut.
+  for (; i < (int)s.size() && pos > 0; i++) {
+    if (isEscape) {
+      if (s[i] == 'm') isEscape = false;
+      out.push_back(s[i]);
+    } else {
+      if (s[i] == '\x1b') {
+        isEscape = true;
+        out.push_back(s[i]);
+      } else {
+        pos--;
+      }
+    }
+  }
+
+  for (; i < (int)s.size() && len > 0; i++) {
+    if (isEscape) {
+      if (s[i] == 'm') isEscape = false;
+    } else {
+      if (s[i] == '\x1b') {
+        isEscape = true;
+      } else {
+        len--;
+      }
+    }
+
+    out.push_back(s[i]);
+  }
+
+  return out;
+}
+
 vector<SyntaxColorInfo> searchTermMarkers(string &line, string &searchTerm) {
   vector<SyntaxColorInfo> out{};
 

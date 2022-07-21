@@ -909,18 +909,20 @@ struct TextView : ITextViewState {
 
       lineStr.append(marginBuf);
 
-      if (!decoratedLine.empty()) {
-        pair<int, int> visibleBorders =
-            visibleStrSlice(decoratedLine, horizontalScroll, textAreaCols());
+      // if (!decoratedLine.empty()) {
+      // pair<int, int> visibleBorders =
+      //     visibleStrSlice(decoratedLine, horizontalScroll, textAreaCols());
 
-        if (visibleBorders.first == -1) {
-          lineStr.append("\x1b[2m<\x1b[22m");
-        } else {
-          lineStr.append(decoratedLine.substr(
-              visibleBorders.first,
-              visibleBorders.second - visibleBorders.first + 1));
-        }
-      }
+      // if (visibleBorders.first == -1) {
+      // lineStr.append("\x1b[2m<\x1b[22m");
+      // } else {
+      // lineStr.append(decoratedLine.substr(
+      //     visibleBorders.first,
+      //     visibleBorders.second - visibleBorders.first + 1));
+      lineStr.append(
+          visibleSubstr(decoratedLine, horizontalScroll, textAreaCols()));
+      // }
+      // }
 
       lineStr.append("\x1b[0m");
     } else {
