@@ -205,7 +205,7 @@ struct TextView : ITextViewState {
 
     if (currentCol() > currentLineSize()) {
       cursor.y++;
-      if (onLineRow()) cursor.x = 0;
+      setCol(0);
     }
 
     fixCursorPos();
