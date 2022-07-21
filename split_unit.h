@@ -10,6 +10,7 @@ struct SplitUnit {
   vector<TextView> textViews{};
   int activeTextViewIdx{0};
   int topMargin{0};
+  bool hasMultipleSplitUnits{false};
 
   int cols{0};
   int rows{0};
@@ -21,7 +22,7 @@ struct SplitUnit {
   void newTextView() {
     textViews.emplace_back(textViewCols(), textViewRows());
     setActiveTextViewIdx(textViews.size() - 1);
-    updateDimensions(cols, rows);
+    updateInternalDimensions();
   }
 
   void closeTextView() {
@@ -29,7 +30,7 @@ struct SplitUnit {
     advance(viewIt, activeTextViewIdx);
     textViews.erase(viewIt);
 
-    updateDimensions(cols, rows);
+    updateInternalDimensions();
     setActiveTextViewIdx(activeTextViewIdx - 1);
   }
 
@@ -40,13 +41,17 @@ struct SplitUnit {
   inline bool hasMultipleTabs() const { return textViews.size() > 1; }
 
   void drawLine(string& out, int lineIdx, optional<string>& searchTerm) {
-    if (lineIdx == 0 && hasMultipleTabs()) {
+    if (lineIdx == 0 && needTabBar()) {
       generateTextViewsTabsLine(out);
       return;
     }
 
-    int textViewLineIdx = hasMultipleTabs() ? lineIdx - 1 : lineIdx;
+    int textViewLineIdx = needTabBar() ? lineIdx - 1 : lineIdx;
     activeTextView()->drawLine(out, textViewLineIdx, searchTerm);
+  }
+
+  inline bool needTabBar() const {
+    return hasMultipleTabs() || hasMultipleSplitUnits;
   }
 
   void generateTextViewsTabsLine(string& out) {
@@ -67,7 +72,10 @@ struct SplitUnit {
         } else {
           tabsLine.append("\x1b[90m ");
         }
-        // TODO only use filename part
+
+        if (textViews[i].isDirty)
+          tabsLine.append("\x1b[1m\x1b[41m*\x1b[49m\x1b[21m");
+
         tabsLine.append(textViews[i]
                             .fileName()
                             .value_or("<no file>")
@@ -94,14 +102,22 @@ struct SplitUnit {
   inline int textViewCols() const { return cols; }
   inline int textViewRows() const { return rows - topMargin; }
 
-  void updateDimensions(int newCols, int newRows) {
-    cols = newCols;
-    rows = newRows;
-
-    topMargin = hasMultipleTabs() ? 1 : 0;
+  void updateInternalDimensions() {
+    updateTopMargin();
 
     for (auto& textView : textViews) {
       textView.updateDimensions(textViewCols(), textViewRows());
     }
   }
+
+  void updateDimensions(int newCols, int newRows,
+                        bool newHasMultipleSplitUnits) {
+    cols = newCols;
+    rows = newRows;
+    hasMultipleSplitUnits = newHasMultipleSplitUnits;
+
+    updateInternalDimensions();
+  }
+
+  inline void updateTopMargin() { topMargin = needTabBar() ? 1 : 0; }
 };

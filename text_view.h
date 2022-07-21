@@ -67,7 +67,7 @@ struct TextView : ITextViewState {
   optional<SelectionEdge> getSelectionStart() { return selectionStart; }
   optional<SelectionEdge> getSelectionEnd() { return selectionEnd; }
 
-  bool isDirty{false};
+  bool isDirty{true};
 
   inline int textAreaCols() const { return cols - leftMargin; }
   inline int textAreaRows() const { return rows; }
@@ -778,6 +778,8 @@ struct TextView : ITextViewState {
       }
 
       f.close();
+
+      isDirty = false;
     } else {
       DLOG("Cannot load file - config does not have any.");
     }

@@ -552,9 +552,11 @@ struct Editor {
     bottomMargin = 1;
 
     for (int i = 0; i < (int)splitUnits.size(); i++) {
-      splitUnits[i].updateDimensions(textViewCols(i), textViewRows());
+      splitUnits[i].updateDimensions(textViewCols(i), textViewRows(), hasMultipleSplitUnits());
     }
   }
+  
+  inline bool hasMultipleSplitUnits() { return splitUnits.size() > 1; }
 
   inline void newTextView() { activeSplitUnit()->newTextView(); }
 
