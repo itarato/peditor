@@ -913,7 +913,7 @@ struct TextView : ITextViewState {
 
       string finalLine{
           visibleSubstr(decoratedLine, horizontalScroll, textAreaCols())};
-      if (horizontalScroll > 0 && finalLine.empty()) {
+      if (horizontalScroll > 0 && visibleCharCount(finalLine) == 0) {
         lineStr.append("\x1b[90m<\x1b[0m");
       } else {
         lineStr.append(finalLine);
