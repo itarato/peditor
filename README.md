@@ -3,7 +3,7 @@ Peditor
 
 Toy text editor.
 
-[![asciicast](https://asciinema.org/a/Io4jttaRgjHdJnQYFgPdihbnl.svg)](https://asciinema.org/a/Io4jttaRgjHdJnQYFgPdihbnl)
+[![asciicast](https://asciinema.org/a/dU62NhgEKLj22hRyEgZ3ln7B8.svg)](https://asciinema.org/a/dU62NhgEKLj22hRyEgZ3ln7B8)
 
 Limitations:
 - it's rubbish
