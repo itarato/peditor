@@ -357,14 +357,14 @@ struct TextView : ITextViewState {
 
     for (auto& lineSelection : lineSelections) {
       if (lineSelection.isFullLine()) {
-        sharedClipboard.push_back(lines[selection.startRow]);
+        sharedClipboard.push_back(lines[lineSelection.lineNo]);
       } else {
         int start = lineSelection.isLeftBounded() ? lineSelection.startCol : 0;
         int end = lineSelection.isRightBounded()
                       ? lineSelection.endCol
                       : lines[lineSelection.lineNo].size();
         sharedClipboard.push_back(
-            lines[selection.startRow].substr(start, end - start));
+            lines[lineSelection.lineNo].substr(start, end - start));
       }
     }
 
