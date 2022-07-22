@@ -44,7 +44,6 @@
 
 using namespace std;
 
-// FIXME: Unused.
 struct CodeComments {
   vector<string> oneLiners{"//"};
   vector<pair<string, string>> bounded{{"/*", "*/"}};

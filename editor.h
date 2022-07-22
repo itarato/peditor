@@ -358,8 +358,6 @@ struct Editor {
 
   void contextAdjustEditorCursor() {
     if (mode == EditorMode::TextEdit) {
-      // FIXME: Left side split pane sizes needs to be added
-
       int currentSplitUnitIdx = 0;
       int splitUnitXOffset = 0;
       while (currentSplitUnitIdx < activeSplitUnitIdx) {
@@ -513,7 +511,6 @@ struct Editor {
       activeTextView()->cursorTo(lineNo, activeTextView()->currentCol());
     } else if (topCommand == "search" || topCommand == "s") {
       string term;
-      // FIXME: Not just one, but get all the rest (maybe there are spaces);
       iss >> term;
 
       if (term.empty()) {
