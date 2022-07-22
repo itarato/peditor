@@ -412,6 +412,7 @@ struct MultiLineCharIterator {
   inline string peek(int n) const { return lines[idx.y].substr(idx.x, n); }
 
   bool isPeekMatch(string &s) const {
+    if (!isRealChar()) return false;
     if (idx.x + s.size() > lines[idx.y].size()) return false;
 
     for (int i = 0; i < (int)s.size() && (i + idx.x) < (int)lines[idx.y].size();

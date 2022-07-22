@@ -221,10 +221,11 @@ void test_multiline_quotes() {
   ASSERT_EQ(2, (int)result.size());
 
   ASSERT_EQ(1, (int)result[0].size());
-  ASSERT_EQ(1, (int)result[1].size());
+  ASSERT_EQ(2, (int)result[1].size());
 
   ASSERT_EQ(0, (int)result[0][0].pos);
-  ASSERT_EQ(2, (int)result[1][0].pos);
+  ASSERT_EQ(0, (int)result[1][0].pos);
+  ASSERT_EQ(2, (int)result[1][1].pos);
 }
 
 void test_comments() {
@@ -248,9 +249,25 @@ void test_multiline_comments() {
   auto result = ta.colorizeTokens(raw);
 
   ASSERT_EQ(2, (int)result.size());
+  ASSERT_EQ(1, (int)result[0].size());
+  ASSERT_EQ(2, (int)result[1].size());
 
   ASSERT_EQ(2, (int)result[0][0].pos);
-  ASSERT_EQ(4, (int)result[1][0].pos);
+  ASSERT_EQ(0, (int)result[1][0].pos);
+  ASSERT_EQ(4, (int)result[1][1].pos);
+}
+
+void test_multiline_comments_only_start() {
+  vector<string> raw = {"/*"};
+  SyntaxHighlightConfig conf{nullptr};
+
+  TokenAnalyzer ta{conf};
+  auto result = ta.colorizeTokens(raw);
+
+  ASSERT_EQ(2, (int)result[0].size());
+
+  ASSERT_EQ(0, (int)result[0][0].pos);
+  ASSERT_EQ(2, (int)result[0][1].pos);
 }
 
 void test_next_word_jump_location() {
@@ -363,7 +380,7 @@ void test_text_view_basics() {
 
   ASSERT_EQ(24, tv.rows);
   ASSERT_EQ(32, tv.cols);
-  ASSERT_EQ(false, tv.isDirty);
+  ASSERT_EQ(true, tv.isDirty);
 
   // TODO: more
 }
