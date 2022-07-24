@@ -607,19 +607,19 @@ struct TextView : ITextViewState {
     history.newBlock(this);
 
     if (hasActiveSelection()) {
-      if (selectionEnd.value().row >= (int)lines.size() - 1) {
+      SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+
+      if (selection.endRow >= (int)lines.size() - 1) {
         history.closeBlock(this);
         return;
       }
 
-      int selectionLen =
-          selectionEnd.value().row - selectionStart.value().row + 1;
+      int selectionLen = selection.endRow - selection.startRow + 1;
 
-      lineMoveForward(selectionStart.value().row, selectionLen);
+      lineMoveForward(selection.startRow, selectionLen);
 
-      selectionStart = {selectionStart.value().row + 1,
-                        selectionStart.value().col};
-      selectionEnd = {selectionEnd.value().row + 1, selectionEnd.value().col};
+      selectionStart = {selection.startRow + 1, selection.startCol};
+      selectionEnd = {selection.endRow + 1, selection.endCol};
     } else {
       if (currentRow() >= (int)lines.size() - 1) {
         history.closeBlock(this);
@@ -644,19 +644,18 @@ struct TextView : ITextViewState {
     history.newBlock(this);
 
     if (hasActiveSelection()) {
-      if (selectionStart.value().row <= 0) {
+      SelectionRange selection{selectionStart.value(), selectionEnd.value()};
+      if (selection.startRow <= 0) {
         history.closeBlock(this);
         return;
       }
 
-      int selectionLen =
-          selectionEnd.value().row - selectionStart.value().row + 1;
+      int selectionLen = selection.endRow - selection.startRow + 1;
 
-      lineMoveBackward(selectionStart.value().row, selectionLen);
+      lineMoveBackward(selection.startRow, selectionLen);
 
-      selectionStart = {selectionStart.value().row - 1,
-                        selectionStart.value().col};
-      selectionEnd = {selectionEnd.value().row - 1, selectionEnd.value().col};
+      selectionStart = {selection.startRow - 1, selection.startCol};
+      selectionEnd = {selection.endRow - 1, selection.endCol};
     } else {
       if (currentRow() <= 0) {
         history.closeBlock(this);
