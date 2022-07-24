@@ -51,6 +51,8 @@ struct TextView : ITextViewState {
   int cols{0};
   int rows{0};
 
+  bool isDirty{true};
+
   TokenAnalyzer tokenAnalyzer;
 
   TextView() : tokenAnalyzer(TokenAnalyzer(SyntaxHighlightConfig(&keywords))) {
@@ -66,8 +68,6 @@ struct TextView : ITextViewState {
   Point getCursor() { return cursor; }
   optional<SelectionEdge> getSelectionStart() { return selectionStart; }
   optional<SelectionEdge> getSelectionEnd() { return selectionEnd; }
-
-  bool isDirty{true};
 
   inline int textAreaCols() const { return cols - leftMargin; }
   inline int textAreaRows() const { return rows; }
