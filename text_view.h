@@ -618,8 +618,9 @@ struct TextView : ITextViewState {
 
       lineMoveForward(selection.startRow, selectionLen);
 
-      selectionStart = {selection.startRow + 1, selection.startCol};
-      selectionEnd = {selection.endRow + 1, selection.endCol};
+      selectionStart = {selectionStart.value().row + 1,
+                        selectionStart.value().col};
+      selectionEnd = {selectionEnd.value().row + 1, selectionEnd.value().col};
     } else {
       if (currentRow() >= (int)lines.size() - 1) {
         history.closeBlock(this);
@@ -654,8 +655,9 @@ struct TextView : ITextViewState {
 
       lineMoveBackward(selection.startRow, selectionLen);
 
-      selectionStart = {selection.startRow - 1, selection.startCol};
-      selectionEnd = {selection.endRow - 1, selection.endCol};
+      selectionStart = {selectionStart.value().row - 1,
+                        selectionStart.value().col};
+      selectionEnd = {selectionEnd.value().row - 1, selectionEnd.value().col};
     } else {
       if (currentRow() <= 0) {
         history.closeBlock(this);
