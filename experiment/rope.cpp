@@ -114,7 +114,9 @@ struct Rope {
     }
   }
 
-  void assert_at(size_t at) { assert(start <= at && at <= end); }
+  void remove(size_t at) {}
+
+  void assert_at(size_t at) const { assert(start <= at && at <= end); }
 };
 
 int main() {
