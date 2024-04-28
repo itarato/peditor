@@ -10,6 +10,8 @@
 
 using namespace std;
 
+#define ROPE_UNIT_BREAK_THRESHOLD 8
+
 enum class RopeNodeType {
   Intermediate,
   Leaf,
@@ -48,17 +50,26 @@ struct Rope {
     }
   }
 
+  string to_string() {
+    if (type == RopeNodeType::Intermediate) {
+      return intermediateNode.lhs->to_string() +
+             intermediateNode.rhs->to_string();
+    } else {
+      return leafNode.s;
+    }
+  }
+
   string debug_to_string() {
     if (type == RopeNodeType::Intermediate) {
-      string out{};
-      out = out + intermediateNode.lhs->debug_to_string();
-      out = out + intermediateNode.rhs->debug_to_string();
-      return out;
+      return intermediateNode.lhs->debug_to_string() +
+             intermediateNode.rhs->debug_to_string();
     } else {
       return "[" + std::to_string(start) + ":" + std::to_string(end) + " " +
              leafNode.s + "]";
     }
   }
+
+  size_t len() const { return end - start + 1; }
 
   void split(size_t at) {
     if (type == RopeNodeType::Intermediate) {
@@ -68,7 +79,7 @@ struct Rope {
         intermediateNode.rhs->split(at);
       }
     } else {
-      assert(start <= at && at <= end);
+      assert_at(at);
 
       unique_ptr<Rope> lhs =
           make_unique<Rope>(start, leafNode.s.substr(0, at - start));
@@ -82,23 +93,50 @@ struct Rope {
       intermediateNode.rhs.reset(rhs.release());
     }
   }
+
+  void insert(size_t at, char c) {
+    if (type == RopeNodeType::Intermediate) {
+      if (at <= intermediateNode.lhs->end) {
+        intermediateNode.lhs->insert(at, c);
+      } else {
+        intermediateNode.rhs->insert(at, c);
+      }
+    } else {
+      if (len() >= ROPE_UNIT_BREAK_THRESHOLD) {
+        size_t mid = (end + start + 1) / 2;
+        split(mid);
+        insert(at, c);
+      } else {
+        assert_at(at);
+        size_t pos = at - start;
+        leafNode.s.insert(pos, 1, c);
+      }
+    }
+  }
+
+  void assert_at(size_t at) { assert(start <= at && at <= end); }
 };
 
 int main() {
-  Rope root = Rope(0, "hello world another line and another");
+  Rope root = Rope(0, "0123456789012345678901234567890123456789");
+  cout << root.len() << endl;
   cout << root.debug_to_string() << endl;
 
-  root.split(10);
+  // root.split(10);
+  root.insert(20, 'x');
   cout << root.debug_to_string() << endl;
 
-  root.split(20);
-  cout << root.debug_to_string() << endl;
+  // root.split(20);
+  // cout << root.debug_to_string() << endl;
 
-  root.split(5);
-  cout << root.debug_to_string() << endl;
+  // root.split(5);
+  // cout << root.debug_to_string() << endl;
 
-  root.split(30);
-  cout << root.debug_to_string() << endl;
+  // root.split(30);
+  // cout << root.debug_to_string() << endl;
+  cout << root.to_string() << endl;
+
+  cout << root.len() << endl;
 
   return EXIT_SUCCESS;
 }
