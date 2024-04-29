@@ -6,3 +6,6 @@ sample.c
 test
 sample2.c
 test.cpp
+experiment/rope
+experiment/rope_tophat
+experiment/rope_test
