@@ -61,7 +61,13 @@ void test_insert_with_splits() {
   ASSERT_EQ("[0:4 abcde][5:7 012][8:9 34][10:14 fghij][15:19 56789]"s,
             r.debug_to_string());
 
-  // ASSERT_EQ(true, r.insert())
+  ASSERT_EQ(true, r.insert(6, 'x'));
+  ASSERT_EQ("[0:4 abcde][5:8 0x12][9:10 34][11:15 fghij][16:20 56789]"s,
+            r.debug_to_string());
+
+  ASSERT_EQ(true, r.insert(5, 'y'));
+  ASSERT_EQ("[0:4 abcde][5:9 y0x12][10:11 34][12:16 fghij][17:21 56789]"s,
+            r.debug_to_string());
 }
 
 int main() {
