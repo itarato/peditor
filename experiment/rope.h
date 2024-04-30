@@ -39,7 +39,7 @@ struct RopeIntermediateNode {
 };
 
 struct RopeLeaf {
-  string s{};
+  string s;
 };
 
 struct RopeConfig {
@@ -60,11 +60,11 @@ struct Rope {
     RopeLeaf leafNode;
   };
 
-  Rope(string s)
+  Rope(string &&s)
       : start(0),
         type(RopeNodeType::Leaf),
         config(std::make_shared<RopeConfig>(ROPE_UNIT_BREAK_THRESHOLD)),
-        leafNode({s}) {
+        leafNode({std::forward<string>(s)}) {
     end = start + s.size() - 1;
   }
 
@@ -82,6 +82,8 @@ struct Rope {
     if (type == RopeNodeType::Intermediate) {
       delete this->intermediateNode.lhs.release();
       delete this->intermediateNode.rhs.release();
+    } else {
+      leafNode.RopeLeaf::~RopeLeaf();
     }
   }
 
