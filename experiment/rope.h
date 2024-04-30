@@ -25,6 +25,12 @@ enum class RopeSplitResult {
   EmptySplitError,
 };
 
+enum class RopeRemoveResult {
+  Success,
+  NeedUpmerge,
+  RangeError,
+};
+
 struct Rope;
 
 struct RopeIntermediateNode {
@@ -168,14 +174,14 @@ struct Rope {
   }
 
   // ?: remove empty nodes?
-  bool remove(size_t at) {
+  RopeRemoveResult remove(size_t at) {
     if (!in_range_chars(at)) {
-      return false;
+      return RopeRemoveResult::RangeError;
     }
 
-    end--;
-
     if (type == RopeNodeType::Intermediate) {
+      end--;
+
       if (intermediateNode.lhs->end >= at) {
         intermediateNode.rhs->adjust_start_and_end(-1);
         return intermediateNode.lhs->remove(at);
@@ -183,10 +189,15 @@ struct Rope {
         return intermediateNode.rhs->remove(at);
       }
     } else {
-      size_t pos = at - start;
-      leafNode.s.erase(pos, 1);
+      if (start == end) {
+        return RopeRemoveResult::NeedUpmerge;
+      } else {
+        end--;
+        size_t pos = at - start;
+        leafNode.s.erase(pos, 1);
 
-      return true;
+        return RopeRemoveResult::Success;
+      }
     }
   }
 

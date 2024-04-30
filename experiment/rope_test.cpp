@@ -99,7 +99,7 @@ void test_remove_with_split() {
   ASSERT_EQ("[0:4 abcde][5:7 012][8:9 34][10:14 fghij][15:19 56789]"s,
             r.debug_to_string());
 
-  ASSERT_EQ(true, r.remove(2));
+  ASSERT_EQ((int)RopeRemoveResult::Success, (int)r.remove(2));
   ASSERT_EQ("[0:3 abde][4:6 012][7:8 34][9:13 fghij][14:18 56789]"s,
             r.debug_to_string());
 }
