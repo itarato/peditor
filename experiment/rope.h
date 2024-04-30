@@ -36,10 +36,15 @@ struct RopeLeaf {
   string s{};
 };
 
+struct RopeConfig {
+  size_t unit_break_threshold{ROPE_UNIT_BREAK_THRESHOLD};
+};
+
 struct Rope {
   size_t start;
   size_t end;
   RopeNodeType type{RopeNodeType::Intermediate};
+  shared_ptr<RopeConfig> config;
 
   union {
     RopeIntermediateNode intermediateNode;
@@ -47,11 +52,17 @@ struct Rope {
   };
 
   Rope(string s) : start(0), type(RopeNodeType::Leaf), leafNode({s}) {
+    config = make_shared<RopeConfig>((size_t)ROPE_UNIT_BREAK_THRESHOLD);
     end = start + s.size() - 1;
   }
 
-  Rope(size_t start, string s)
-      : start(start), type(RopeNodeType::Leaf), leafNode({s}) {
+  Rope(shared_ptr<RopeConfig> config, string s)
+      : config(config), start(0), type(RopeNodeType::Leaf), leafNode({s}) {
+    end = start + s.size() - 1;
+  }
+
+  Rope(shared_ptr<RopeConfig> config, size_t start, string s)
+      : config(config), start(start), type(RopeNodeType::Leaf), leafNode({s}) {
     end = start + s.size() - 1;
   }
 
@@ -97,9 +108,9 @@ struct Rope {
         return RopeSplitResult::EmptySplitError;
 
       unique_ptr<Rope> lhs =
-          make_unique<Rope>(start, leafNode.s.substr(0, at - start));
+          make_unique<Rope>(config, start, leafNode.s.substr(0, at - start));
       unique_ptr<Rope> rhs =
-          make_unique<Rope>(at, leafNode.s.substr(at - start));
+          make_unique<Rope>(config, at, leafNode.s.substr(at - start));
 
       type = RopeNodeType::Intermediate;
       intermediateNode.lhs.release();
