@@ -27,7 +27,7 @@ enum class RopeSplitResult {
 
 enum class RopeRemoveResult {
   Success,
-  NeedUpmerge,
+  NeedMergeUp,
   RangeError,
 };
 
@@ -182,15 +182,25 @@ struct Rope {
     if (type == RopeNodeType::Intermediate) {
       end--;
 
-      if (intermediateNode.lhs->end >= at) {
+      bool is_left_adjusted = intermediateNode.lhs->end >= at;
+      RopeRemoveResult result;
+
+      if (is_left_adjusted) {
         intermediateNode.rhs->adjust_start_and_end(-1);
-        return intermediateNode.lhs->remove(at);
+        result = intermediateNode.lhs->remove(at);
       } else {
-        return intermediateNode.rhs->remove(at);
+        result = intermediateNode.rhs->remove(at);
+      }
+
+      if (result == RopeRemoveResult::NeedMergeUp) {
+        merge_up(is_left_adjusted);
+        return RopeRemoveResult::Success;
+      } else {
+        return result;
       }
     } else {
       if (start == end) {
-        return RopeRemoveResult::NeedUpmerge;
+        return RopeRemoveResult::NeedMergeUp;
       } else {
         end--;
         size_t pos = at - start;
@@ -200,6 +210,8 @@ struct Rope {
       }
     }
   }
+
+  void merge_up(bool is_left) {}
 
   bool in_range(size_t at) const { return start <= at && at <= end + 1; }
   bool in_range_chars(size_t at) const { return start <= at && at <= end; }
