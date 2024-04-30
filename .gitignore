@@ -9,3 +9,4 @@ test.cpp
 experiment/rope
 experiment/rope_tophat
 experiment/rope_test
+experiment/alloc*
