@@ -37,7 +37,10 @@ struct RopeLeaf {
 };
 
 struct RopeConfig {
-  size_t unit_break_threshold{ROPE_UNIT_BREAK_THRESHOLD};
+  size_t unit_break_threshold;
+
+  RopeConfig(size_t unit_break_threshold)
+      : unit_break_threshold(unit_break_threshold) {}
 };
 
 struct Rope {
@@ -51,18 +54,21 @@ struct Rope {
     RopeLeaf leafNode;
   };
 
-  Rope(string s) : start(0), type(RopeNodeType::Leaf), leafNode({s}) {
-    config = make_shared<RopeConfig>((size_t)ROPE_UNIT_BREAK_THRESHOLD);
+  Rope(string s)
+      : start(0),
+        type(RopeNodeType::Leaf),
+        config(std::make_shared<RopeConfig>(ROPE_UNIT_BREAK_THRESHOLD)),
+        leafNode({s}) {
     end = start + s.size() - 1;
   }
 
   Rope(shared_ptr<RopeConfig> config, string s)
-      : config(config), start(0), type(RopeNodeType::Leaf), leafNode({s}) {
+      : start(0), type(RopeNodeType::Leaf), config(config), leafNode({s}) {
     end = start + s.size() - 1;
   }
 
   Rope(shared_ptr<RopeConfig> config, size_t start, string s)
-      : config(config), start(start), type(RopeNodeType::Leaf), leafNode({s}) {
+      : start(start), type(RopeNodeType::Leaf), config(config), leafNode({s}) {
     end = start + s.size() - 1;
   }
 
@@ -135,7 +141,7 @@ struct Rope {
         return intermediateNode.rhs->insert(at, c);
       }
     } else {
-      if (len() >= ROPE_UNIT_BREAK_THRESHOLD) {
+      if (len() >= config->unit_break_threshold) {
         size_t mid = (end + start + 1) / 2;
         split(mid);
 

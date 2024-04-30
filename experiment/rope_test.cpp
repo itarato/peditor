@@ -70,11 +70,20 @@ void test_insert_with_splits() {
             r.debug_to_string());
 }
 
+void test_insert_with_auto_split() {
+  Rope r{make_shared<RopeConfig>(4), "abcde01234fghij56789"};
+  ASSERT_EQ(true, r.insert(2, 'x'));
+
+  ASSERT_EQ("[0:1 ab][2:5 xcde][6:10 01234][11:20 fghij56789]"s,
+            r.debug_to_string());
+}
+
 int main() {
   test_default();
   test_split();
   test_insert();
   test_insert_with_splits();
+  test_insert_with_auto_split();
 
   return EXIT_SUCCESS;
 }
