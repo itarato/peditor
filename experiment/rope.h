@@ -211,7 +211,20 @@ struct Rope {
     }
   }
 
-  void merge_up(bool is_left) {}
+  void merge_up(bool is_left) {
+    string s;
+
+    if (is_left) {
+      s = intermediateNode.rhs->leafNode.s;
+    } else {
+      s = intermediateNode.lhs->leafNode.s;
+    }
+    // delete intermediateNode.lhs.release();
+    // delete intermediateNode.rhs.release();
+
+    type = RopeNodeType::Leaf;
+    leafNode.s = s;
+  }
 
   bool in_range(size_t at) const { return start <= at && at <= end + 1; }
   bool in_range_chars(size_t at) const { return start <= at && at <= end; }
