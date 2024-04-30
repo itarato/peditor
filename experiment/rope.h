@@ -135,7 +135,7 @@ struct Rope {
       end++;
 
       if (at <= intermediateNode.lhs->end) {
-        intermediateNode.rhs->increase_start_and_end();
+        intermediateNode.rhs->adjust_start_and_end(1);
         return intermediateNode.lhs->insert(at, c);
       } else {
         return intermediateNode.rhs->insert(at, c);
@@ -157,19 +157,39 @@ struct Rope {
     }
   }
 
-  void increase_start_and_end() {
-    start++;
-    end++;
+  void adjust_start_and_end(int diff) {
+    start += diff;
+    end += diff;
 
     if (type == RopeNodeType::Intermediate) {
-      intermediateNode.lhs->increase_start_and_end();
-      intermediateNode.rhs->increase_start_and_end();
+      intermediateNode.lhs->adjust_start_and_end(diff);
+      intermediateNode.rhs->adjust_start_and_end(diff);
     }
   }
 
-  // void remove(size_t at) {
-  //   // if ()
-  // }
+  // ?: remove empty nodes?
+  bool remove(size_t at) {
+    if (!in_range_chars(at)) {
+      return false;
+    }
+
+    end--;
+
+    if (type == RopeNodeType::Intermediate) {
+      if (intermediateNode.lhs->end >= at) {
+        intermediateNode.rhs->adjust_start_and_end(-1);
+        return intermediateNode.lhs->remove(at);
+      } else {
+        return intermediateNode.rhs->remove(at);
+      }
+    } else {
+      size_t pos = at - start;
+      leafNode.s.erase(pos, 1);
+
+      return true;
+    }
+  }
 
   bool in_range(size_t at) const { return start <= at && at <= end + 1; }
+  bool in_range_chars(size_t at) const { return start <= at && at <= end; }
 };

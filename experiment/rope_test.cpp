@@ -78,12 +78,42 @@ void test_insert_with_auto_split() {
             r.debug_to_string());
 }
 
+void test_remove() {
+  Rope r{"abcd"};
+
+  r.remove(0);
+  ASSERT_EQ("[0:2 bcd]"s, r.debug_to_string());
+
+  r.remove(2);
+  ASSERT_EQ("[0:1 bc]"s, r.debug_to_string());
+}
+
+void test_remove_with_split() {
+  Rope r{"abcde01234fghij56789"};
+
+  ASSERT_EQ((int)RopeSplitResult::Success, (int)r.split(10));
+  ASSERT_EQ((int)RopeSplitResult::Success, (int)r.split(5));
+  ASSERT_EQ((int)RopeSplitResult::Success, (int)r.split(15));
+  ASSERT_EQ((int)RopeSplitResult::Success, (int)r.split(8));
+
+  ASSERT_EQ("[0:4 abcde][5:7 012][8:9 34][10:14 fghij][15:19 56789]"s,
+            r.debug_to_string());
+
+  ASSERT_EQ(true, r.remove(2));
+  ASSERT_EQ("[0:3 abde][4:6 012][7:8 34][9:13 fghij][14:18 56789]"s,
+            r.debug_to_string());
+}
+
 int main() {
   test_default();
   test_split();
+
   test_insert();
   test_insert_with_splits();
   test_insert_with_auto_split();
+
+  test_remove();
+  test_remove_with_split();
 
   return EXIT_SUCCESS;
 }
