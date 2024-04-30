@@ -104,6 +104,15 @@ void test_remove_with_split() {
             r.debug_to_string());
 }
 
+void test_remove_with_empty_node() {
+  Rope r{"abcd"};
+  r.split(1);
+
+  ASSERT_EQ("[0:0 a][1:3 bcd]"s, r.debug_to_string());
+  r.remove(0);
+  ASSERT_EQ("[0:0 a][1:3 bcd]"s, r.debug_to_string());
+}
+
 int main() {
   test_default();
   test_split();
@@ -114,6 +123,7 @@ int main() {
 
   test_remove();
   test_remove_with_split();
+  test_remove_with_empty_node();
 
   return EXIT_SUCCESS;
 }
