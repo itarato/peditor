@@ -123,7 +123,7 @@ int main() {
 
   test_remove();
   test_remove_with_split();
-  // test_remove_with_empty_node();
+  test_remove_with_empty_node();
 
   return EXIT_SUCCESS;
 }
