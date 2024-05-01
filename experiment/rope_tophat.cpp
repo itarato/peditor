@@ -11,19 +11,19 @@ int main() {
 
   root.split(10);
   root.insert(20, 'x');
-  // cout << root.debug_to_string() << endl;
+  cout << root.debug_to_string() << endl;
 
-  // root.split(20);
-  // cout << root.debug_to_string() << endl;
+  root.split(20);
+  cout << root.debug_to_string() << endl;
 
-  // root.split(5);
-  // cout << root.debug_to_string() << endl;
+  root.split(5);
+  cout << root.debug_to_string() << endl;
 
-  // root.split(30);
-  // cout << root.debug_to_string() << endl;
-  // cout << root.to_string() << endl;
+  root.split(30);
+  cout << root.debug_to_string() << endl;
+  cout << root.to_string() << endl;
 
-  // cout << root.len() << endl;
+  cout << root.len() << endl;
 
   return EXIT_SUCCESS;
 }
