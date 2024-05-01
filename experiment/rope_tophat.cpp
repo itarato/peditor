@@ -25,5 +25,10 @@ int main() {
 
   cout << root.len() << endl;
 
+  root.remove(21);
+  cout << root.debug_to_string() << endl;
+  root.remove(20);
+  cout << root.debug_to_string() << endl;
+
   return EXIT_SUCCESS;
 }

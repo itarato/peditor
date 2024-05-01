@@ -86,8 +86,8 @@ struct Rope {
 
   ~Rope() {
     if (type == RopeNodeType::Intermediate) {
-      delete this->intermediateNode.lhs.release();
-      delete this->intermediateNode.rhs.release();
+      delete intermediateNode.lhs.release();
+      delete intermediateNode.rhs.release();
     } else {
       leafNode.RopeLeaf::~RopeLeaf();
     }
@@ -229,11 +229,11 @@ struct Rope {
     } else {
       s = intermediateNode.lhs->leafNode.s;
     }
-    // delete intermediateNode.lhs.release();
-    // delete intermediateNode.rhs.release();
+    delete intermediateNode.lhs.release();
+    delete intermediateNode.rhs.release();
 
     type = RopeNodeType::Leaf;
-    leafNode.s = s;
+    leafNode.s.swap(s);
   }
 
   bool in_range(size_t at) const { return start <= at && at <= end + 1; }
