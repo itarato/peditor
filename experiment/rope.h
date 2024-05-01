@@ -65,17 +65,23 @@ struct Rope {
         type(RopeNodeType::Leaf),
         config(std::make_shared<RopeConfig>(ROPE_UNIT_BREAK_THRESHOLD)),
         leafNode({std::forward<string>(s)}) {
-    end = start + s.size() - 1;
+    end = start + leafNode.s.size() - 1;
   }
 
-  Rope(shared_ptr<RopeConfig> config, string s)
-      : start(0), type(RopeNodeType::Leaf), config(config), leafNode({s}) {
-    end = start + s.size() - 1;
+  Rope(shared_ptr<RopeConfig> config, string &&s)
+      : start(0),
+        type(RopeNodeType::Leaf),
+        config(config),
+        leafNode({std::forward<string>(s)}) {
+    end = start + leafNode.s.size() - 1;
   }
 
-  Rope(shared_ptr<RopeConfig> config, size_t start, string s)
-      : start(start), type(RopeNodeType::Leaf), config(config), leafNode({s}) {
-    end = start + s.size() - 1;
+  Rope(shared_ptr<RopeConfig> config, size_t start, string &&s)
+      : start(start),
+        type(RopeNodeType::Leaf),
+        config(config),
+        leafNode({std::forward<string>(s)}) {
+    end = start + leafNode.s.size() - 1;
   }
 
   ~Rope() {
@@ -125,6 +131,8 @@ struct Rope {
           make_unique<Rope>(config, start, leafNode.s.substr(0, at - start));
       unique_ptr<Rope> rhs =
           make_unique<Rope>(config, at, leafNode.s.substr(at - start));
+
+      leafNode.RopeLeaf::~RopeLeaf();
 
       type = RopeNodeType::Intermediate;
       intermediateNode.lhs.release();
