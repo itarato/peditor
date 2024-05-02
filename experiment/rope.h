@@ -192,7 +192,6 @@ struct Rope {
     }
   }
 
-  // ?: remove empty nodes?
   RopeRemoveResult remove(size_t at) {
     if (!in_range_chars(at)) return RopeRemoveResult::RangeError;
 
