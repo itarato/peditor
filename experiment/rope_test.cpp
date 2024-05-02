@@ -41,12 +41,12 @@ void test_split() {
 void test_insert() {
   Rope r1{"abcd"};
 
-  ASSERT_EQ(false, r1.insert(5, 'y'));
+  ASSERT_EQ(false, r1.insert(5, "y"));
 
-  r1.insert(0, 'x');
+  r1.insert(0, "x");
   ASSERT_EQ("xabcd"s, r1.to_string());
 
-  r1.insert(5, 'y');
+  r1.insert(5, "y");
   ASSERT_EQ("xabcdy"s, r1.to_string());
 }
 
@@ -61,18 +61,18 @@ void test_insert_with_splits() {
   ASSERT_EQ("[0:4 abcde][5:7 012][8:9 34][10:14 fghij][15:19 56789]"s,
             r.debug_to_string());
 
-  ASSERT_EQ(true, r.insert(6, 'x'));
+  ASSERT_EQ(true, r.insert(6, "x"));
   ASSERT_EQ("[0:4 abcde][5:8 0x12][9:10 34][11:15 fghij][16:20 56789]"s,
             r.debug_to_string());
 
-  ASSERT_EQ(true, r.insert(5, 'y'));
+  ASSERT_EQ(true, r.insert(5, "y"));
   ASSERT_EQ("[0:4 abcde][5:9 y0x12][10:11 34][12:16 fghij][17:21 56789]"s,
             r.debug_to_string());
 }
 
 void test_insert_with_auto_split() {
   Rope r{make_shared<RopeConfig>(4), "abcde01234fghij56789"};
-  ASSERT_EQ(true, r.insert(2, 'x'));
+  ASSERT_EQ(true, r.insert(2, "x"));
 
   ASSERT_EQ("[0:1 ab][2:5 xcde][6:10 01234][11:20 fghij56789]"s,
             r.debug_to_string());
@@ -119,8 +119,8 @@ void test_empty() {
   ASSERT_EQ(""s, r.to_string());
 
   ASSERT_EQ((int)RopeRemoveResult::RangeError, (int)r.remove(0));
-  ASSERT_EQ(true, r.insert(0, 'x'));
-  ASSERT_EQ(true, r.insert(0, 'y'));
+  ASSERT_EQ(true, r.insert(0, "x"));
+  ASSERT_EQ(true, r.insert(0, "y"));
 
   ASSERT_EQ("[0:1 yx]"s, r.debug_to_string());
 }

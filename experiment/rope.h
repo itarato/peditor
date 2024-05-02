@@ -12,6 +12,13 @@
 
 using namespace std;
 
+/**
+ * Needs:
+ * - navigation by line: up, down
+ * - edit line: delete line
+ * - insert/remove section (from..to)
+ */
+
 #define ROPE_UNIT_BREAK_THRESHOLD 8
 
 enum class RopeNodeType {
@@ -154,7 +161,7 @@ struct Rope {
     }
   }
 
-  bool insert(size_t at, char c) {
+  bool insert(size_t at, string &&snippet) {
     if (!in_range(at)) return false;
 
     if (type == RopeNodeType::Intermediate) {
@@ -162,21 +169,21 @@ struct Rope {
 
       if (!intermediateNode.lhs->empty() && at <= intermediateNode.lhs->end()) {
         intermediateNode.rhs->adjust_start(1);
-        return intermediateNode.lhs->insert(at, c);
+        return intermediateNode.lhs->insert(at, std::forward<string>(snippet));
       } else {
-        return intermediateNode.rhs->insert(at, c);
+        return intermediateNode.rhs->insert(at, std::forward<string>(snippet));
       }
     } else {
       if (size >= config->unit_break_threshold) {
         size_t mid = start + size / 2;
         split(mid);
 
-        return insert(at, c);
+        return insert(at, std::forward<string>(snippet));
       } else {
         size++;
 
         size_t pos = at - start;
-        leafNode.s.insert(pos, 1, c);
+        leafNode.s.insert(pos, snippet);
 
         return true;
       }
