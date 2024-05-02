@@ -113,6 +113,30 @@ void test_remove_with_empty_node() {
   ASSERT_EQ("[0:2 bcd]"s, r.debug_to_string());
 }
 
+void test_empty() {
+  Rope r;
+  ASSERT_EQ((size_t)0, r.size);
+  ASSERT_EQ(""s, r.to_string());
+
+  ASSERT_EQ((int)RopeRemoveResult::RangeError, (int)r.remove(0));
+  ASSERT_EQ(true, r.insert(0, 'x'));
+  ASSERT_EQ(true, r.insert(0, 'y'));
+
+  ASSERT_EQ("[0:1 yx]"s, r.debug_to_string());
+}
+
+void test_empty_from_non_empty() {
+  Rope r{"ab"};
+
+  r.remove(1);
+  ASSERT_EQ("[0:0 a]"s, r.debug_to_string());
+
+  ASSERT_EQ((int)RopeRemoveResult::NeedMergeUp, (int)r.remove(0));
+  ASSERT_EQ(""s, r.to_string());
+
+  ASSERT_EQ(true, r.empty());
+}
+
 int main() {
   test_default();
   test_split();
@@ -124,6 +148,9 @@ int main() {
   test_remove();
   test_remove_with_split();
   test_remove_with_empty_node();
+
+  test_empty();
+  test_empty_from_non_empty();
 
   return EXIT_SUCCESS;
 }

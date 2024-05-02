@@ -51,7 +51,7 @@ struct RopeConfig {
 
 struct Rope {
   size_t start;
-  size_t end;
+  size_t size;
   RopeNodeType type{RopeNodeType::Intermediate};
   shared_ptr<RopeConfig> config;
 
@@ -60,29 +60,33 @@ struct Rope {
     RopeLeaf leafNode;
   };
 
-  Rope(string &&s)
+  Rope()
       : start(0),
+        size(0),
         type(RopeNodeType::Leaf),
         config(std::make_shared<RopeConfig>(ROPE_UNIT_BREAK_THRESHOLD)),
-        leafNode({std::forward<string>(s)}) {
-    end = start + leafNode.s.size() - 1;
-  }
+        leafNode({std::forward<string>(""s)}) {}
+
+  Rope(string &&s)
+      : start(0),
+        size(s.size()),
+        type(RopeNodeType::Leaf),
+        config(std::make_shared<RopeConfig>(ROPE_UNIT_BREAK_THRESHOLD)),
+        leafNode({std::forward<string>(s)}) {}
 
   Rope(shared_ptr<RopeConfig> config, string &&s)
       : start(0),
+        size(s.size()),
         type(RopeNodeType::Leaf),
         config(config),
-        leafNode({std::forward<string>(s)}) {
-    end = start + leafNode.s.size() - 1;
-  }
+        leafNode({std::forward<string>(s)}) {}
 
   Rope(shared_ptr<RopeConfig> config, size_t start, string &&s)
       : start(start),
+        size(s.size()),
         type(RopeNodeType::Leaf),
         config(config),
-        leafNode({std::forward<string>(s)}) {
-    end = start + leafNode.s.size() - 1;
-  }
+        leafNode({std::forward<string>(s)}) {}
 
   ~Rope() {
     if (type == RopeNodeType::Intermediate) {
@@ -107,16 +111,22 @@ struct Rope {
       return intermediateNode.lhs->debug_to_string() +
              intermediateNode.rhs->debug_to_string();
     } else {
-      return "[" + std::to_string(start) + ":" + std::to_string(end) + " " +
+      return "[" + std::to_string(start) + ":" + std::to_string(end()) + " " +
              leafNode.s + "]";
     }
   }
 
-  size_t len() const { return end - start + 1; }
+  bool empty() const { return size == 0; }
+
+  size_t end() const {
+    // Must check emptiness before calling this.
+    assert(!empty());
+    return start + size - 1;
+  }
 
   RopeSplitResult split(size_t at) {
     if (type == RopeNodeType::Intermediate) {
-      if (at <= intermediateNode.lhs->end) {
+      if (!intermediateNode.lhs->empty() && at <= intermediateNode.lhs->end()) {
         return intermediateNode.lhs->split(at);
       } else {
         return intermediateNode.rhs->split(at);
@@ -124,7 +134,7 @@ struct Rope {
     } else {
       if (!in_range(at)) return RopeSplitResult::RangeError;
 
-      if (at - start == 0 || 1 + end - at == 0)
+      if (at == start || end() + 1 == at)
         return RopeSplitResult::EmptySplitError;
 
       unique_ptr<Rope> lhs =
@@ -148,22 +158,22 @@ struct Rope {
     if (!in_range(at)) return false;
 
     if (type == RopeNodeType::Intermediate) {
-      end++;
+      size++;
 
-      if (at <= intermediateNode.lhs->end) {
-        intermediateNode.rhs->adjust_start_and_end(1);
+      if (!intermediateNode.lhs->empty() && at <= intermediateNode.lhs->end()) {
+        intermediateNode.rhs->adjust_start(1);
         return intermediateNode.lhs->insert(at, c);
       } else {
         return intermediateNode.rhs->insert(at, c);
       }
     } else {
-      if (len() >= config->unit_break_threshold) {
-        size_t mid = (end + start + 1) / 2;
+      if (size >= config->unit_break_threshold) {
+        size_t mid = start + size / 2;
         split(mid);
 
         return insert(at, c);
       } else {
-        end++;
+        size++;
 
         size_t pos = at - start;
         leafNode.s.insert(pos, 1, c);
@@ -173,30 +183,28 @@ struct Rope {
     }
   }
 
-  void adjust_start_and_end(int diff) {
+  void adjust_start(int diff) {
     start += diff;
-    end += diff;
 
     if (type == RopeNodeType::Intermediate) {
-      intermediateNode.lhs->adjust_start_and_end(diff);
-      intermediateNode.rhs->adjust_start_and_end(diff);
+      intermediateNode.lhs->adjust_start(diff);
+      intermediateNode.rhs->adjust_start(diff);
     }
   }
 
   // ?: remove empty nodes?
   RopeRemoveResult remove(size_t at) {
-    if (!in_range_chars(at)) {
-      return RopeRemoveResult::RangeError;
-    }
+    if (!in_range_chars(at)) return RopeRemoveResult::RangeError;
 
     if (type == RopeNodeType::Intermediate) {
-      end--;
+      size--;
 
-      bool is_left_adjusted = intermediateNode.lhs->end >= at;
+      bool is_left_adjusted =
+          !intermediateNode.lhs->empty() && intermediateNode.lhs->end() >= at;
       RopeRemoveResult result;
 
       if (is_left_adjusted) {
-        intermediateNode.rhs->adjust_start_and_end(-1);
+        intermediateNode.rhs->adjust_start(-1);
         result = intermediateNode.lhs->remove(at);
       } else {
         result = intermediateNode.rhs->remove(at);
@@ -209,13 +217,14 @@ struct Rope {
         return result;
       }
     } else {
-      if (start == end) {
+      size--;
+
+      size_t pos = at - start;
+      leafNode.s.erase(pos, 1);
+
+      if (empty()) {
         return RopeRemoveResult::NeedMergeUp;
       } else {
-        end--;
-        size_t pos = at - start;
-        leafNode.s.erase(pos, 1);
-
         return RopeRemoveResult::Success;
       }
     }
@@ -236,6 +245,10 @@ struct Rope {
     leafNode.s.swap(s);
   }
 
-  bool in_range(size_t at) const { return start <= at && at <= end + 1; }
-  bool in_range_chars(size_t at) const { return start <= at && at <= end; }
+  bool in_range(size_t at) const {
+    return (empty() && at == start) || (start <= at && at <= end() + 1);
+  }
+  bool in_range_chars(size_t at) const {
+    return !empty() && start <= at && at <= end();
+  }
 };
