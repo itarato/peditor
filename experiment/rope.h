@@ -61,6 +61,7 @@ struct Rope {
   size_t size;
   RopeNodeType type{RopeNodeType::Intermediate};
   shared_ptr<RopeConfig> config;
+  Rope *parent;
 
   union {
     RopeIntermediateNode intermediateNode;
@@ -72,12 +73,14 @@ struct Rope {
         size(0),
         type(RopeNodeType::Leaf),
         config(std::make_shared<RopeConfig>(ROPE_UNIT_BREAK_THRESHOLD)),
+        parent(nullptr),
         leafNode({std::forward<string>(""s)}) {}
 
   Rope(string &&s)
       : start(0),
         size(s.size()),
         type(RopeNodeType::Leaf),
+        parent(nullptr),
         config(std::make_shared<RopeConfig>(ROPE_UNIT_BREAK_THRESHOLD)),
         leafNode({std::forward<string>(s)}) {}
 
@@ -85,13 +88,15 @@ struct Rope {
       : start(0),
         size(s.size()),
         type(RopeNodeType::Leaf),
+        parent(nullptr),
         config(config),
         leafNode({std::forward<string>(s)}) {}
 
-  Rope(shared_ptr<RopeConfig> config, size_t start, string &&s)
+  Rope(shared_ptr<RopeConfig> config, size_t start, Rope *parent, string &&s)
       : start(start),
         size(s.size()),
         type(RopeNodeType::Leaf),
+        parent(parent),
         config(config),
         leafNode({std::forward<string>(s)}) {}
 
@@ -144,10 +149,10 @@ struct Rope {
       if (at == start || end() + 1 == at)
         return RopeSplitResult::EmptySplitError;
 
-      unique_ptr<Rope> lhs =
-          make_unique<Rope>(config, start, leafNode.s.substr(0, at - start));
+      unique_ptr<Rope> lhs = make_unique<Rope>(
+          config, start, this, leafNode.s.substr(0, at - start));
       unique_ptr<Rope> rhs =
-          make_unique<Rope>(config, at, leafNode.s.substr(at - start));
+          make_unique<Rope>(config, at, this, leafNode.s.substr(at - start));
 
       leafNode.RopeLeaf::~RopeLeaf();
 
@@ -254,7 +259,12 @@ struct Rope {
   bool in_range(size_t at) const {
     return (empty() && at == start) || (start <= at && at <= end() + 1);
   }
+
   bool in_range_chars(size_t at) const {
     return !empty() && start <= at && at <= end();
   }
+
+  // bool is_right_child() const {}
+
+  // Rope *prev() const {}
 };
