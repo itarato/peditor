@@ -165,7 +165,7 @@ struct Rope {
     if (!in_range(at)) return false;
 
     if (type == RopeNodeType::Intermediate) {
-      size++;
+      size += snippet.size();
 
       if (!intermediateNode.lhs->empty() && at <= intermediateNode.lhs->end()) {
         intermediateNode.rhs->adjust_start(1);
@@ -180,7 +180,7 @@ struct Rope {
 
         return insert(at, std::forward<string>(snippet));
       } else {
-        size++;
+        size += snippet.size();
 
         size_t pos = at - start;
         leafNode.s.insert(pos, snippet);

@@ -78,6 +78,14 @@ void test_insert_with_auto_split() {
             r.debug_to_string());
 }
 
+void test_insert_string() {
+  Rope r;
+  r.insert(0, "herld");
+  r.insert(2, "llo wo");
+
+  ASSERT_EQ("hello world"s, r.to_string());
+}
+
 void test_remove() {
   Rope r{"abcd"};
 
@@ -144,6 +152,7 @@ int main() {
   test_insert();
   test_insert_with_splits();
   test_insert_with_auto_split();
+  test_insert_string();
 
   test_remove();
   test_remove_with_split();
