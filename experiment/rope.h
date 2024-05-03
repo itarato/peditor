@@ -109,7 +109,7 @@ struct Rope {
     }
   }
 
-  string to_string() {
+  string to_string() const {
     if (type == RopeNodeType::Intermediate) {
       return intermediateNode.lhs->to_string() +
              intermediateNode.rhs->to_string();
@@ -118,7 +118,7 @@ struct Rope {
     }
   }
 
-  string debug_to_string() {
+  string debug_to_string() const {
     if (type == RopeNodeType::Intermediate) {
       return intermediateNode.lhs->debug_to_string() +
              intermediateNode.rhs->debug_to_string();
@@ -264,7 +264,41 @@ struct Rope {
     return !empty() && start <= at && at <= end();
   }
 
-  // bool is_right_child() const {}
+  bool is_right_child() const {
+    if (!parent) return false;
+    return parent->intermediateNode.rhs.get() == this;
+  }
 
-  // Rope *prev() const {}
+  bool is_left_child() const {
+    if (!parent) return false;
+    return parent->intermediateNode.lhs.get() == this;
+  }
+
+  Rope *prev() const {
+    if (!parent) return nullptr;
+    if (is_right_child()) return parent->intermediateNode.lhs->rightmost();
+    return parent->prev();
+  }
+
+  Rope *rightmost() const {
+    if (type == RopeNodeType::Intermediate) {
+      return intermediateNode.rhs->rightmost();
+    } else {
+      return (Rope *)this;
+    }
+  }
+
+  Rope *next() const {
+    if (!parent) return nullptr;
+    if (is_left_child()) return parent->intermediateNode.rhs->leftmost();
+    return parent->next();
+  }
+
+  Rope *leftmost() const {
+    if (type == RopeNodeType::Intermediate) {
+      return intermediateNode.lhs->leftmost();
+    } else {
+      return (Rope *)this;
+    }
+  }
 };
