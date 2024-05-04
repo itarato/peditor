@@ -109,6 +109,10 @@ struct Rope {
     }
   }
 
+  /**
+   * OUTPUT
+   */
+
   string to_string() const {
     if (type == RopeNodeType::Intermediate) {
       return intermediateNode.lhs->to_string() +
@@ -128,20 +132,16 @@ struct Rope {
     }
   }
 
-  bool empty() const { return size == 0; }
-
-  size_t end() const {
-    // Must check emptiness before calling this.
-    assert(!empty());
-    return start + size - 1;
-  }
+  /**
+   * OPERATIONS
+   */
 
   RopeSplitResult split(size_t at) {
     if (type == RopeNodeType::Intermediate) {
-      if (!intermediateNode.lhs->empty() && at <= intermediateNode.lhs->end()) {
-        return intermediateNode.lhs->split(at);
-      } else {
+      if (intermediateNode.rhs->start <= at) {
         return intermediateNode.rhs->split(at);
+      } else {
+        return intermediateNode.lhs->split(at);
       }
     } else {
       if (!in_range(at)) return RopeSplitResult::RangeError;
@@ -172,11 +172,11 @@ struct Rope {
     if (type == RopeNodeType::Intermediate) {
       size += snippet.size();
 
-      if (!intermediateNode.lhs->empty() && at <= intermediateNode.lhs->end()) {
+      if (intermediateNode.rhs->start <= at) {
+        return intermediateNode.rhs->insert(at, std::forward<string>(snippet));
+      } else {
         intermediateNode.rhs->adjust_start(1);
         return intermediateNode.lhs->insert(at, std::forward<string>(snippet));
-      } else {
-        return intermediateNode.rhs->insert(at, std::forward<string>(snippet));
       }
     } else {
       if (size >= config->unit_break_threshold) {
@@ -256,6 +256,18 @@ struct Rope {
     leafNode.s.swap(s);
   }
 
+  /**
+   * BOUNDS
+   */
+
+  bool empty() const { return size == 0; }
+
+  size_t end() const {
+    // Must check emptiness before calling this.
+    assert(!empty());
+    return start + size - 1;
+  }
+
   bool in_range(size_t at) const {
     return (empty() && at == start) || (start <= at && at <= end() + 1);
   }
@@ -263,6 +275,10 @@ struct Rope {
   bool in_range_chars(size_t at) const {
     return !empty() && start <= at && at <= end();
   }
+
+  /**
+   * NAVIGATION
+   */
 
   bool is_right_child() const {
     if (!parent) return false;
@@ -301,4 +317,23 @@ struct Rope {
       return (Rope *)this;
     }
   }
+
+  Rope *node_at(size_t at) const {
+    if (!in_range(at)) return nullptr;
+
+    if (type == RopeNodeType::Intermediate) {
+      if (intermediateNode.rhs->start <= at) {
+        return intermediateNode.rhs->node_at(at);
+      } else {
+        return intermediateNode.lhs->node_at(at);
+      }
+    }
+
+    return (Rope *)this;
+  }
+
+  // // ?: Should we cache NL locations?
+  // int next_line_at(size_t at) const {}
+
+  // int prev_line_at(size_t at) const {}
 };
