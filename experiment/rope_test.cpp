@@ -248,6 +248,14 @@ void test_node_at() {
   ASSERT_NULLPTR(rope->node_at(16));
 }
 
+void test_next_new_line_at() {
+  Rope r{"\n0123\nabcd\n0123\nabcd\n"};
+  r.split(3);
+  r.split(18);
+  ASSERT_EQ("[0:2 \n01][3:17 23\nabcd\n0123\nab][18:20 cd\n]"s,
+            r.debug_to_string());
+}
+
 int main() {
   test_default();
   test_split();
@@ -269,6 +277,8 @@ int main() {
   test_adjacent();
 
   test_node_at();
+
+  test_next_new_line_at();
 
   printf("\nCompleted\n");
 

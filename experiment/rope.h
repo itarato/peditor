@@ -47,6 +47,14 @@ struct RopeIntermediateNode {
 
 struct RopeLeaf {
   string s;
+
+  int next_char_after(size_t pos, char ch) const {
+    while (pos < s.size()) {
+      if (s[pos] == ch) return pos;
+      pos++;
+    }
+    return -1;
+  }
 };
 
 struct RopeConfig {
@@ -290,6 +298,7 @@ struct Rope {
     return parent->intermediateNode.lhs.get() == this;
   }
 
+  // TODO: We could cache leaf-sibling pointers.
   Rope *prev() const {
     if (!parent) return nullptr;
     if (is_right_child()) return parent->intermediateNode.lhs->rightmost();
@@ -332,8 +341,24 @@ struct Rope {
     return (Rope *)this;
   }
 
-  // // ?: Should we cache NL locations?
-  // int next_line_at(size_t at) const {}
+  int next_line_at(size_t at) const {
+    if (type == RopeNodeType::Intermediate) {
+      auto node = node_at(at);
+      if (!node) return -1;
+      return node->next_line_at(at);
+    }
+
+    size_t current_at = at;
+
+    int result = leafNode.next_char_after(current_at - start, '\n');
+    if (result >= 0) return result + start;
+
+    current_at += size;
+    auto next_node = next();
+    if (!next_node) return -1;
+
+    return next_node->next_line_at(at);
+  }
 
   // int prev_line_at(size_t at) const {}
 };
