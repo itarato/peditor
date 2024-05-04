@@ -202,5 +202,7 @@ int main() {
 
   test_adjacent();
 
+  printf("\nCompleted\n");
+
   return EXIT_SUCCESS;
 }

@@ -80,24 +80,24 @@ struct Rope {
       : start(0),
         size(s.size()),
         type(RopeNodeType::Leaf),
-        parent(nullptr),
         config(std::make_shared<RopeConfig>(ROPE_UNIT_BREAK_THRESHOLD)),
+        parent(nullptr),
         leafNode({std::forward<string>(s)}) {}
 
   Rope(shared_ptr<RopeConfig> config, string &&s)
       : start(0),
         size(s.size()),
         type(RopeNodeType::Leaf),
-        parent(nullptr),
         config(config),
+        parent(nullptr),
         leafNode({std::forward<string>(s)}) {}
 
   Rope(shared_ptr<RopeConfig> config, size_t start, Rope *parent, string &&s)
       : start(start),
         size(s.size()),
         type(RopeNodeType::Leaf),
-        parent(parent),
         config(config),
+        parent(parent),
         leafNode({std::forward<string>(s)}) {}
 
   ~Rope() {
