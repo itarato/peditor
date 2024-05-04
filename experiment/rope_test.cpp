@@ -4,8 +4,11 @@
 
 #include <cstdlib>
 #include <string>
+#include <utility>
 
 #define ASSERT_EQ(v1, v2) assert_eq(v1, v2, __LINE__)
+#define ASSERT_NOT_NULLPTR(ptr) assert_not_nullptr(ptr, __LINE__)
+#define ASSERT_NULLPTR(ptr) assert_nullptr(ptr, __LINE__)
 
 template <typename T>
 void assert_eq(T v1, T v2, int lineNo) {
@@ -15,6 +18,52 @@ void assert_eq(T v1, T v2, int lineNo) {
     cout << "\n\nFail!\nLine: " << lineNo << "\nExpected: <" << v1
          << ">\n  Actual: <" << v2 << ">\n\n";
   }
+}
+
+template <typename T>
+void assert_not_nullptr(T ptr, int lineNo) {
+  if (ptr != nullptr) {
+    cout << ".";
+  } else {
+    cout << "\n\nFail!\nLine: " << lineNo << "\nGot: NULLPTR\n\n";
+  }
+}
+
+template <typename T>
+void assert_nullptr(T ptr, int lineNo) {
+  if (ptr == nullptr) {
+    cout << ".";
+  } else {
+    cout << "\n\nFail!\nLine: " << lineNo << "\nGot: not a NULLPTR\n\n";
+  }
+}
+
+/*
+      /--\
+     +    +
+   /-\    /-\
+   +  gh ij +
+  / \      / \
+  ab +     + op
+    / \   / \
+   cd ef kl mn
+*/
+unique_ptr<Rope> make_medium_branched() {
+  unique_ptr<Rope> rope = make_unique<Rope>("abcdefghijklmnop");
+
+  rope->split(8);
+  rope->split(6);
+  rope->split(10);
+  rope->split(2);
+  rope->split(14);
+  rope->split(4);
+  rope->split(12);
+
+  ASSERT_EQ(
+      "[0:1 ab][2:3 cd][4:5 ef][6:7 gh][8:9 ij][10:11 kl][12:13 mn][14:15 op]"s,
+      rope->debug_to_string());
+
+  return rope;
 }
 
 void test_default() {
@@ -182,6 +231,23 @@ void test_adjacent() {
   ASSERT_EQ((Rope *)nullptr, next_c->next());
 }
 
+void test_node_at() {
+  // [0:1 ab][2:3 cd][4:5 ef][6:7 gh][8:9 ij][10:11 kl][12:13 mn][14:15 op]
+  auto rope = make_medium_branched();
+
+  ASSERT_NOT_NULLPTR(rope->node_at(4));
+  ASSERT_EQ("ef"s, rope->node_at(4)->to_string());
+  ASSERT_EQ("ef"s, rope->node_at(5)->to_string());
+
+  ASSERT_EQ("ij"s, rope->node_at(8)->to_string());
+  ASSERT_EQ("ij"s, rope->node_at(9)->to_string());
+
+  ASSERT_EQ("ab"s, rope->node_at(0)->to_string());
+  ASSERT_EQ("op"s, rope->node_at(15)->to_string());
+
+  ASSERT_NULLPTR(rope->node_at(16));
+}
+
 int main() {
   test_default();
   test_split();
@@ -201,6 +267,8 @@ int main() {
   test_parent();
 
   test_adjacent();
+
+  test_node_at();
 
   printf("\nCompleted\n");
 

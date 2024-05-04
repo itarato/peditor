@@ -319,7 +319,7 @@ struct Rope {
   }
 
   Rope *node_at(size_t at) const {
-    if (!in_range(at)) return nullptr;
+    if (!in_range_chars(at)) return nullptr;
 
     if (type == RopeNodeType::Intermediate) {
       if (intermediateNode.rhs->start <= at) {
