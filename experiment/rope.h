@@ -55,6 +55,15 @@ struct RopeLeaf {
     }
     return -1;
   }
+
+  int prev_char_before(size_t pos, char ch) const {
+    while (pos >= 0) {
+      if (s[pos] == ch) return pos;
+      if (pos == 0) return -1;
+
+      pos--;
+    }
+  }
 };
 
 struct RopeConfig {
@@ -348,17 +357,28 @@ struct Rope {
       return node->next_line_at(at);
     }
 
-    size_t current_at = at;
-
-    int result = leafNode.next_char_after(current_at - start, '\n');
+    int result = leafNode.next_char_after(at - start, '\n');
     if (result >= 0) return result + start;
 
-    current_at += size;
     auto next_node = next();
     if (!next_node) return -1;
 
-    return next_node->next_line_at(at);
+    return next_node->next_line_at(next_node->start);
   }
 
-  // int prev_line_at(size_t at) const {}
+  int prev_line_at(size_t at) const {
+    if (type == RopeNodeType::Intermediate) {
+      auto node = node_at(at);
+      if (!node) return -1;
+      return node->prev_line_at(at);
+    }
+
+    int result = leafNode.prev_char_before(at - start, '\n');
+    if (result >= 0) return result + start;
+
+    auto prev_node = prev();
+    if (!prev_node) return -1;
+
+    return prev_node->prev_line_at(prev_node->end());
+  }
 };

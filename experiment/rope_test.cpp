@@ -254,6 +254,46 @@ void test_next_new_line_at() {
   r.split(18);
   ASSERT_EQ("[0:2 \n01][3:17 23\nabcd\n0123\nab][18:20 cd\n]"s,
             r.debug_to_string());
+
+  ASSERT_EQ(0, r.next_line_at(0));
+
+  ASSERT_EQ(5, r.next_line_at(1));
+  ASSERT_EQ(5, r.next_line_at(2));
+  ASSERT_EQ(5, r.next_line_at(3));
+  ASSERT_EQ(5, r.next_line_at(4));
+  ASSERT_EQ(5, r.next_line_at(5));
+
+  ASSERT_EQ(10, r.next_line_at(6));
+  ASSERT_EQ(20, r.next_line_at(20));
+}
+
+void test_next_new_line_at_many_passes() {
+  Rope r{"abcdefgh01234567\n"};
+  r.split(4);
+  r.split(2);
+  r.split(6);
+  r.split(14);
+  r.split(12);
+  r.split(10);
+  ASSERT_EQ(
+      "[0:1 ab][2:3 cd][4:5 ef][6:9 gh01][10:11 23][12:13 45][14:16 67\n]"s,
+      r.debug_to_string());
+
+  ASSERT_EQ(16, r.next_line_at(0));
+}
+
+void test_prev_new_line_at() {
+  Rope r{"\n0123\nabcd\n0123\nabcd\n"};
+  r.split(3);
+  r.split(18);
+  ASSERT_EQ("[0:2 \n01][3:17 23\nabcd\n0123\nab][18:20 cd\n]"s,
+            r.debug_to_string());
+
+  ASSERT_EQ(20, r.prev_line_at(20));
+
+  ASSERT_EQ(15, r.prev_line_at(19));
+  ASSERT_EQ(15, r.prev_line_at(17));
+  ASSERT_EQ(15, r.prev_line_at(15));
 }
 
 int main() {
@@ -279,6 +319,9 @@ int main() {
   test_node_at();
 
   test_next_new_line_at();
+  test_next_new_line_at_many_passes();
+
+  test_prev_new_line_at();
 
   printf("\nCompleted\n");
 
