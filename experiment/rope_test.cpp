@@ -296,6 +296,36 @@ void test_prev_new_line_at() {
   ASSERT_EQ(15, r.prev_line_at(15));
 }
 
+void test_prev_new_line_at_many_passes() {
+  Rope r{"\nabcdefgh01234567"};
+  r.split(4);
+  r.split(2);
+  r.split(6);
+  r.split(14);
+  r.split(12);
+  r.split(10);
+  ASSERT_EQ(
+      "[0:1 \na][2:3 bc][4:5 de][6:9 fgh0][10:11 12][12:13 34][14:16 567]"s,
+      r.debug_to_string());
+
+  ASSERT_EQ(0, r.prev_line_at(16));
+}
+
+void test_prev_and_next_new_line_at_without_match() {
+  Rope r{"abcdefgh01234567"};
+  r.split(4);
+  r.split(2);
+  r.split(6);
+  r.split(14);
+  r.split(12);
+  r.split(10);
+  ASSERT_EQ("[0:1 ab][2:3 cd][4:5 ef][6:9 gh01][10:11 23][12:13 45][14:15 67]"s,
+            r.debug_to_string());
+
+  ASSERT_EQ(-1, r.next_line_at(0));
+  ASSERT_EQ(-1, r.prev_line_at(16));
+}
+
 int main() {
   test_default();
   test_split();
@@ -320,8 +350,9 @@ int main() {
 
   test_next_new_line_at();
   test_next_new_line_at_many_passes();
-
   test_prev_new_line_at();
+  test_prev_new_line_at_many_passes();
+  test_prev_and_next_new_line_at_without_match();
 
   printf("\nCompleted\n");
 
