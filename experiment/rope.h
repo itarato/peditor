@@ -258,6 +258,44 @@ struct Rope {
     }
   }
 
+  RopeRemoveResult remove_range(size_t from, size_t to) {
+    if (!in_range_chars(from) || !in_range_chars(to))
+      return RopeRemoveResult::RangeError;
+
+    if (type == RopeNodeType::Intermediate) {
+      size -= to - from + 1;  // Continue here!!!!!!!!!!!!!!!!!!!!1
+
+      bool is_left_adjusted =
+          !intermediateNode.lhs->empty() && intermediateNode.lhs->end() >= at;
+      RopeRemoveResult result;
+
+      if (is_left_adjusted) {
+        intermediateNode.rhs->adjust_start(-1);
+        result = intermediateNode.lhs->remove(at);
+      } else {
+        result = intermediateNode.rhs->remove(at);
+      }
+
+      if (result == RopeRemoveResult::NeedMergeUp) {
+        merge_up(is_left_adjusted);
+        return RopeRemoveResult::Success;
+      } else {
+        return result;
+      }
+    } else {
+      size--;
+
+      size_t pos = at - start;
+      leafNode.s.erase(pos, 1);
+
+      if (empty()) {
+        return RopeRemoveResult::NeedMergeUp;
+      } else {
+        return RopeRemoveResult::Success;
+      }
+    }
+  }
+
   void merge_up(bool is_left) {
     string s;
 
