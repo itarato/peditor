@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <unistd.h>
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -144,8 +145,12 @@ struct Rope {
       return intermediateNode.lhs->debug_to_string() +
              intermediateNode.rhs->debug_to_string();
     } else {
-      return "[" + std::to_string(start) + ":" + std::to_string(end()) + " " +
-             leafNode.s + "]";
+      if (empty()) {
+        return "[" + std::to_string(start) + ":-]";
+      } else {
+        return "[" + std::to_string(start) + ":" + std::to_string(end()) + " " +
+               leafNode.s + "]";
+      }
     }
   }
 
@@ -263,30 +268,47 @@ struct Rope {
       return RopeRemoveResult::RangeError;
 
     if (type == RopeNodeType::Intermediate) {
-      size -= to - from + 1;  // Continue here!!!!!!!!!!!!!!!!!!!!1
+      size -= to - from + 1;
 
-      bool is_left_adjusted =
-          !intermediateNode.lhs->empty() && intermediateNode.lhs->end() >= at;
-      RopeRemoveResult result;
+      size_t rhs_from = intermediateNode.rhs->start;
+      size_t lhs_to = intermediateNode.lhs->end();
 
-      if (is_left_adjusted) {
-        intermediateNode.rhs->adjust_start(-1);
-        result = intermediateNode.lhs->remove(at);
-      } else {
-        result = intermediateNode.rhs->remove(at);
+      if (rhs_from <= to) {
+        RopeRemoveResult result =
+            intermediateNode.rhs->remove_range(rhs_from, to);
+        if (result == RopeRemoveResult::NeedMergeUp) {
+          merge_up(false);
+        } else if (result == RopeRemoveResult::RangeError) {
+          return result;
+        }
+
+        if (from <= lhs_to) {
+          return remove_range(from, lhs_to);
+        } else {
+          return RopeRemoveResult::Success;
+        }
       }
 
-      if (result == RopeRemoveResult::NeedMergeUp) {
-        merge_up(is_left_adjusted);
+      if (from <= lhs_to) {
+        intermediateNode.rhs->adjust_start(-(lhs_to - start + 1));
+
+        RopeRemoveResult result =
+            intermediateNode.lhs->remove_range(from, lhs_to);
+        if (result == RopeRemoveResult::NeedMergeUp) {
+          merge_up(true);
+        } else if (result == RopeRemoveResult::RangeError) {
+          return result;
+        }
+
         return RopeRemoveResult::Success;
-      } else {
-        return result;
       }
-    } else {
-      size--;
 
-      size_t pos = at - start;
-      leafNode.s.erase(pos, 1);
+      return RopeRemoveResult::RangeError;
+    } else {
+      size -= to - from + 1;
+
+      size_t pos = from - start;
+      leafNode.s.erase(pos, to - from + 1);
 
       if (empty()) {
         return RopeRemoveResult::NeedMergeUp;

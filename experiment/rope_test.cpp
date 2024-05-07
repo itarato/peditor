@@ -326,6 +326,17 @@ void test_prev_and_next_new_line_at_without_match() {
   ASSERT_EQ(-1, r.prev_line_at(16));
 }
 
+void test_remove_range() {
+  Rope r{"abcdef"};
+  r.remove_range(2, 3);
+  ASSERT_EQ("[0:3 abef]"s, r.debug_to_string());
+
+  ASSERT_EQ((int)RopeRemoveResult::RangeError, (int)r.remove_range(0, 4));
+
+  r.remove_range(0, 3);
+  ASSERT_EQ("[0:-]"s, r.debug_to_string());
+}
+
 int main() {
   test_default();
   test_split();
@@ -353,6 +364,8 @@ int main() {
   test_prev_new_line_at();
   test_prev_new_line_at_many_passes();
   test_prev_and_next_new_line_at_without_match();
+
+  test_remove_range();
 
   printf("\nCompleted\n");
 
