@@ -64,6 +64,8 @@ struct RopeLeaf {
 
       pos--;
     }
+
+    return -1;
   }
 };
 
@@ -264,16 +266,22 @@ struct Rope {
   }
 
   RopeRemoveResult remove_range(size_t from, size_t to) {
-    if (!in_range_chars(from) || !in_range_chars(to))
+    if (!in_range_chars(from) || !in_range_chars(to)) {
+      printf("Range error start=%ld size=%ld from=%ld to=%ld\n", start, size,
+             from, to);
       return RopeRemoveResult::RangeError;
+    }
 
     if (type == RopeNodeType::Intermediate) {
-      size -= to - from + 1;
+      size_t rhs_from = max(intermediateNode.rhs->start, from);
+      size_t lhs_to = min(intermediateNode.lhs->end(), to);
 
-      size_t rhs_from = intermediateNode.rhs->start;
-      size_t lhs_to = intermediateNode.lhs->end();
+      printf("INT %ld-%ld .. %ld-%ld\n", from, lhs_to, rhs_from, to);
 
       if (rhs_from <= to) {
+        printf("INT remove right %ld-%ld Adjust %ld\n", rhs_from, to,
+               -(to - rhs_from + 1));
+        size -= to - rhs_from + 1;
         RopeRemoveResult result =
             intermediateNode.rhs->remove_range(rhs_from, to);
         if (result == RopeRemoveResult::NeedMergeUp) {
@@ -283,6 +291,7 @@ struct Rope {
         }
 
         if (from <= lhs_to) {
+          printf("INT right - also remove left\n");
           return remove_range(from, lhs_to);
         } else {
           return RopeRemoveResult::Success;
@@ -290,7 +299,11 @@ struct Rope {
       }
 
       if (from <= lhs_to) {
-        intermediateNode.rhs->adjust_start(-(lhs_to - start + 1));
+        printf("INT remove left %ld-%ld Adjust: %ld\n", from, lhs_to,
+               -(lhs_to - from + 1));
+
+        size -= lhs_to - from + 1;
+        intermediateNode.rhs->adjust_start(-(lhs_to - from + 1));
 
         RopeRemoveResult result =
             intermediateNode.lhs->remove_range(from, lhs_to);
@@ -305,6 +318,7 @@ struct Rope {
 
       return RopeRemoveResult::RangeError;
     } else {
+      printf("LEAF %ld-%ld\n", from, to);
       size -= to - from + 1;
 
       size_t pos = from - start;
@@ -319,18 +333,29 @@ struct Rope {
   }
 
   void merge_up(bool is_left) {
-    string s;
-
     if (is_left) {
-      s = intermediateNode.rhs->leafNode.s;
+      if (intermediateNode.rhs->type == RopeNodeType::Intermediate) {
+        // Left is leaf (to delete).
+        // Right is to move up.
+        intermediateNode.lhs.swap(intermediateNode.rhs->intermediateNode.lhs);
+        intermediateNode.rhs.swap(intermediateNode.rhs->intermediateNode.rhs);
+      } else {
+        string s = intermediateNode.rhs->leafNode.s;
+        intermediateNode.RopeIntermediateNode::~RopeIntermediateNode();
+        type = RopeNodeType::Leaf;
+        leafNode.s.swap(s);
+      }
     } else {
-      s = intermediateNode.lhs->leafNode.s;
+      if (intermediateNode.lhs->type == RopeNodeType::Intermediate) {
+        intermediateNode.rhs.swap(intermediateNode.lhs->intermediateNode.rhs);
+        intermediateNode.lhs.swap(intermediateNode.lhs->intermediateNode.lhs);
+      } else {
+        string s = intermediateNode.lhs->leafNode.s;
+        intermediateNode.RopeIntermediateNode::~RopeIntermediateNode();
+        type = RopeNodeType::Leaf;
+        leafNode.s.swap(s);
+      }
     }
-    delete intermediateNode.lhs.release();
-    delete intermediateNode.rhs.release();
-
-    type = RopeNodeType::Leaf;
-    leafNode.s.swap(s);
   }
 
   /**
