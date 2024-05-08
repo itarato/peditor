@@ -45,7 +45,7 @@ struct RopeIntermediateNode {
   unique_ptr<Rope> lhs;
   unique_ptr<Rope> rhs;
 
-  unique_ptr<Rope> *child(bool is_left) { return is_left ? &lhs : &rhs; }
+  unique_ptr<Rope> &child(bool is_left) { return is_left ? lhs : rhs; }
 };
 
 struct RopeLeaf {
@@ -335,19 +335,17 @@ struct Rope {
   }
 
   void merge_up(bool is_left) {
-    if ((*intermediateNode.child(!is_left))->type ==
-        RopeNodeType::Intermediate) {
-      intermediateNode.child(is_left)->reset(nullptr);
-      intermediateNode.child(is_left)->swap(
-          *(*intermediateNode.child(!is_left))
-               ->intermediateNode.child(is_left));
+    if (intermediateNode.child(!is_left)->type == RopeNodeType::Intermediate) {
+      intermediateNode.child(is_left).reset(nullptr);
+      intermediateNode.child(is_left).swap(
+          intermediateNode.child(!is_left)->intermediateNode.child(is_left));
 
-      auto right_right_child = (*intermediateNode.child(!is_left))
+      auto right_right_child = intermediateNode.child(!is_left)
                                    ->intermediateNode.child(!is_left)
-                                   ->release();
-      intermediateNode.child(!is_left)->reset(right_right_child);
+                                   .release();
+      intermediateNode.child(!is_left).reset(right_right_child);
     } else {
-      string s = (*intermediateNode.child(!is_left))->leafNode.s;
+      string s = intermediateNode.child(!is_left)->leafNode.s;
       intermediateNode.RopeIntermediateNode::~RopeIntermediateNode();
       type = RopeNodeType::Leaf;
       leafNode.s.swap(s);
