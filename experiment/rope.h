@@ -44,6 +44,8 @@ struct Rope;
 struct RopeIntermediateNode {
   unique_ptr<Rope> lhs;
   unique_ptr<Rope> rhs;
+
+  unique_ptr<Rope> *child(bool is_left) { return is_left ? &lhs : &rhs; }
 };
 
 struct RopeLeaf {
@@ -333,34 +335,22 @@ struct Rope {
   }
 
   void merge_up(bool is_left) {
-    if (is_left) {
-      if (intermediateNode.rhs->type == RopeNodeType::Intermediate) {
-        intermediateNode.lhs.reset(nullptr);
-        intermediateNode.lhs.swap(intermediateNode.rhs->intermediateNode.lhs);
+    if ((*intermediateNode.child(!is_left))->type ==
+        RopeNodeType::Intermediate) {
+      intermediateNode.child(is_left)->reset(nullptr);
+      intermediateNode.child(is_left)->swap(
+          *(*intermediateNode.child(!is_left))
+               ->intermediateNode.child(is_left));
 
-        auto right_right_child =
-            intermediateNode.rhs->intermediateNode.rhs.release();
-        intermediateNode.rhs.reset(right_right_child);
-      } else {
-        string s = intermediateNode.rhs->leafNode.s;
-        intermediateNode.RopeIntermediateNode::~RopeIntermediateNode();
-        type = RopeNodeType::Leaf;
-        leafNode.s.swap(s);
-      }
+      auto right_right_child = (*intermediateNode.child(!is_left))
+                                   ->intermediateNode.child(!is_left)
+                                   ->release();
+      intermediateNode.child(!is_left)->reset(right_right_child);
     } else {
-      if (intermediateNode.lhs->type == RopeNodeType::Intermediate) {
-        intermediateNode.rhs.reset(nullptr);
-        intermediateNode.rhs.swap(intermediateNode.lhs->intermediateNode.rhs);
-
-        auto left_left_child =
-            intermediateNode.lhs->intermediateNode.lhs.release();
-        intermediateNode.lhs.reset(left_left_child);
-      } else {
-        string s = intermediateNode.lhs->leafNode.s;
-        intermediateNode.RopeIntermediateNode::~RopeIntermediateNode();
-        type = RopeNodeType::Leaf;
-        leafNode.s.swap(s);
-      }
+      string s = (*intermediateNode.child(!is_left))->leafNode.s;
+      intermediateNode.RopeIntermediateNode::~RopeIntermediateNode();
+      type = RopeNodeType::Leaf;
+      leafNode.s.swap(s);
     }
   }
 
