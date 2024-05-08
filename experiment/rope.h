@@ -269,8 +269,6 @@ struct Rope {
 
   RopeRemoveResult remove_range(size_t from, size_t to) {
     if (!in_range_chars(from) || !in_range_chars(to)) {
-      printf("Range error start=%ld size=%ld from=%ld to=%ld\n", start, size,
-             from, to);
       return RopeRemoveResult::RangeError;
     }
 
@@ -278,11 +276,7 @@ struct Rope {
       size_t rhs_from = max(intermediateNode.rhs->start, from);
       size_t lhs_to = min(intermediateNode.lhs->end(), to);
 
-      printf("INT %ld-%ld .. %ld-%ld\n", from, lhs_to, rhs_from, to);
-
       if (rhs_from <= to) {
-        printf("INT remove right %ld-%ld Adjust %ld\n", rhs_from, to,
-               -(to - rhs_from + 1));
         size -= to - rhs_from + 1;
         RopeRemoveResult result =
             intermediateNode.rhs->remove_range(rhs_from, to);
@@ -293,7 +287,6 @@ struct Rope {
         }
 
         if (from <= lhs_to) {
-          printf("INT right - also remove left\n");
           return remove_range(from, lhs_to);
         } else {
           return RopeRemoveResult::Success;
@@ -301,9 +294,6 @@ struct Rope {
       }
 
       if (from <= lhs_to) {
-        printf("INT remove left %ld-%ld Adjust: %ld\n", from, lhs_to,
-               -(lhs_to - from + 1));
-
         size -= lhs_to - from + 1;
         intermediateNode.rhs->adjust_start(-(lhs_to - from + 1));
 
@@ -320,7 +310,6 @@ struct Rope {
 
       return RopeRemoveResult::RangeError;
     } else {
-      printf("LEAF %ld-%ld\n", from, to);
       size -= to - from + 1;
 
       size_t pos = from - start;

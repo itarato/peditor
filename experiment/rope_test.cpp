@@ -370,7 +370,7 @@ void test_remove_range_across_nodes() {
   unique_ptr<Rope> r{make_medium_branched()};
 
   r->remove_range(3, 12);
-  ASSERT_EQ(""s, r->debug_to_string());
+  ASSERT_EQ("[0:1 ab][2:2 c][3:3 n][4:5 op]"s, r->debug_to_string());
 }
 
 int main() {
@@ -404,8 +404,8 @@ int main() {
   test_merge_up_subtree_left();
   test_merge_up_subtree_right();
 
-  // test_remove_range();
-  // test_remove_range_across_nodes();
+  test_remove_range();
+  test_remove_range_across_nodes();
 
   printf("\nCompleted\n");
 
