@@ -283,7 +283,7 @@ struct Rope {
         RopeRemoveResult result =
             intermediateNode.rhs->remove_range(rhs_from, to);
         if (result == RopeRemoveResult::NeedMergeUp) {
-          merge_up(false);
+          merge_up(RIGHT);
         } else if (result == RopeRemoveResult::RangeError) {
           return result;
         }
@@ -302,7 +302,7 @@ struct Rope {
         RopeRemoveResult result =
             intermediateNode.lhs->remove_range(from, lhs_to);
         if (result == RopeRemoveResult::NeedMergeUp) {
-          merge_up(true);
+          merge_up(LEFT);
         } else if (result == RopeRemoveResult::RangeError) {
           return result;
         }
