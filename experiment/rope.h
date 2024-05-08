@@ -21,6 +21,8 @@ using namespace std;
  */
 
 #define ROPE_UNIT_BREAK_THRESHOLD 8
+#define LEFT true
+#define RIGHT !LEFT
 
 enum class RopeNodeType {
   Intermediate,
@@ -323,18 +325,20 @@ struct Rope {
     }
   }
 
-  void merge_up(bool is_left) {
-    if (intermediateNode.child(!is_left)->type == RopeNodeType::Intermediate) {
-      intermediateNode.child(is_left).reset(nullptr);
-      intermediateNode.child(is_left).swap(
-          intermediateNode.child(!is_left)->intermediateNode.child(is_left));
+  void merge_up(bool empty_node) {
+    if (intermediateNode.child(!empty_node)->type ==
+        RopeNodeType::Intermediate) {
+      intermediateNode.child(empty_node).reset(nullptr);
+      intermediateNode.child(empty_node)
+          .swap(intermediateNode.child(!empty_node)
+                    ->intermediateNode.child(empty_node));
 
-      auto right_right_child = intermediateNode.child(!is_left)
-                                   ->intermediateNode.child(!is_left)
-                                   .release();
-      intermediateNode.child(!is_left).reset(right_right_child);
+      auto grandchild = intermediateNode.child(!empty_node)
+                            ->intermediateNode.child(!empty_node)
+                            .release();
+      intermediateNode.child(!empty_node).reset(grandchild);
     } else {
-      string s = intermediateNode.child(!is_left)->leafNode.s;
+      string s = intermediateNode.child(!empty_node)->leafNode.s;
       intermediateNode.RopeIntermediateNode::~RopeIntermediateNode();
       type = RopeNodeType::Leaf;
       leafNode.s.swap(s);
