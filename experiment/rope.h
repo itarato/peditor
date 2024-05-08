@@ -335,10 +335,12 @@ struct Rope {
   void merge_up(bool is_left) {
     if (is_left) {
       if (intermediateNode.rhs->type == RopeNodeType::Intermediate) {
-        // Left is leaf (to delete).
-        // Right is to move up.
+        intermediateNode.lhs.reset(nullptr);
         intermediateNode.lhs.swap(intermediateNode.rhs->intermediateNode.lhs);
-        intermediateNode.rhs.swap(intermediateNode.rhs->intermediateNode.rhs);
+
+        auto right_right_child =
+            intermediateNode.rhs->intermediateNode.rhs.release();
+        intermediateNode.rhs.reset(right_right_child);
       } else {
         string s = intermediateNode.rhs->leafNode.s;
         intermediateNode.RopeIntermediateNode::~RopeIntermediateNode();
@@ -347,8 +349,12 @@ struct Rope {
       }
     } else {
       if (intermediateNode.lhs->type == RopeNodeType::Intermediate) {
+        intermediateNode.rhs.reset(nullptr);
         intermediateNode.rhs.swap(intermediateNode.lhs->intermediateNode.rhs);
-        intermediateNode.lhs.swap(intermediateNode.lhs->intermediateNode.lhs);
+
+        auto left_left_child =
+            intermediateNode.lhs->intermediateNode.lhs.release();
+        intermediateNode.lhs.reset(left_left_child);
       } else {
         string s = intermediateNode.lhs->leafNode.s;
         intermediateNode.RopeIntermediateNode::~RopeIntermediateNode();

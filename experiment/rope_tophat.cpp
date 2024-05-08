@@ -8,8 +8,7 @@ int main() {
   Rope root = Rope("0123456789012345678901234567890123456789"s);
   cout << root.len() << endl;
   cout << root.debug_to_string() << endl;
-
-  root.split(10);
+  [0:0 x] [1:1 a] [2:4 bcd] [5:6 ef] root.split(10);
   root.insert(20, 'x');
   cout << root.debug_to_string() << endl;
 

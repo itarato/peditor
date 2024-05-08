@@ -326,7 +326,7 @@ void test_prev_and_next_new_line_at_without_match() {
   ASSERT_EQ(-1, r.prev_line_at(16));
 }
 
-void test_merge_up_subtree() {
+void test_merge_up_subtree_left() {
   Rope r{"xabcdef"};
   r.split(1);
   r.split(2);
@@ -335,6 +335,23 @@ void test_merge_up_subtree() {
 
   r.remove(1);
   ASSERT_EQ("[0:0 x][1:3 bcd][4:5 ef]"s, r.debug_to_string());
+
+  r.remove(0);
+  ASSERT_EQ("[0:2 bcd][3:4 ef]"s, r.debug_to_string());
+}
+
+void test_merge_up_subtree_right() {
+  Rope r{"abcdefg"};
+  r.split(6);
+  r.split(5);
+  r.split(2);
+  ASSERT_EQ("[0:1 ab][2:4 cde][5:5 f][6:6 g]"s, r.debug_to_string());
+
+  r.remove(5);
+  ASSERT_EQ("[0:1 ab][2:4 cde][5:5 g]"s, r.debug_to_string());
+
+  r.remove(5);
+  ASSERT_EQ("[0:1 ab][2:4 cde]"s, r.debug_to_string());
 }
 
 void test_remove_range() {
@@ -384,7 +401,8 @@ int main() {
   test_prev_new_line_at_many_passes();
   test_prev_and_next_new_line_at_without_match();
 
-  // test_merge_up_subtree();
+  test_merge_up_subtree_left();
+  test_merge_up_subtree_right();
 
   // test_remove_range();
   // test_remove_range_across_nodes();
