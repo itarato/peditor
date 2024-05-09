@@ -416,6 +416,25 @@ void test_new_line_at() {
   ASSERT_EQ(31, r.nth_new_line_at(5));
 }
 
+void test_substr() {
+  Rope r{"abcdef"};
+
+  ASSERT_EQ("ab"s, r.substr(0, 2));
+  ASSERT_EQ("cd"s, r.substr(2, 2));
+  ASSERT_EQ("ef"s, r.substr(4, 2));
+  ASSERT_EQ("abcdef"s, r.substr(0, 6));
+  ASSERT_EQ("def"s, r.substr(3, 10));
+}
+
+void test_substr_multinode() {
+  // [0:1 ab][2:3 cd][4:5 ef][6:7 gh][8:9 ij][10:11 kl][12:13 mn][14:15 op]
+  auto r = make_medium_branched();
+
+  ASSERT_EQ("abcdefghijklmnop"s, r->substr(0, 16));
+  ASSERT_EQ("abcdefghijklmnop"s, r->substr(0, 20));
+  ASSERT_EQ("bcdefghijklmno"s, r->substr(1, 14));
+}
+
 int main() {
   test_default();
   test_split();
@@ -452,6 +471,9 @@ int main() {
 
   test_new_line_count();
   test_new_line_at();
+
+  test_substr();
+  test_substr_multinode();
 
   printf("\nCompleted\n");
 

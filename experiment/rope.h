@@ -206,6 +206,35 @@ struct Rope {
     }
   }
 
+  string substr(size_t at, size_t len) const {
+    if (!in_range(at)) return "";
+
+    if (type == RopeNodeType::Intermediate) {
+      Rope *start_node = node_at(at);
+      if (!start_node) return "";
+      return start_node->substr(at, len);
+    } else {
+      size_t pos = at - start;
+      size_t in_node_len = min(len, size - pos);
+
+      string out = leafNode.s.substr(pos, in_node_len);
+
+      bool need_more = in_node_len < len;
+      if (need_more) {
+        Rope *next_node = next();
+        if (next_node) {
+          return out + next_node->substr(next_node->start, len - in_node_len);
+        }
+      }
+
+      return out;
+    }
+  }
+
+  // string nth_line() const {
+
+  // }
+
   /**
    * OPERATIONS
    */
