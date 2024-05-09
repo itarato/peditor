@@ -22,8 +22,8 @@ using namespace std;
 
 /**
  * - [done] line count (how many lines)
- * - get Nth line
- * - get Nth line length
+ * - [done] get Nth line
+ * - [done] get Nth line length
  * - search for substring
  * - jump to next/pref substring match
  * - clear all
@@ -90,31 +90,9 @@ struct RopeConfig {
 };
 
 namespace RopeUtil {
-size_t count_new_lines(const string &s) {
-  size_t out{0};
-  for (auto &c : s) {
-    if (c == '\n') out++;
-  }
-  return out;
-}
-size_t count_new_lines(const string &s, size_t from, size_t to) {
-  size_t out{0};
-  for (size_t i = from; i <= to; i++) {
-    if (s[i] == '\n') out++;
-  }
-  return out;
-}
-
-int nth_new_line_pos(const string &s, size_t nth) {
-  int pos{0};
-  for (int i = 0; i < s.size(); i++) {
-    if (s[i] == '\n') {
-      if (nth == 0) return i;
-      nth--;
-    }
-  }
-  return -1;
-}
+size_t count_new_lines(const string &s);
+size_t count_new_lines(const string &s, size_t from, size_t to);
+int nth_new_line_pos(const string &s, size_t nth);
 };  // namespace RopeUtil
 
 struct Rope {
@@ -230,10 +208,6 @@ struct Rope {
       return out;
     }
   }
-
-  // string nth_line() const {
-
-  // }
 
   /**
    * OPERATIONS
@@ -568,3 +542,43 @@ struct Rope {
     }
   }
 };
+
+namespace RopeUtil {
+size_t count_new_lines(const string &s) {
+  size_t out{0};
+  for (auto &c : s) {
+    if (c == '\n') out++;
+  }
+  return out;
+}
+size_t count_new_lines(const string &s, size_t from, size_t to) {
+  size_t out{0};
+  for (size_t i = from; i <= to; i++) {
+    if (s[i] == '\n') out++;
+  }
+  return out;
+}
+
+int nth_new_line_pos(const string &s, size_t nth) {
+  for (int i = 0; i < s.size(); i++) {
+    if (s[i] == '\n') {
+      if (nth == 0) return i;
+      nth--;
+    }
+  }
+  return -1;
+}
+
+string nth_line(Rope const &rope, size_t nth) {
+  if (rope.empty()) return "";
+
+  size_t start_pos = nth == 0 ? 0 : rope.nth_new_line_at(nth - 1);
+  if (start_pos == -1) return "";
+
+  size_t end_pos = rope.nth_new_line_at(nth);
+  if (end_pos == -1) end_pos = rope.end();
+  if (start_pos >= end_pos - 1) return "";
+
+  return rope.substr(start_pos + 1, end_pos - start_pos - 1);
+}
+};  // namespace RopeUtil

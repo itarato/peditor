@@ -435,6 +435,24 @@ void test_substr_multinode() {
   ASSERT_EQ("bcdefghijklmno"s, r->substr(1, 14));
 }
 
+void test_nth_line() {
+  Rope r{"\nhello\nbello\nfrom\n\nanother\nworld\n"};
+  r.split(16);
+  r.split(8);
+  r.split(24);
+  r.split(28);
+
+  ASSERT_EQ(""s, RopeUtil::nth_line(r, 0));
+  ASSERT_EQ("hello"s, RopeUtil::nth_line(r, 1));
+  ASSERT_EQ("bello"s, RopeUtil::nth_line(r, 2));
+  ASSERT_EQ("from"s, RopeUtil::nth_line(r, 3));
+  ASSERT_EQ(""s, RopeUtil::nth_line(r, 4));
+  ASSERT_EQ("another"s, RopeUtil::nth_line(r, 5));
+  ASSERT_EQ("world"s, RopeUtil::nth_line(r, 6));
+  ASSERT_EQ(""s, RopeUtil::nth_line(r, 7));
+  ASSERT_EQ(""s, RopeUtil::nth_line(r, 10));
+}
+
 int main() {
   test_default();
   test_split();
