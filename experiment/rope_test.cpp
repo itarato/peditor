@@ -401,6 +401,21 @@ void test_new_line_count() {
   ASSERT_EQ((size_t)6, r.new_line_count);
 }
 
+void test_new_line_at() {
+  Rope r{"\nhello\nbello\nfrom\nanother\nworld\n"};
+  r.split(16);
+  r.split(8);
+  r.split(24);
+  r.split(28);
+
+  ASSERT_EQ(0, r.nth_new_line_at(0));
+  ASSERT_EQ(6, r.nth_new_line_at(1));
+  ASSERT_EQ(12, r.nth_new_line_at(2));
+  ASSERT_EQ(17, r.nth_new_line_at(3));
+  ASSERT_EQ(25, r.nth_new_line_at(4));
+  ASSERT_EQ(31, r.nth_new_line_at(5));
+}
+
 int main() {
   test_default();
   test_split();
@@ -436,6 +451,7 @@ int main() {
   test_remove_range_across_nodes();
 
   test_new_line_count();
+  test_new_line_at();
 
   printf("\nCompleted\n");
 

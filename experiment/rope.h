@@ -21,7 +21,7 @@ using namespace std;
  */
 
 /**
- * - line count (how many lines)
+ * - [done] line count (how many lines)
  * - get Nth line
  * - get Nth line length
  * - search for substring
@@ -90,19 +90,30 @@ struct RopeConfig {
 };
 
 namespace RopeUtil {
-size_t count_new_lines(string &s) {
+size_t count_new_lines(const string &s) {
   size_t out{0};
   for (auto &c : s) {
     if (c == '\n') out++;
   }
   return out;
 }
-size_t count_new_lines(string &s, size_t from, size_t to) {
+size_t count_new_lines(const string &s, size_t from, size_t to) {
   size_t out{0};
   for (size_t i = from; i <= to; i++) {
     if (s[i] == '\n') out++;
   }
   return out;
+}
+
+int nth_new_line_pos(const string &s, size_t nth) {
+  int pos{0};
+  for (int i = 0; i < s.size(); i++) {
+    if (s[i] == '\n') {
+      if (nth == 0) return i;
+      nth--;
+    }
+  }
+  return -1;
 }
 };  // namespace RopeUtil
 
@@ -508,5 +519,23 @@ struct Rope {
     if (!prev_node) return -1;
 
     return prev_node->prev_line_at(prev_node->end());
+  }
+
+  int nth_new_line_at(size_t nth) const {
+    if (new_line_count <= nth) return -1;
+
+    if (type == RopeNodeType::Intermediate) {
+      if (intermediateNode.lhs->new_line_count >= nth + 1) {
+        return intermediateNode.lhs->nth_new_line_at(nth);
+      } else {
+        return intermediateNode.rhs->nth_new_line_at(
+            nth - intermediateNode.lhs->new_line_count);
+      }
+    } else {
+      int relative_pos = RopeUtil::nth_new_line_pos(leafNode.s, nth);
+      assert(relative_pos >= 0);
+
+      return start + relative_pos;
+    }
   }
 };
