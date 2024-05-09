@@ -20,6 +20,15 @@ using namespace std;
  * - insert/remove section (from..to)
  */
 
+/**
+ * - line count (how many lines)
+ * - get Nth line
+ * - get Nth line length
+ * - search for substring
+ * - jump to next/pref substring match
+ * - clear all
+ */
+
 #define ROPE_UNIT_BREAK_THRESHOLD 8
 #define LEFT true
 #define RIGHT !LEFT
