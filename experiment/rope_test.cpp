@@ -373,6 +373,34 @@ void test_remove_range_across_nodes() {
   ASSERT_EQ("[0:1 ab][2:2 c][3:3 n][4:5 op]"s, r->debug_to_string());
 }
 
+void test_new_line_count() {
+  Rope r{"\nhello\nbello\nfrom\nanother\nworld\n"};
+  r.split(16);
+  r.split(8);
+  r.split(24);
+  r.split(28);
+
+  ASSERT_EQ(
+      "[0:7 \nhello\nb][8:15 ello\nfro][16:23 m\nanothe][24:27 r\nwo][28:31 rld\n]"s,
+      r.debug_to_string());
+
+  ASSERT_EQ((size_t)6, r.new_line_count);
+
+  r.remove(25);
+  ASSERT_EQ((size_t)5, r.new_line_count);
+
+  ASSERT_EQ(
+      "[0:7 \nhello\nb][8:15 ello\nfro][16:23 m\nanothe][24:26 rwo][27:30 rld\n]"s,
+      r.debug_to_string());
+  r.remove_range(24, 26);
+  ASSERT_EQ("[0:7 \nhello\nb][8:15 ello\nfro][16:23 m\nanothe][24:27 rld\n]"s,
+            r.debug_to_string());
+  ASSERT_EQ((size_t)5, r.new_line_count);
+
+  r.insert(20, "\n");
+  ASSERT_EQ((size_t)6, r.new_line_count);
+}
+
 int main() {
   test_default();
   test_split();
@@ -406,6 +434,8 @@ int main() {
 
   test_remove_range();
   test_remove_range_across_nodes();
+
+  test_new_line_count();
 
   printf("\nCompleted\n");
 
