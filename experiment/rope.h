@@ -61,6 +61,8 @@ struct RopeIntermediateNode {
 
 struct RopeLeaf {
   string s;
+  Rope *left{nullptr};
+  Rope *right{nullptr};
 
   int next_char_after(size_t pos, char ch) const {
     while (pos < s.size()) {
@@ -230,6 +232,12 @@ struct Rope {
           config, start, this, leafNode.s.substr(0, at - start));
       unique_ptr<Rope> rhs =
           make_unique<Rope>(config, at, this, leafNode.s.substr(at - start));
+
+      Rope *old_left_sib = leafNode.left;
+      Rope *old_right_sib = leafNode.right;
+
+      if (old_left_sib) {
+      }
 
       leafNode.RopeLeaf::~RopeLeaf();
 
