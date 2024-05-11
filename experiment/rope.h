@@ -233,11 +233,15 @@ struct Rope {
       unique_ptr<Rope> rhs =
           make_unique<Rope>(config, at, this, leafNode.s.substr(at - start));
 
+      // Set sibling pointers.
       Rope *old_left_sib = leafNode.left;
       Rope *old_right_sib = leafNode.right;
-
-      if (old_left_sib) {
-      }
+      lhs->leafNode.right = rhs.get();
+      lhs->leafNode.left = old_left_sib;
+      rhs->leafNode.left = lhs.get();
+      rhs->leafNode.right = old_right_sib;
+      if (old_left_sib) old_left_sib->leafNode.right = lhs.get();
+      if (old_right_sib) old_right_sib->leafNode.left = rhs.get();
 
       leafNode.RopeLeaf::~RopeLeaf();
 
@@ -261,7 +265,7 @@ struct Rope {
       if (intermediateNode.rhs->start <= at) {
         return intermediateNode.rhs->insert(at, std::forward<string>(snippet));
       } else {
-        intermediateNode.rhs->adjust_start(1);
+        intermediateNode.rhs->adjust_start(snippet.size());
         return intermediateNode.lhs->insert(at, std::forward<string>(snippet));
       }
     } else {
@@ -417,9 +421,18 @@ struct Rope {
       intermediateNode.child(!empty_node).reset(grandchild);
     } else {
       string s = intermediateNode.child(!empty_node)->leafNode.s;
+      Rope *old_left_sib = intermediateNode.lhs->leafNode.left;
+      Rope *old_right_sib = intermediateNode.rhs->leafNode.right;
+
+      // Kill old self subtype.
       intermediateNode.RopeIntermediateNode::~RopeIntermediateNode();
+
       type = RopeNodeType::Leaf;
       leafNode.s.swap(s);
+      leafNode.left = old_left_sib;
+      leafNode.right = old_right_sib;
+      if (old_left_sib) old_left_sib->leafNode.right = this;
+      if (old_right_sib) old_right_sib->leafNode.left = this;
     }
   }
 

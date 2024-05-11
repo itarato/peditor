@@ -453,6 +453,40 @@ void test_nth_line() {
   ASSERT_EQ(""s, RopeUtil::nth_line(r, 10));
 }
 
+void test_siblings() {
+  // [0:1 ab][2:3 cd][4:5 ef][6:7 gh][8:9 ij][10:11 kl][12:13 mn][14:15 op]
+  auto r = make_medium_branched();
+
+  r->remove_range(10, 11);
+  r->insert(3, "hello bello strange person");
+  r->insert(4, "lots of text");
+
+  r->insert(10, "another bit of text haha");
+  r->insert(11, "and even more data coming");
+
+  r->remove_range(4, 20);
+
+  ASSERT_EQ(
+      "[0:1 ab][2:3 ch][4:20 ore data comingno][21:27 ther bi][28:42 t of text hahaf][43:52  textello ][53:59 bello s][60:73 trange persond][74:75 ef][76:77 gh][78:79 ij][80:81 mn][82:83 op]"s,
+      r->debug_to_string());
+
+  Rope *node = r->node_at(0);
+  ASSERT_EQ("ab"s, node->to_string());
+  ASSERT_NULLPTR(node->leafNode.left);
+  ASSERT_NOT_NULLPTR(node->leafNode.right);
+
+  node = node->leafNode.right;
+  ASSERT_EQ("ch"s, node->to_string());
+  ASSERT_EQ("ab"s, node->leafNode.left->to_string());
+
+  for (int i = 0; i < 11; i++) node = node->leafNode.right;
+  ASSERT_EQ("op"s, node->to_string());
+  ASSERT_NULLPTR(node->leafNode.right);
+
+  for (int i = 0; i < 12; i++) node = node->leafNode.left;
+  ASSERT_EQ("ab"s, node->to_string());
+}
+
 int main() {
   test_default();
   test_split();
@@ -492,6 +526,8 @@ int main() {
 
   test_substr();
   test_substr_multinode();
+
+  test_siblings();
 
   printf("\nCompleted\n");
 
