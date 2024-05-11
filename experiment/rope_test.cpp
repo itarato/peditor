@@ -384,10 +384,10 @@ void test_new_line_count() {
       "[0:7 \nhello\nb][8:15 ello\nfro][16:23 m\nanothe][24:27 r\nwo][28:31 rld\n]"s,
       r.debug_to_string());
 
-  ASSERT_EQ((size_t)6, r.new_line_count);
+  ASSERT_EQ((size_t)6, RopeUtil::new_line_count(r));
 
   r.remove(25);
-  ASSERT_EQ((size_t)5, r.new_line_count);
+  ASSERT_EQ((size_t)5, RopeUtil::new_line_count(r));
 
   ASSERT_EQ(
       "[0:7 \nhello\nb][8:15 ello\nfro][16:23 m\nanothe][24:26 rwo][27:30 rld\n]"s,
@@ -395,10 +395,10 @@ void test_new_line_count() {
   r.remove_range(24, 26);
   ASSERT_EQ("[0:7 \nhello\nb][8:15 ello\nfro][16:23 m\nanothe][24:27 rld\n]"s,
             r.debug_to_string());
-  ASSERT_EQ((size_t)5, r.new_line_count);
+  ASSERT_EQ((size_t)5, RopeUtil::new_line_count(r));
 
   r.insert(20, "\n");
-  ASSERT_EQ((size_t)6, r.new_line_count);
+  ASSERT_EQ((size_t)6, RopeUtil::new_line_count(r));
 }
 
 void test_new_line_at() {
@@ -523,6 +523,7 @@ int main() {
 
   test_new_line_count();
   test_new_line_at();
+  test_nth_line();
 
   test_substr();
   test_substr_multinode();

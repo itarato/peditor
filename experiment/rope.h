@@ -95,12 +95,12 @@ namespace RopeUtil {
 size_t count_new_lines(const string &s);
 size_t count_new_lines(const string &s, size_t from, size_t to);
 int nth_new_line_pos(const string &s, size_t nth);
+size_t new_line_count(Rope const &rope);
 };  // namespace RopeUtil
 
 struct Rope {
   size_t start;
   size_t size;
-  size_t new_line_count{0};
   RopeNodeType type{RopeNodeType::Intermediate};
   shared_ptr<RopeConfig> config;
   Rope *parent;
@@ -116,9 +116,7 @@ struct Rope {
         type(RopeNodeType::Leaf),
         config(std::make_shared<RopeConfig>(ROPE_UNIT_BREAK_THRESHOLD)),
         parent(nullptr),
-        leafNode({std::forward<string>(""s)}) {
-    new_line_count = 0;
-  }
+        leafNode({std::forward<string>(""s)}) {}
 
   Rope(string &&s)
       : start(0),
@@ -126,9 +124,7 @@ struct Rope {
         type(RopeNodeType::Leaf),
         config(std::make_shared<RopeConfig>(ROPE_UNIT_BREAK_THRESHOLD)),
         parent(nullptr),
-        leafNode({std::forward<string>(s)}) {
-    new_line_count = RopeUtil::count_new_lines(leafNode.s);
-  }
+        leafNode({std::forward<string>(s)}) {}
 
   Rope(shared_ptr<RopeConfig> config, string &&s)
       : start(0),
@@ -136,9 +132,7 @@ struct Rope {
         type(RopeNodeType::Leaf),
         config(config),
         parent(nullptr),
-        leafNode({std::forward<string>(s)}) {
-    new_line_count = RopeUtil::count_new_lines(leafNode.s);
-  }
+        leafNode({std::forward<string>(s)}) {}
 
   Rope(shared_ptr<RopeConfig> config, size_t start, Rope *parent, string &&s)
       : start(start),
@@ -146,9 +140,7 @@ struct Rope {
         type(RopeNodeType::Leaf),
         config(config),
         parent(parent),
-        leafNode({std::forward<string>(s)}) {
-    new_line_count = RopeUtil::count_new_lines(leafNode.s);
-  }
+        leafNode({std::forward<string>(s)}) {}
 
   ~Rope() {
     if (type == RopeNodeType::Intermediate) {
@@ -260,7 +252,6 @@ struct Rope {
 
     if (type == RopeNodeType::Intermediate) {
       size += snippet.size();
-      new_line_count += RopeUtil::count_new_lines(snippet);
 
       if (intermediateNode.rhs->start <= at) {
         return intermediateNode.rhs->insert(at, std::forward<string>(snippet));
@@ -276,7 +267,6 @@ struct Rope {
         return insert(at, std::forward<string>(snippet));
       } else {
         size += snippet.size();
-        new_line_count += RopeUtil::count_new_lines(snippet);
 
         size_t pos = at - start;
         leafNode.s.insert(pos, snippet);
@@ -293,13 +283,6 @@ struct Rope {
       intermediateNode.lhs->adjust_start(diff);
       intermediateNode.rhs->adjust_start(diff);
     }
-  }
-
-  void adjust_new_line_count_to_all_parents(int diff) {
-    if (!parent) return;
-
-    parent->new_line_count += diff;
-    parent->adjust_new_line_count_to_all_parents(diff);
   }
 
   RopeRemoveResult remove(size_t at) {
@@ -329,11 +312,6 @@ struct Rope {
       size--;
 
       size_t pos = at - start;
-      if (leafNode.s[pos] == '\n') {
-        new_line_count--;
-        adjust_new_line_count_to_all_parents(-1);
-      }
-
       leafNode.s.erase(pos, 1);
 
       if (empty()) {
@@ -390,13 +368,6 @@ struct Rope {
       size -= to - from + 1;
 
       size_t pos = from - start;
-      size_t removed_new_line_count =
-          RopeUtil::count_new_lines(leafNode.s, pos, to - start);
-      if (removed_new_line_count > 0) {
-        new_line_count -= removed_new_line_count;
-        adjust_new_line_count_to_all_parents(-removed_new_line_count);
-      }
-
       leafNode.s.erase(pos, to - from + 1);
 
       if (empty()) {
@@ -546,20 +517,21 @@ struct Rope {
   }
 
   int nth_new_line_at(size_t nth) const {
-    if (new_line_count <= nth) return -1;
-
     if (type == RopeNodeType::Intermediate) {
-      if (intermediateNode.lhs->new_line_count >= nth + 1) {
-        return intermediateNode.lhs->nth_new_line_at(nth);
-      } else {
-        return intermediateNode.rhs->nth_new_line_at(
-            nth - intermediateNode.lhs->new_line_count);
-      }
+      return leftmost()->nth_new_line_at(nth);
     } else {
-      int relative_pos = RopeUtil::nth_new_line_pos(leafNode.s, nth);
-      assert(relative_pos >= 0);
+      for (size_t i = 0; i < leafNode.s.size(); i++) {
+        if (leafNode.s[i] == '\n') {
+          if (nth == 0) return start + i;
+          nth--;
+        }
+      }
 
-      return start + relative_pos;
+      if (leafNode.right) {
+        return leafNode.right->nth_new_line_at(nth);
+      } else {
+        return -1;
+      }
     }
   }
 };
@@ -593,13 +565,25 @@ int nth_new_line_pos(const string &s, size_t nth) {
 string nth_line(Rope const &rope, size_t nth) {
   if (rope.empty()) return "";
 
-  size_t start_pos = nth == 0 ? 0 : rope.nth_new_line_at(nth - 1);
+  int start_pos = nth == 0 ? 0 : rope.nth_new_line_at(nth - 1);
   if (start_pos == -1) return "";
 
-  size_t end_pos = rope.nth_new_line_at(nth);
+  int end_pos = rope.nth_new_line_at(nth);
   if (end_pos == -1) end_pos = rope.end();
   if (start_pos >= end_pos - 1) return "";
 
   return rope.substr(start_pos + 1, end_pos - start_pos - 1);
+}
+
+size_t new_line_count(Rope const &rope) {
+  Rope *r = rope.leftmost();
+  size_t out{0};
+  while (r) {
+    for (auto &c : r->leafNode.s) {
+      if (c == '\n') out++;
+    }
+    r = r->leafNode.right;
+  }
+  return out;
 }
 };  // namespace RopeUtil
