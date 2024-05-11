@@ -193,7 +193,7 @@ struct Rope {
 
       bool need_more = in_node_len < len;
       if (need_more) {
-        Rope *next_node = next();
+        Rope *next_node = leafNode.right;
         if (next_node) {
           return out + next_node->substr(next_node->start, len - in_node_len);
         }
@@ -441,25 +441,12 @@ struct Rope {
     return parent->intermediateNode.lhs.get() == this;
   }
 
-  // TODO: We could cache leaf-sibling pointers.
-  Rope *prev() const {
-    if (!parent) return nullptr;
-    if (is_right_child()) return parent->intermediateNode.lhs->rightmost();
-    return parent->prev();
-  }
-
   Rope *rightmost() const {
     if (type == RopeNodeType::Intermediate) {
       return intermediateNode.rhs->rightmost();
     } else {
       return (Rope *)this;
     }
-  }
-
-  Rope *next() const {
-    if (!parent) return nullptr;
-    if (is_left_child()) return parent->intermediateNode.rhs->leftmost();
-    return parent->next();
   }
 
   Rope *leftmost() const {
@@ -494,7 +481,7 @@ struct Rope {
     int result = leafNode.next_char_after(at - start, '\n');
     if (result >= 0) return result + start;
 
-    auto next_node = next();
+    auto next_node = leafNode.right;
     if (!next_node) return -1;
 
     return next_node->next_line_at(next_node->start);
@@ -510,7 +497,7 @@ struct Rope {
     int result = leafNode.prev_char_before(at - start, '\n');
     if (result >= 0) return result + start;
 
-    auto prev_node = prev();
+    auto prev_node = leafNode.left;
     if (!prev_node) return -1;
 
     return prev_node->prev_line_at(prev_node->end());

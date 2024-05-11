@@ -212,25 +212,6 @@ void test_parent() {
   ASSERT_EQ(false, r.is_right_child());
 }
 
-void test_adjacent() {
-  Rope r{"abcd"};
-  r.split(2);
-  r.split(1);
-  r.split(3);
-  ASSERT_EQ("[0:0 a][1:1 b][2:2 c][3:3 d]"s, r.debug_to_string());
-
-  Rope *c = r.intermediateNode.rhs->intermediateNode.lhs.get();
-  ASSERT_EQ("c"s, c->to_string());
-
-  Rope *prev_c = c->prev();
-  ASSERT_EQ("b"s, prev_c->to_string());
-
-  Rope *next_c = c->next();
-  ASSERT_EQ("d"s, next_c->to_string());
-
-  ASSERT_EQ((Rope *)nullptr, next_c->next());
-}
-
 void test_node_at() {
   // [0:1 ab][2:3 cd][4:5 ef][6:7 gh][8:9 ij][10:11 kl][12:13 mn][14:15 op]
   auto rope = make_medium_branched();
@@ -504,8 +485,6 @@ int main() {
   test_empty_from_non_empty();
 
   test_parent();
-
-  test_adjacent();
 
   test_node_at();
 
