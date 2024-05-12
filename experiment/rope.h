@@ -96,6 +96,7 @@ size_t count_new_lines(const string &s);
 size_t count_new_lines(const string &s, size_t from, size_t to);
 int nth_new_line_pos(const string &s, size_t nth);
 size_t new_line_count(Rope const &rope);
+int find_str(Rope &rope, string &pattern, size_t pos);
 };  // namespace RopeUtil
 
 struct Rope {
@@ -523,13 +524,17 @@ struct Rope {
   }
 };
 
-namespace RopeUtil {
-size_t count_new_lines(const string &s) {
-  size_t out{0};
-  for (auto &c : s) {
-    if (c == '\n') out++;
-  }
-  return out;
+struct RopeIter {
+ private:
+  Rope *rope;
+  size_t ptr;
+}
+
+namespace RopeUtil{size_t count_new_lines(const string &s){size_t out{0};
+for (auto &c : s) {
+  if (c == '\n') out++;
+}
+return out;
 }
 size_t count_new_lines(const string &s, size_t from, size_t to) {
   size_t out{0};
@@ -573,4 +578,10 @@ size_t new_line_count(Rope const &rope) {
   }
   return out;
 }
-};  // namespace RopeUtil
+
+int find_str(Rope &rope, string &pattern, size_t pos) {
+  Rope *node = rope.node_at(pos);
+  if (!node) return -1;
+}
+}
+;  // namespace RopeUtil
