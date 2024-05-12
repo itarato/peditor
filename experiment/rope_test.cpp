@@ -468,6 +468,14 @@ void test_siblings() {
   ASSERT_EQ("ab"s, node->to_string());
 }
 
+void test_iterator() {
+  auto rope = make_medium_branched();
+  string expected{"abcdefghijklmnop"};
+
+  int i = 0;
+  for (auto c : *rope) ASSERT_EQ(expected[i++], c);
+}
+
 int main() {
   test_default();
   test_split();
@@ -508,6 +516,8 @@ int main() {
   test_substr_multinode();
 
   test_siblings();
+
+  test_iterator();
 
   printf("\nCompleted\n");
 

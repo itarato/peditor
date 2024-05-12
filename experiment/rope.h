@@ -4,7 +4,9 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
@@ -173,8 +175,8 @@ struct Rope {
       if (empty()) {
         return "[" + std::to_string(start) + ":-]";
       } else {
-        return "[" + std::to_string(start) + ":" + std::to_string(end()) + " " +
-               leafNode.s + "]";
+        return "[" + std::to_string(start) + ":" + std::to_string(endpos()) +
+               " " + leafNode.s + "]";
       }
     }
   }
@@ -218,7 +220,7 @@ struct Rope {
     } else {
       if (!in_range(at)) return RopeSplitResult::RangeError;
 
-      if (at == start || end() + 1 == at)
+      if (at == start || endpos() + 1 == at)
         return RopeSplitResult::EmptySplitError;
 
       unique_ptr<Rope> lhs = make_unique<Rope>(
@@ -292,8 +294,8 @@ struct Rope {
     if (type == RopeNodeType::Intermediate) {
       size--;
 
-      bool is_left_adjusted =
-          !intermediateNode.lhs->empty() && intermediateNode.lhs->end() >= at;
+      bool is_left_adjusted = !intermediateNode.lhs->empty() &&
+                              intermediateNode.lhs->endpos() >= at;
       RopeRemoveResult result;
 
       if (is_left_adjusted) {
@@ -330,7 +332,7 @@ struct Rope {
 
     if (type == RopeNodeType::Intermediate) {
       size_t rhs_from = max(intermediateNode.rhs->start, from);
-      size_t lhs_to = min(intermediateNode.lhs->end(), to);
+      size_t lhs_to = min(intermediateNode.lhs->endpos(), to);
 
       if (rhs_from <= to) {
         size -= to - rhs_from + 1;
@@ -414,18 +416,18 @@ struct Rope {
 
   bool empty() const { return size == 0; }
 
-  size_t end() const {
+  size_t endpos() const {
     // Must check emptiness before calling this.
     assert(!empty());
     return start + size - 1;
   }
 
   bool in_range(size_t at) const {
-    return (empty() && at == start) || (start <= at && at <= end() + 1);
+    return (empty() && at == start) || (start <= at && at <= endpos() + 1);
   }
 
   bool in_range_chars(size_t at) const {
-    return !empty() && start <= at && at <= end();
+    return !empty() && start <= at && at <= endpos();
   }
 
   /**
@@ -501,7 +503,7 @@ struct Rope {
     auto prev_node = leafNode.left;
     if (!prev_node) return -1;
 
-    return prev_node->prev_line_at(prev_node->end());
+    return prev_node->prev_line_at(prev_node->endpos());
   }
 
   int nth_new_line_at(size_t nth) const {
@@ -522,19 +524,67 @@ struct Rope {
       }
     }
   }
+
+  /**
+   * ITERATOR
+   */
+
+  struct RopeIter {
+    using iterator_category = forward_iterator_tag;
+    using difference_type = ptrdiff_t;
+    using value_type = char;
+    using pointer = char *;
+    using reference = char &;
+
+    RopeIter(Rope *rope, size_t at_ptr) : rope(rope), at_ptr(at_ptr) {}
+
+    reference operator*() const {
+      return rope->leafNode.s[at_ptr - rope->start];
+    }
+
+    pointer operator->() {
+      return rope->leafNode.s.data() + (at_ptr - rope->start);
+    }
+
+    RopeIter operator++() {
+      if (rope) {
+        at_ptr++;
+        if (at_ptr > rope->endpos()) rope = rope->leafNode.right;
+      }
+
+      return *this;
+    }
+
+    RopeIter operator++(int) {
+      RopeIter current = *this;
+      ++(*this);
+      return current;
+    }
+
+    friend bool operator==(const RopeIter &lhs, const RopeIter &rhs) {
+      return lhs.at_ptr == rhs.at_ptr;
+    }
+
+    friend bool operator!=(const RopeIter &lhs, const RopeIter &rhs) {
+      return lhs.at_ptr != rhs.at_ptr;
+    }
+
+   private:
+    Rope *rope;
+    size_t at_ptr;
+  };
+
+  RopeIter begin() { return RopeIter(leftmost(), 0); }
+  RopeIter end() { return RopeIter(nullptr, size); }
 };
 
-struct RopeIter {
- private:
-  Rope *rope;
-  size_t ptr;
-}
-
-namespace RopeUtil{size_t count_new_lines(const string &s){size_t out{0};
-for (auto &c : s) {
-  if (c == '\n') out++;
-}
-return out;
+namespace RopeUtil {
+size_t count_new_lines(const string &s) {
+  size_t out{0};
+  for (auto &c : s) {
+    if (c == '\n') out++;
+  }
+  return out;
 }
 size_t count_new_lines(const string &s, size_t from, size_t to) {
   size_t out{0};
@@ -561,7 +611,7 @@ string nth_line(Rope const &rope, size_t nth) {
   if (start_pos == -1) return "";
 
   int end_pos = rope.nth_new_line_at(nth);
-  if (end_pos == -1) end_pos = rope.end();
+  if (end_pos == -1) end_pos = rope.endpos();
   if (start_pos >= end_pos - 1) return "";
 
   return rope.substr(start_pos + 1, end_pos - start_pos - 1);
@@ -579,9 +629,8 @@ size_t new_line_count(Rope const &rope) {
   return out;
 }
 
-int find_str(Rope &rope, string &pattern, size_t pos) {
-  Rope *node = rope.node_at(pos);
-  if (!node) return -1;
-}
-}
-;  // namespace RopeUtil
+// int find_str(Rope &rope, string &pattern, size_t pos) {
+//   Rope *node = rope.node_at(pos);
+//   if (!node) return -1;
+// }
+};  // namespace RopeUtil
