@@ -98,7 +98,6 @@ size_t count_new_lines(const string &s);
 size_t count_new_lines(const string &s, size_t from, size_t to);
 int nth_new_line_pos(const string &s, size_t nth);
 size_t new_line_count(Rope const &rope);
-int find_str(Rope &rope, string &pattern, size_t pos);
 };  // namespace RopeUtil
 
 struct Rope {
@@ -393,7 +392,11 @@ struct Rope {
                             ->intermediateNode.child(!empty_node)
                             .release();
       intermediateNode.child(!empty_node).reset(grandchild);
+
+      // TODO MISSED HANDLING REMOVED NODE SIBLING CHAIN!!!
     } else {
+      assert(type == RopeNodeType::Intermediate);
+
       string s = intermediateNode.child(!empty_node)->leafNode.s;
       Rope *old_left_sib = intermediateNode.lhs->leafNode.left;
       Rope *old_right_sib = intermediateNode.rhs->leafNode.right;
@@ -406,7 +409,9 @@ struct Rope {
       leafNode.left = old_left_sib;
       leafNode.right = old_right_sib;
       if (old_left_sib) old_left_sib->leafNode.right = this;
-      if (old_right_sib) old_right_sib->leafNode.left = this;
+      if (old_right_sib)
+        old_right_sib->leafNode.left =
+            this;  // TODO: FIX USE OF FREE HEAP MEMORY
     }
   }
 
@@ -536,7 +541,9 @@ struct Rope {
     using pointer = char *;
     using reference = char &;
 
-    RopeIter(Rope *rope, size_t at_ptr) : rope(rope), at_ptr(at_ptr) {}
+    size_t at_ptr;
+
+    RopeIter(Rope *rope, size_t at_ptr) : at_ptr(at_ptr), rope(rope) {}
 
     reference operator*() const {
       return rope->leafNode.s[at_ptr - rope->start];
@@ -571,7 +578,6 @@ struct Rope {
 
    private:
     Rope *rope;
-    size_t at_ptr;
   };
 
   RopeIter begin() { return RopeIter(leftmost(), 0); }
@@ -629,8 +635,27 @@ size_t new_line_count(Rope const &rope) {
   return out;
 }
 
-// int find_str(Rope &rope, string &pattern, size_t pos) {
-//   Rope *node = rope.node_at(pos);
-//   if (!node) return -1;
-// }
+int find_str(Rope &rope, string const &pattern, size_t pos) {
+  Rope::RopeIter it = Rope::RopeIter(rope.node_at(pos), pos);
+  Rope::RopeIter it_end = rope.end();
+
+  while (it != it_end) {
+    if (*it == pattern[0]) {
+      auto it_current = it;
+      bool has_found{true};
+      for (int i = 0; i < pattern.size() && it_current != it_end; i++) {
+        if (*it_current != pattern[i]) {
+          has_found = false;
+          break;
+        }
+      }
+
+      if (has_found) {
+        return it.at_ptr;
+      }
+    }
+  }
+
+  return -1;
+}
 };  // namespace RopeUtil

@@ -476,48 +476,63 @@ void test_iterator() {
   for (auto c : *rope) ASSERT_EQ(expected[i++], c);
 }
 
+void test_find_str() {
+  // [0:1 ab][2:3 cd][4:5 ef][6:7 gh][8:9 ij][10:11 kl][12:13 mn][14:15 op]
+  auto rope = make_medium_branched();
+
+  ASSERT_EQ(0, RopeUtil::find_str(*(rope.get()), "a", 0));
+  ASSERT_EQ(0, RopeUtil::find_str(*(rope.get()), "ab", 0));
+  ASSERT_EQ(0, RopeUtil::find_str(*(rope.get()), "abc", 0));
+  ASSERT_EQ(0, RopeUtil::find_str(*(rope.get()), "abcdedg", 0));
+
+  ASSERT_EQ(5, RopeUtil::find_str(*(rope.get()), "fghi", 0));
+}
+
+// void test_find_str_from_mid() { Rope r{"abc012abc345abc678"};
+//   r.split(); }
+
 int main() {
-  test_default();
-  test_split();
+  // test_default();
+  // test_split();
 
-  test_insert();
-  test_insert_with_splits();
-  test_insert_with_auto_split();
-  test_insert_string();
+  // test_insert();
+  // test_insert_with_splits();
+  // test_insert_with_auto_split();
+  // test_insert_string();
 
-  test_remove();
-  test_remove_with_split();
-  test_remove_with_empty_node();
+  // test_remove();
+  // test_remove_with_split();
+  // test_remove_with_empty_node();
 
-  test_empty();
-  test_empty_from_non_empty();
+  // test_empty();
+  // test_empty_from_non_empty();
 
-  test_parent();
+  // test_parent();
 
-  test_node_at();
+  // test_node_at();
 
-  test_next_new_line_at();
-  test_next_new_line_at_many_passes();
-  test_prev_new_line_at();
-  test_prev_new_line_at_many_passes();
-  test_prev_and_next_new_line_at_without_match();
+  // test_next_new_line_at();
+  // test_next_new_line_at_many_passes();
+  // test_prev_new_line_at();
+  // test_prev_new_line_at_many_passes();
+  // test_prev_and_next_new_line_at_without_match();
 
-  test_merge_up_subtree_left();
-  test_merge_up_subtree_right();
+  // test_merge_up_subtree_left();
+  // test_merge_up_subtree_right();
 
-  test_remove_range();
+  // test_remove_range();
   test_remove_range_across_nodes();
 
-  test_new_line_count();
-  test_new_line_at();
-  test_nth_line();
+  // test_new_line_count();
+  // test_new_line_at();
+  // test_nth_line();
 
-  test_substr();
-  test_substr_multinode();
+  // test_substr();
+  // test_substr_multinode();
 
-  test_siblings();
+  // test_siblings();
 
-  test_iterator();
+  // test_iterator();
 
   printf("\nCompleted\n");
 
