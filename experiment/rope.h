@@ -384,21 +384,10 @@ struct Rope {
     if (intermediateNode.child(!empty_node)->type ==
         RopeNodeType::Intermediate) {
       // Adjust sibling pointers.
-      if (empty_node == LEFT) {
-        Rope *old_left = intermediateNode.lhs->leafNode.left;
-        Rope *old_right = intermediateNode.lhs->leafNode.right;
-        assert(old_right);
-
-        if (old_left) old_left->leafNode.right = old_right;
-        old_right->leafNode.left = old_left;
-      } else {
-        Rope *old_left = intermediateNode.rhs->leafNode.left;
-        Rope *old_right = intermediateNode.rhs->leafNode.right;
-        assert(old_left);
-
-        if (old_right) old_right->leafNode.left = old_left;
-        old_left->leafNode.right = old_right;
-      }
+      Rope *old_left = intermediateNode.child(empty_node)->leafNode.left;
+      Rope *old_right = intermediateNode.child(empty_node)->leafNode.right;
+      if (old_left) old_left->leafNode.right = old_right;
+      if (old_right) old_right->leafNode.left = old_left;
 
       intermediateNode.child(empty_node).reset(nullptr);
       intermediateNode.child(empty_node)
