@@ -383,6 +383,23 @@ struct Rope {
   void merge_up(bool empty_node) {
     if (intermediateNode.child(!empty_node)->type ==
         RopeNodeType::Intermediate) {
+      // Adjust sibling pointers.
+      if (empty_node == LEFT) {
+        Rope *old_left = intermediateNode.lhs->leafNode.left;
+        Rope *old_right = intermediateNode.lhs->leafNode.right;
+        assert(old_right);
+
+        if (old_left) old_left->leafNode.right = old_right;
+        old_right->leafNode.left = old_left;
+      } else {
+        Rope *old_left = intermediateNode.rhs->leafNode.left;
+        Rope *old_right = intermediateNode.rhs->leafNode.right;
+        assert(old_left);
+
+        if (old_right) old_right->leafNode.left = old_left;
+        old_left->leafNode.right = old_right;
+      }
+
       intermediateNode.child(empty_node).reset(nullptr);
       intermediateNode.child(empty_node)
           .swap(intermediateNode.child(!empty_node)
@@ -392,8 +409,6 @@ struct Rope {
                             ->intermediateNode.child(!empty_node)
                             .release();
       intermediateNode.child(!empty_node).reset(grandchild);
-
-      // TODO MISSED HANDLING REMOVED NODE SIBLING CHAIN!!!
     } else {
       assert(type == RopeNodeType::Intermediate);
 
@@ -409,9 +424,7 @@ struct Rope {
       leafNode.left = old_left_sib;
       leafNode.right = old_right_sib;
       if (old_left_sib) old_left_sib->leafNode.right = this;
-      if (old_right_sib)
-        old_right_sib->leafNode.left =
-            this;  // TODO: FIX USE OF FREE HEAP MEMORY
+      if (old_right_sib) old_right_sib->leafNode.left = this;
     }
   }
 

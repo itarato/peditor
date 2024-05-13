@@ -492,47 +492,47 @@ void test_find_str() {
 //   r.split(); }
 
 int main() {
-  // test_default();
-  // test_split();
+  test_default();
+  test_split();
 
-  // test_insert();
-  // test_insert_with_splits();
-  // test_insert_with_auto_split();
-  // test_insert_string();
+  test_insert();
+  test_insert_with_splits();
+  test_insert_with_auto_split();
+  test_insert_string();
 
-  // test_remove();
-  // test_remove_with_split();
-  // test_remove_with_empty_node();
+  test_remove();
+  test_remove_with_split();
+  test_remove_with_empty_node();
 
-  // test_empty();
-  // test_empty_from_non_empty();
+  test_empty();
+  test_empty_from_non_empty();
 
-  // test_parent();
+  test_parent();
 
-  // test_node_at();
+  test_node_at();
 
-  // test_next_new_line_at();
-  // test_next_new_line_at_many_passes();
-  // test_prev_new_line_at();
-  // test_prev_new_line_at_many_passes();
-  // test_prev_and_next_new_line_at_without_match();
+  test_next_new_line_at();
+  test_next_new_line_at_many_passes();
+  test_prev_new_line_at();
+  test_prev_new_line_at_many_passes();
+  test_prev_and_next_new_line_at_without_match();
 
-  // test_merge_up_subtree_left();
-  // test_merge_up_subtree_right();
+  test_merge_up_subtree_left();
+  test_merge_up_subtree_right();
 
-  // test_remove_range();
+  test_remove_range();
   test_remove_range_across_nodes();
 
-  // test_new_line_count();
-  // test_new_line_at();
-  // test_nth_line();
+  test_new_line_count();
+  test_new_line_at();
+  test_nth_line();
 
-  // test_substr();
-  // test_substr_multinode();
+  test_substr();
+  test_substr_multinode();
 
-  // test_siblings();
+  test_siblings();
 
-  // test_iterator();
+  test_iterator();
 
   printf("\nCompleted\n");
 
