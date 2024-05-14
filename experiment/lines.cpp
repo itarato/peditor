@@ -76,8 +76,8 @@ struct LinesConfig {
 };
 
 struct Lines {
-  size_t start;
-  size_t size;
+  size_t line_start;
+  size_t line_count;
   LinesNodeType type{LinesNodeType::Intermediate};
   shared_ptr<LinesConfig> config;
   Lines *parent;
@@ -88,24 +88,24 @@ struct Lines {
   };
 
   Lines()
-      : start(0),
-        size(0),
+      : line_start(0),
+        line_count(0),
         type(LinesNodeType::Leaf),
         config(std::make_shared<LinesConfig>(LINES_UNIT_BREAK_THRESHOLD)),
         parent(nullptr),
         leafNode({}) {}
 
   Lines(vector<string> &&lines)
-      : start(0),
-        size(lines.size()),
+      : line_start(0),
+        line_count(lines.size()),
         type(LinesNodeType::Leaf),
         config(std::make_shared<LinesConfig>(LINES_UNIT_BREAK_THRESHOLD)),
         parent(nullptr),
         leafNode({std::forward<vector<string>>(lines)}) {}
 
   Lines(shared_ptr<LinesConfig> config, vector<string> &&lines)
-      : start(0),
-        size(lines.size()),
+      : line_start(0),
+        line_count(lines.size()),
         type(LinesNodeType::Leaf),
         config(config),
         parent(nullptr),
@@ -113,8 +113,8 @@ struct Lines {
 
   Lines(shared_ptr<LinesConfig> config, size_t start, Lines *parent,
         vector<string> &&lines)
-      : start(start),
-        size(lines.size()),
+      : line_start(start),
+        line_count(lines.size()),
         type(LinesNodeType::Leaf),
         config(config),
         parent(parent),
@@ -155,9 +155,9 @@ struct Lines {
          << intermediateNode.rhs->debug_to_string() << ")";
     } else {
       if (empty()) {
-        ss << std::to_string(start) << "[]";
+        ss << std::to_string(line_start) << "[]";
       } else {
-        ss << std::to_string(start) << ":" << std::to_string(endpos());
+        ss << std::to_string(line_start) << ":" << std::to_string(line_end());
         for (auto &line : leafNode.lines) ss << "[" << line << "]";
       }
     }
@@ -169,23 +169,27 @@ struct Lines {
    * OPERATIONS
    */
 
-  LinesSplitResult split(size_t at) {
+  LinesSplitResult split(size_t line_idx) {
     if (type == LinesNodeType::Intermediate) {
-      if (intermediateNode.rhs->start <= at) {
-        return intermediateNode.rhs->split(at);
+      if (intermediateNode.rhs->line_start <= line_idx) {
+        return intermediateNode.rhs->split(line_idx);
       } else {
-        return intermediateNode.lhs->split(at);
+        return intermediateNode.lhs->split(line_idx);
       }
     } else {
-      if (!in_range(at)) return LinesSplitResult::RangeError;
+      if (!in_range(line_idx)) return LinesSplitResult::RangeError;
 
-      if (at == start || endpos() + 1 == at)
+      if (line_idx == line_start || line_end() + 1 == line_idx)
         return LinesSplitResult::EmptySplitError;
 
       unique_ptr<Lines> lhs = make_unique<Lines>(
-          config, start, this, leafNode.s.substr(0, at - start));
-      unique_ptr<Lines> rhs =
-          make_unique<Lines>(config, at, this, leafNode.s.substr(at - start));
+          config, line_start, this,
+          vector<string>{leafNode.lines.begin(),
+                         leafNode.lines.begin() + (line_idx - line_start)});
+      unique_ptr<Lines> rhs = make_unique<Lines>(
+          config, line_idx, this,
+          vector<string>{leafNode.lines.begin() + (line_idx - line_start),
+                         leafNode.lines.end()});
 
       // Set sibling pointers.
       Lines *old_left_sib = leafNode.left;
@@ -209,37 +213,28 @@ struct Lines {
     }
   }
 
-  bool insert(size_t at, string &&snippet) {
-    if (!in_range(at)) return false;
+  bool insert(size_t line_idx, size_t pos, string &&snippet) {
+    if (!in_range(line_idx)) return false;
 
     if (type == LinesNodeType::Intermediate) {
-      size += snippet.size();
-
-      if (intermediateNode.rhs->start <= at) {
-        return intermediateNode.rhs->insert(at, std::forward<string>(snippet));
+      if (intermediateNode.rhs->line_start <= line_idx) {
+        return intermediateNode.rhs->insert(line_idx, pos,
+                                            std::forward<string>(snippet));
       } else {
-        intermediateNode.rhs->adjust_start(snippet.size());
-        return intermediateNode.lhs->insert(at, std::forward<string>(snippet));
+        return intermediateNode.lhs->insert(line_idx, pos,
+                                            std::forward<string>(snippet));
       }
     } else {
-      if (size >= config->unit_break_threshold) {
-        size_t mid = start + size / 2;
-        split(mid);
+      size_t line_relative_idx = line_idx - line_start;
+      // TODO: Handle new line chars in `snippet`.
+      leafNode.lines[line_relative_idx].insert(pos, snippet);
 
-        return insert(at, std::forward<string>(snippet));
-      } else {
-        size += snippet.size();
-
-        size_t pos = at - start;
-        leafNode.s.insert(pos, snippet);
-
-        return true;
-      }
+      return true;
     }
   }
 
   void adjust_start(int diff) {
-    start += diff;
+    line_start += diff;
 
     if (type == LinesNodeType::Intermediate) {
       intermediateNode.lhs->adjust_start(diff);
@@ -247,8 +242,8 @@ struct Lines {
     }
   }
 
-  LinesRemoveResult remove(size_t at) {
-    if (!in_range_chars(at)) return LinesRemoveResult::RangeError;
+  LinesRemoveResult remove_char(size_t line_idx, size_t pos) {
+    if (!in_range_chars(line_idx)) return LinesRemoveResult::RangeError;
 
     if (type == LinesNodeType::Intermediate) {
       size--;
@@ -381,20 +376,21 @@ struct Lines {
    * BOUNDS
    */
 
-  bool empty() const { return size == 0; }
+  bool empty() const { return line_count == 0; }
 
-  size_t endpos() const {
+  size_t line_end() const {
     // Must check emptiness before calling this.
     assert(!empty());
-    return start + size - 1;
+    return line_start + line_count - 1;
   }
 
   bool in_range(size_t at) const {
-    return (empty() && at == start) || (start <= at && at <= endpos() + 1);
+    return (empty() && at == line_start) ||
+           (line_start <= at && at <= line_end() + 1);
   }
 
   bool in_range_chars(size_t at) const {
-    return !empty() && start <= at && at <= endpos();
+    return !empty() && line_start <= at && at <= line_end();
   }
 
   /**
