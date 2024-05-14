@@ -242,98 +242,77 @@ struct Lines {
     }
   }
 
-  LinesRemoveResult remove_char(size_t line_idx, size_t pos) {
-    if (!in_range_chars(line_idx)) return LinesRemoveResult::RangeError;
+  bool remove_char(size_t line_idx, size_t pos) {
+    if (!in_range_lines(line_idx)) return false;
 
     if (type == LinesNodeType::Intermediate) {
-      size--;
-
       bool is_left_adjusted = !intermediateNode.lhs->empty() &&
-                              intermediateNode.lhs->endpos() >= at;
-      LinesRemoveResult result;
+                              intermediateNode.lhs->line_end() >= line_idx;
 
-      if (is_left_adjusted) {
-        intermediateNode.rhs->adjust_start(-1);
-        result = intermediateNode.lhs->remove(at);
-      } else {
-        result = intermediateNode.rhs->remove(at);
-      }
-
-      if (result == LinesRemoveResult::NeedMergeUp) {
-        merge_up(is_left_adjusted);
-        return LinesRemoveResult::Success;
-      } else {
-        return result;
-      }
+      return intermediateNode.child(is_left_adjusted)
+          ->remove_char(line_idx, pos);
     } else {
-      size--;
-
-      size_t pos = at - start;
-      leafNode.s.erase(pos, 1);
-
-      if (empty()) {
-        return LinesRemoveResult::NeedMergeUp;
-      } else {
-        return LinesRemoveResult::Success;
-      }
+      size_t line_relative_idx = line_idx - line_start;
+      leafNode.lines[line_relative_idx].erase(pos, 1);
     }
   }
 
-  LinesRemoveResult remove_range(size_t from, size_t to) {
-    if (!in_range_chars(from) || !in_range_chars(to)) {
-      return LinesRemoveResult::RangeError;
-    }
+  // LinesRemoveResult remove_range(size_t from_line, size_t from_pos,
+  //                                size_t to_line, size_t to_pos) {
+  //   if (!in_range_chars(from) || !in_range_chars(to)) {
+  //     return LinesRemoveResult::RangeError;
+  //   }
 
-    if (type == LinesNodeType::Intermediate) {
-      size_t rhs_from = max(intermediateNode.rhs->start, from);
-      size_t lhs_to = min(intermediateNode.lhs->endpos(), to);
+  //   if (type == LinesNodeType::Intermediate) {
+  //     size_t rhs_from = max(intermediateNode.rhs->start, from);
+  //     size_t lhs_to = min(intermediateNode.lhs->endpos(), to);
 
-      if (rhs_from <= to) {
-        size -= to - rhs_from + 1;
-        LinesRemoveResult result =
-            intermediateNode.rhs->remove_range(rhs_from, to);
-        if (result == LinesRemoveResult::NeedMergeUp) {
-          merge_up(RIGHT);
-        } else if (result == LinesRemoveResult::RangeError) {
-          return result;
-        }
+  //     if (rhs_from <= to) {
+  //       size -= to - rhs_from + 1;
+  //       LinesRemoveResult result =
+  //           intermediateNode.rhs->remove_range(rhs_from, to);
+  //       if (result == LinesRemoveResult::NeedMergeUp) {
+  //         merge_up(RIGHT);
+  //       } else if (result == LinesRemoveResult::RangeError) {
+  //         return result;
+  //       }
 
-        if (from <= lhs_to) {
-          return remove_range(from, lhs_to);
-        } else {
-          return LinesRemoveResult::Success;
-        }
-      }
+  //       if (from <= lhs_to) {
+  //         return remove_range(from, lhs_to);
+  //       } else {
+  //         return LinesRemoveResult::Success;
+  //       }
+  //     }
 
-      if (from <= lhs_to) {
-        size -= lhs_to - from + 1;
-        intermediateNode.rhs->adjust_start(-(lhs_to - from + 1));
+  //     if (from <= lhs_to) {
+  //       size -= lhs_to - from + 1;
+  //       intermediateNode.rhs->adjust_start(-(lhs_to - from + 1));
 
-        LinesRemoveResult result =
-            intermediateNode.lhs->remove_range(from, lhs_to);
-        if (result == LinesRemoveResult::NeedMergeUp) {
-          merge_up(LEFT);
-        } else if (result == LinesRemoveResult::RangeError) {
-          return result;
-        }
+  //       LinesRemoveResult result =
+  //           intermediateNode.lhs->remove_range(from, lhs_to);
+  //       if (result == LinesRemoveResult::NeedMergeUp) {
+  //         merge_up(LEFT);
+  //       } else if (result == LinesRemoveResult::RangeError) {
+  //         return result;
+  //       }
 
-        return LinesRemoveResult::Success;
-      }
+  //       return LinesRemoveResult::Success;
+  //     }
 
-      return LinesRemoveResult::RangeError;
-    } else {
-      size -= to - from + 1;
+  //     return LinesRemoveResult::RangeError;
+  //   } else {
+  //     size -= to - from + 1;
 
-      size_t pos = from - start;
-      leafNode.s.erase(pos, to - from + 1);
+  //     size_t pos = from - start;
+  //     leafNode.s.erase(pos, to - from + 1);
 
-      if (empty()) {
-        return LinesRemoveResult::NeedMergeUp;
-      } else {
-        return LinesRemoveResult::Success;
-      }
-    }
-  }
+  //     if (empty()) {
+  //       return LinesRemoveResult::NeedMergeUp;
+  //     } else {
+  //       return LinesRemoveResult::Success;
+  //     }
+  //   }
+  // }
 
   void merge_up(bool empty_node) {
     if (intermediateNode.child(!empty_node)->type ==
@@ -356,7 +335,8 @@ struct Lines {
     } else {
       assert(type == LinesNodeType::Intermediate);
 
-      string s = intermediateNode.child(!empty_node)->leafNode.s;
+      vector<string> old_lines =
+          intermediateNode.child(!empty_node)->leafNode.lines;
       Lines *old_left_sib = intermediateNode.lhs->leafNode.left;
       Lines *old_right_sib = intermediateNode.rhs->leafNode.right;
 
@@ -364,7 +344,7 @@ struct Lines {
       intermediateNode.LinesIntermediateNode::~LinesIntermediateNode();
 
       type = LinesNodeType::Leaf;
-      leafNode.s.swap(s);
+      leafNode.lines.swap(old_lines);
       leafNode.left = old_left_sib;
       leafNode.right = old_right_sib;
       if (old_left_sib) old_left_sib->leafNode.right = this;
@@ -389,7 +369,7 @@ struct Lines {
            (line_start <= at && at <= line_end() + 1);
   }
 
-  bool in_range_chars(size_t at) const {
+  bool in_range_lines(size_t at) const {
     return !empty() && line_start <= at && at <= line_end();
   }
 
@@ -424,10 +404,10 @@ struct Lines {
   }
 
   Lines *node_at(size_t at) const {
-    if (!in_range_chars(at)) return nullptr;
+    if (!in_range_lines(at)) return nullptr;
 
     if (type == LinesNodeType::Intermediate) {
-      if (intermediateNode.rhs->start <= at) {
+      if (intermediateNode.rhs->line_start <= at) {
         return intermediateNode.rhs->node_at(at);
       } else {
         return intermediateNode.lhs->node_at(at);
