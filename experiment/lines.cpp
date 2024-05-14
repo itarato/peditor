@@ -1,5 +1,3 @@
-#pragma once
-
 #include <assert.h>
 #include <unistd.h>
 
@@ -417,57 +415,6 @@ struct Lines {
     return (Lines *)this;
   }
 
-  int next_line_at(size_t at) const {
-    if (type == LinesNodeType::Intermediate) {
-      auto node = node_at(at);
-      if (!node) return -1;
-      return node->next_line_at(at);
-    }
-
-    int result = leafNode.next_char_after(at - start, '\n');
-    if (result >= 0) return result + start;
-
-    auto next_node = leafNode.right;
-    if (!next_node) return -1;
-
-    return next_node->next_line_at(next_node->start);
-  }
-
-  int prev_line_at(size_t at) const {
-    if (type == LinesNodeType::Intermediate) {
-      auto node = node_at(at);
-      if (!node) return -1;
-      return node->prev_line_at(at);
-    }
-
-    int result = leafNode.prev_char_before(at - start, '\n');
-    if (result >= 0) return result + start;
-
-    auto prev_node = leafNode.left;
-    if (!prev_node) return -1;
-
-    return prev_node->prev_line_at(prev_node->endpos());
-  }
-
-  int nth_new_line_at(size_t nth) const {
-    if (type == LinesNodeType::Intermediate) {
-      return leftmost()->nth_new_line_at(nth);
-    } else {
-      for (size_t i = 0; i < leafNode.s.size(); i++) {
-        if (leafNode.s[i] == '\n') {
-          if (nth == 0) return start + i;
-          nth--;
-        }
-      }
-
-      if (leafNode.right) {
-        return leafNode.right->nth_new_line_at(nth);
-      } else {
-        return -1;
-      }
-    }
-  }
-
   /**
    * ITERATOR
    */
@@ -475,26 +422,27 @@ struct Lines {
   struct LinesIter {
     using iterator_category = forward_iterator_tag;
     using difference_type = ptrdiff_t;
-    using value_type = char;
-    using pointer = char *;
-    using reference = char &;
+    using value_type = string;
+    using pointer = string *;
+    using reference = string &;
 
-    size_t at_ptr;
+    size_t line_ptr;
 
-    LinesIter(Lines *rope, size_t at_ptr) : at_ptr(at_ptr), rope(rope) {}
+    LinesIter(Lines *lines, size_t line_ptr)
+        : line_ptr(line_ptr), lines(lines) {}
 
     reference operator*() const {
-      return rope->leafNode.s[at_ptr - rope->start];
+      return lines->leafNode.lines[line_ptr - lines->line_start];
     }
 
     pointer operator->() {
-      return rope->leafNode.s.data() + (at_ptr - rope->start);
+      return lines->leafNode.lines.data() + (line_ptr - lines->line_start);
     }
 
     LinesIter operator++() {
-      if (rope) {
-        at_ptr++;
-        if (at_ptr > rope->endpos()) rope = rope->leafNode.right;
+      if (lines) {
+        line_ptr++;
+        if (line_ptr > lines->line_end()) lines = lines->leafNode.right;
       }
 
       return *this;
@@ -507,93 +455,45 @@ struct Lines {
     }
 
     friend bool operator==(const LinesIter &lhs, const LinesIter &rhs) {
-      return lhs.at_ptr == rhs.at_ptr;
+      return lhs.line_ptr == rhs.line_ptr;
     }
 
     friend bool operator!=(const LinesIter &lhs, const LinesIter &rhs) {
-      return lhs.at_ptr != rhs.at_ptr;
+      return lhs.line_ptr != rhs.line_ptr;
     }
 
    private:
-    Lines *rope;
+    Lines *lines;
   };
 
   LinesIter begin() { return LinesIter(leftmost(), 0); }
-  LinesIter end() { return LinesIter(nullptr, size); }
+  LinesIter end() { return LinesIter(nullptr, line_count); }
 };
 
-namespace LinesUtil {
-size_t count_new_lines(const string &s) {
-  size_t out{0};
-  for (auto &c : s) {
-    if (c == '\n') out++;
-  }
-  return out;
-}
-size_t count_new_lines(const string &s, size_t from, size_t to) {
-  size_t out{0};
-  for (size_t i = from; i <= to; i++) {
-    if (s[i] == '\n') out++;
-  }
-  return out;
-}
+// namespace LinesUtil {
+// int find_str(Lines &rope, string const &pattern, size_t pos) {
+//   Lines::LinesIter it = Lines::LinesIter(rope.node_at(pos), pos);
+//   Lines::LinesIter it_end = rope.end();
 
-int nth_new_line_pos(const string &s, size_t nth) {
-  for (int i = 0; i < s.size(); i++) {
-    if (s[i] == '\n') {
-      if (nth == 0) return i;
-      nth--;
-    }
-  }
-  return -1;
-}
+//   while (it != it_end) {
+//     if (*it == pattern[0]) {
+//       auto it_current = it;
+//       bool has_found{true};
+//       for (int i = 0; i < pattern.size() && it_current != it_end; i++) {
+//         if (*it_current != pattern[i]) {
+//           has_found = false;
+//           break;
+//         }
+//       }
 
-string nth_line(Lines const &rope, size_t nth) {
-  if (rope.empty()) return "";
+//       if (has_found) {
+//         return it.at_ptr;
+//       }
+//     }
+//   }
 
-  int start_pos = nth == 0 ? 0 : rope.nth_new_line_at(nth - 1);
-  if (start_pos == -1) return "";
+//   return -1;
+// }
+// };  // namespace LinesUtil
 
-  int end_pos = rope.nth_new_line_at(nth);
-  if (end_pos == -1) end_pos = rope.endpos();
-  if (start_pos >= end_pos - 1) return "";
-
-  return rope.substr(start_pos + 1, end_pos - start_pos - 1);
-}
-
-size_t new_line_count(Lines const &rope) {
-  Lines *r = rope.leftmost();
-  size_t out{0};
-  while (r) {
-    for (auto &c : r->leafNode.s) {
-      if (c == '\n') out++;
-    }
-    r = r->leafNode.right;
-  }
-  return out;
-}
-
-int find_str(Lines &rope, string const &pattern, size_t pos) {
-  Lines::LinesIter it = Lines::LinesIter(rope.node_at(pos), pos);
-  Lines::LinesIter it_end = rope.end();
-
-  while (it != it_end) {
-    if (*it == pattern[0]) {
-      auto it_current = it;
-      bool has_found{true};
-      for (int i = 0; i < pattern.size() && it_current != it_end; i++) {
-        if (*it_current != pattern[i]) {
-          has_found = false;
-          break;
-        }
-      }
-
-      if (has_found) {
-        return it.at_ptr;
-      }
-    }
-  }
-
-  return -1;
-}
-};  // namespace LinesUtil
+int main(void) { return EXIT_SUCCESS; }
