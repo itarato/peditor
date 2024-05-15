@@ -1,3 +1,5 @@
+#pragma once
+
 #include <assert.h>
 #include <unistd.h>
 
@@ -39,12 +41,6 @@ enum class LinesNodeType {
   Leaf,
 };
 
-enum class LinesSplitResult {
-  Success,
-  RangeError,
-  EmptySplitError,
-};
-
 enum class LinesRemoveResult {
   Success,
   NeedMergeUp,
@@ -57,7 +53,9 @@ struct LinesIntermediateNode {
   unique_ptr<Lines> lhs;
   unique_ptr<Lines> rhs;
 
-  unique_ptr<Lines> &child(bool is_left) { return is_left ? lhs : rhs; }
+  unique_ptr<Lines> &child(bool is_left) {
+    return is_left ? lhs : rhs;
+  }
 };
 
 struct LinesLeaf {
@@ -69,9 +67,16 @@ struct LinesLeaf {
 struct LinesConfig {
   size_t unit_break_threshold;
 
-  LinesConfig(size_t unit_break_threshold)
-      : unit_break_threshold(unit_break_threshold) {}
+  LinesConfig(size_t unit_break_threshold) : unit_break_threshold(unit_break_threshold) {
+  }
 };
+
+namespace LinesUtil {
+bool has_new_line(string const &s) {
+  auto it = find(s.begin(), s.end(), '\n');
+  return it != s.end();
+}
+};  // namespace LinesUtil
 
 struct Lines {
   size_t line_start;
@@ -91,7 +96,8 @@ struct Lines {
         type(LinesNodeType::Leaf),
         config(std::make_shared<LinesConfig>(LINES_UNIT_BREAK_THRESHOLD)),
         parent(nullptr),
-        leafNode({}) {}
+        leafNode({}) {
+  }
 
   Lines(vector<string> &&lines)
       : line_start(0),
@@ -99,7 +105,8 @@ struct Lines {
         type(LinesNodeType::Leaf),
         config(std::make_shared<LinesConfig>(LINES_UNIT_BREAK_THRESHOLD)),
         parent(nullptr),
-        leafNode({std::forward<vector<string>>(lines)}) {}
+        leafNode({std::forward<vector<string>>(lines)}) {
+  }
 
   Lines(shared_ptr<LinesConfig> config, vector<string> &&lines)
       : line_start(0),
@@ -107,16 +114,17 @@ struct Lines {
         type(LinesNodeType::Leaf),
         config(config),
         parent(nullptr),
-        leafNode({std::forward<vector<string>>(lines)}) {}
+        leafNode({std::forward<vector<string>>(lines)}) {
+  }
 
-  Lines(shared_ptr<LinesConfig> config, size_t start, Lines *parent,
-        vector<string> &&lines)
+  Lines(shared_ptr<LinesConfig> config, size_t start, Lines *parent, vector<string> &&lines)
       : line_start(start),
         line_count(lines.size()),
         type(LinesNodeType::Leaf),
         config(config),
         parent(parent),
-        leafNode({std::forward<vector<string>>(lines)}) {}
+        leafNode({std::forward<vector<string>>(lines)}) {
+  }
 
   ~Lines() {
     if (type == LinesNodeType::Intermediate) {
@@ -133,8 +141,7 @@ struct Lines {
 
   string to_string() const {
     if (type == LinesNodeType::Intermediate) {
-      return intermediateNode.lhs->to_string() +
-             intermediateNode.rhs->to_string();
+      return intermediateNode.lhs->to_string() + intermediateNode.rhs->to_string();
     } else {
       stringstream ss;
       for (auto &line : leafNode.lines) {
@@ -149,8 +156,7 @@ struct Lines {
     stringstream ss;
 
     if (type == LinesNodeType::Intermediate) {
-      ss << "(" << intermediateNode.lhs->debug_to_string() << ")("
-         << intermediateNode.rhs->debug_to_string() << ")";
+      ss << "(" << intermediateNode.lhs->debug_to_string() << ")(" << intermediateNode.rhs->debug_to_string() << ")";
     } else {
       if (empty()) {
         ss << std::to_string(line_start) << "[]";
@@ -167,7 +173,7 @@ struct Lines {
    * OPERATIONS
    */
 
-  LinesSplitResult split(size_t line_idx) {
+  bool split(size_t line_idx) {
     if (type == LinesNodeType::Intermediate) {
       if (intermediateNode.rhs->line_start <= line_idx) {
         return intermediateNode.rhs->split(line_idx);
@@ -175,19 +181,16 @@ struct Lines {
         return intermediateNode.lhs->split(line_idx);
       }
     } else {
-      if (!in_range(line_idx)) return LinesSplitResult::RangeError;
+      if (!in_range(line_idx)) return false;
 
-      if (line_idx == line_start || line_end() + 1 == line_idx)
-        return LinesSplitResult::EmptySplitError;
+      if (line_idx == line_start || line_end() + 1 == line_idx) return false;
 
-      unique_ptr<Lines> lhs = make_unique<Lines>(
-          config, line_start, this,
-          vector<string>{leafNode.lines.begin(),
-                         leafNode.lines.begin() + (line_idx - line_start)});
-      unique_ptr<Lines> rhs = make_unique<Lines>(
-          config, line_idx, this,
-          vector<string>{leafNode.lines.begin() + (line_idx - line_start),
-                         leafNode.lines.end()});
+      unique_ptr<Lines> lhs =
+          make_unique<Lines>(config, line_start, this,
+                             vector<string>{leafNode.lines.begin(), leafNode.lines.begin() + (line_idx - line_start)});
+      unique_ptr<Lines> rhs =
+          make_unique<Lines>(config, line_idx, this,
+                             vector<string>{leafNode.lines.begin() + (line_idx - line_start), leafNode.lines.end()});
 
       // Set sibling pointers.
       Lines *old_left_sib = leafNode.left;
@@ -207,36 +210,68 @@ struct Lines {
       intermediateNode.lhs.reset(lhs.release());
       intermediateNode.rhs.reset(rhs.release());
 
-      return LinesSplitResult::Success;
+      return true;
     }
   }
 
   bool insert(size_t line_idx, size_t pos, string &&snippet) {
-    if (!in_range(line_idx)) return false;
+    if (!in_range_lines(line_idx)) return false;
 
     if (type == LinesNodeType::Intermediate) {
       if (intermediateNode.rhs->line_start <= line_idx) {
-        return intermediateNode.rhs->insert(line_idx, pos,
-                                            std::forward<string>(snippet));
+        return intermediateNode.rhs->insert(line_idx, pos, std::forward<string>(snippet));
       } else {
-        return intermediateNode.lhs->insert(line_idx, pos,
-                                            std::forward<string>(snippet));
+        return intermediateNode.lhs->insert(line_idx, pos, std::forward<string>(snippet));
       }
     } else {
       size_t line_relative_idx = line_idx - line_start;
-      // TODO: Handle new line chars in `snippet`.
+
+      // Line pos out of bounds.
+      if (leafNode.lines[line_relative_idx].size() < pos) return false;
+
       leafNode.lines[line_relative_idx].insert(pos, snippet);
+
+      if (LinesUtil::has_new_line(leafNode.lines[line_relative_idx])) {
+        size_t old_line_count = leafNode.lines.size();
+
+        stringstream line{leafNode.lines[line_relative_idx]};
+        auto it = leafNode.lines.begin();
+        advance(it, line_relative_idx);
+        it = leafNode.lines.erase(it);
+        string buf;
+
+        while (getline(line, buf)) {
+          it = leafNode.lines.insert(it, buf);
+          it++;
+        }
+
+        size_t line_count_diff = leafNode.lines.size() - old_line_count;
+        line_count += line_count_diff;
+        if (parent) parent->adjust_line_count_and_line_start_up_and_right(line_count_diff);
+      }
 
       return true;
     }
   }
 
-  void adjust_start(int diff) {
+  void adjust_line_count_and_line_start_up_and_right(int diff) {
+    assert(type == LinesNodeType::Intermediate);
+
+    line_count += diff;
+
+    if (type == LinesNodeType::Intermediate) {
+      intermediateNode.rhs->adjust_line_start_down(diff);
+    }
+
+    if (parent) parent->adjust_line_count_and_line_start_up_and_right(diff);
+  }
+
+  void adjust_line_start_down(int diff) {
     line_start += diff;
 
     if (type == LinesNodeType::Intermediate) {
-      intermediateNode.lhs->adjust_start(diff);
-      intermediateNode.rhs->adjust_start(diff);
+      intermediateNode.lhs->adjust_line_start_down(diff);
+      intermediateNode.rhs->adjust_line_start_down(diff);
     }
   }
 
@@ -244,14 +279,18 @@ struct Lines {
     if (!in_range_lines(line_idx)) return false;
 
     if (type == LinesNodeType::Intermediate) {
-      bool is_left_adjusted = !intermediateNode.lhs->empty() &&
-                              intermediateNode.lhs->line_end() >= line_idx;
+      bool is_left_adjusted = !intermediateNode.lhs->empty() && intermediateNode.lhs->line_end() >= line_idx;
 
-      return intermediateNode.child(is_left_adjusted)
-          ->remove_char(line_idx, pos);
+      return intermediateNode.child(is_left_adjusted)->remove_char(line_idx, pos);
     } else {
       size_t line_relative_idx = line_idx - line_start;
+
+      // Line pos out of bounds.
+      if (leafNode.lines[line_relative_idx].size() < pos) return false;
+
       leafNode.lines[line_relative_idx].erase(pos, 1);
+
+      return true;
     }
   }
 
@@ -313,8 +352,7 @@ struct Lines {
   // }
 
   void merge_up(bool empty_node) {
-    if (intermediateNode.child(!empty_node)->type ==
-        LinesNodeType::Intermediate) {
+    if (intermediateNode.child(!empty_node)->type == LinesNodeType::Intermediate) {
       // Adjust sibling pointers.
       Lines *old_left = intermediateNode.child(empty_node)->leafNode.left;
       Lines *old_right = intermediateNode.child(empty_node)->leafNode.right;
@@ -322,19 +360,14 @@ struct Lines {
       if (old_right) old_right->leafNode.left = old_left;
 
       intermediateNode.child(empty_node).reset(nullptr);
-      intermediateNode.child(empty_node)
-          .swap(intermediateNode.child(!empty_node)
-                    ->intermediateNode.child(empty_node));
+      intermediateNode.child(empty_node).swap(intermediateNode.child(!empty_node)->intermediateNode.child(empty_node));
 
-      auto grandchild = intermediateNode.child(!empty_node)
-                            ->intermediateNode.child(!empty_node)
-                            .release();
+      auto grandchild = intermediateNode.child(!empty_node)->intermediateNode.child(!empty_node).release();
       intermediateNode.child(!empty_node).reset(grandchild);
     } else {
       assert(type == LinesNodeType::Intermediate);
 
-      vector<string> old_lines =
-          intermediateNode.child(!empty_node)->leafNode.lines;
+      vector<string> old_lines = intermediateNode.child(!empty_node)->leafNode.lines;
       Lines *old_left_sib = intermediateNode.lhs->leafNode.left;
       Lines *old_right_sib = intermediateNode.rhs->leafNode.right;
 
@@ -354,7 +387,9 @@ struct Lines {
    * BOUNDS
    */
 
-  bool empty() const { return line_count == 0; }
+  bool empty() const {
+    return line_count == 0;
+  }
 
   size_t line_end() const {
     // Must check emptiness before calling this.
@@ -363,8 +398,7 @@ struct Lines {
   }
 
   bool in_range(size_t at) const {
-    return (empty() && at == line_start) ||
-           (line_start <= at && at <= line_end() + 1);
+    return (empty() && at == line_start) || (line_start <= at && at <= line_end() + 1);
   }
 
   bool in_range_lines(size_t at) const {
@@ -428,8 +462,8 @@ struct Lines {
 
     size_t line_ptr;
 
-    LinesIter(Lines *lines, size_t line_ptr)
-        : line_ptr(line_ptr), lines(lines) {}
+    LinesIter(Lines *lines, size_t line_ptr) : line_ptr(line_ptr), lines(lines) {
+    }
 
     reference operator*() const {
       return lines->leafNode.lines[line_ptr - lines->line_start];
@@ -466,8 +500,12 @@ struct Lines {
     Lines *lines;
   };
 
-  LinesIter begin() { return LinesIter(leftmost(), 0); }
-  LinesIter end() { return LinesIter(nullptr, line_count); }
+  LinesIter begin() {
+    return LinesIter(leftmost(), 0);
+  }
+  LinesIter end() {
+    return LinesIter(nullptr, line_count);
+  }
 };
 
 // namespace LinesUtil {
@@ -495,5 +533,3 @@ struct Lines {
 //   return -1;
 // }
 // };  // namespace LinesUtil
-
-int main(void) { return EXIT_SUCCESS; }

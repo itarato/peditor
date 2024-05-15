@@ -13,3 +13,5 @@ experiment/alloc*
 experiment/a.out
 experiment/rope_benchmark
 experiment/include
+experiment/lines
+experiment/lines_test
