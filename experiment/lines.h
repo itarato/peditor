@@ -76,6 +76,20 @@ bool has_new_line(string const &s) {
   auto it = find(s.begin(), s.end(), '\n');
   return it != s.end();
 }
+
+template <typename F>
+void split_lines(const string &s, const F fn) {
+  string current;
+  for (const auto &c : s) {
+    if (c == '\n') {
+      fn(current);
+      current.clear();
+    } else {
+      current.push_back(c);
+    }
+  }
+  fn(current);
+}
 };  // namespace LinesUtil
 
 struct Lines {
@@ -224,6 +238,8 @@ struct Lines {
         return intermediateNode.lhs->insert(line_idx, pos, std::forward<string>(snippet));
       }
     } else {
+      if (split_if_too_large()) return insert(line_idx, pos, std::forward<string>(snippet));
+
       size_t line_relative_idx = line_idx - line_start;
 
       // Line pos out of bounds.
@@ -231,19 +247,19 @@ struct Lines {
 
       leafNode.lines[line_relative_idx].insert(pos, snippet);
 
+      // Handle new inserted new lines.
       if (LinesUtil::has_new_line(leafNode.lines[line_relative_idx])) {
         size_t old_line_count = leafNode.lines.size();
 
-        stringstream line{leafNode.lines[line_relative_idx]};
+        string line_to_cut{leafNode.lines[line_relative_idx]};
         auto it = leafNode.lines.begin();
         advance(it, line_relative_idx);
         it = leafNode.lines.erase(it);
-        string buf;
 
-        while (getline(line, buf)) {
-          it = leafNode.lines.insert(it, buf);
+        LinesUtil::split_lines(line_to_cut, [&](const string &new_line) {
+          it = leafNode.lines.insert(it, new_line);
           it++;
-        }
+        });
 
         size_t line_count_diff = leafNode.lines.size() - old_line_count;
         line_count += line_count_diff;
@@ -252,6 +268,16 @@ struct Lines {
 
       return true;
     }
+  }
+
+  bool split_if_too_large() {
+    assert(type == LinesNodeType::Leaf);
+    if (leafNode.lines.size() <= config->unit_break_threshold) return false;
+
+    size_t mid_line_idx = line_start + line_count / 2;
+    split(mid_line_idx);
+
+    return true;
   }
 
   void adjust_line_count_and_line_start_up_and_right(int diff) {

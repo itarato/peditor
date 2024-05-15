@@ -110,7 +110,23 @@ void test_insert_new_lines() {
   ASSERT_EQ("0:3[abc][def][hello][world]"s, l.debug_to_string());
 
   l.insert(3, 5, "\nhi\n");
-  ASSERT_EQ("0:4[abc][def][hello][world][hi]"s, l.debug_to_string());
+  ASSERT_EQ("0:5[abc][def][hello][world][hi][]"s, l.debug_to_string());
+}
+
+void test_insert_with_split() {
+  Lines l{make_shared<LinesConfig>(2), {"0", "1", "2", "3", "4", "5", "6", "7"}};
+
+  ASSERT_EQ("0:7[0][1][2][3][4][5][6][7]"s, l.debug_to_string());
+
+  l.insert(2, 1, "x");
+  ASSERT_EQ("((0:1[0][1])(2:3[2x][3]))(4:7[4][5][6][7])"s, l.debug_to_string());
+}
+
+void test_insert_empty_new_line() {
+  Lines l{{"hello"}};
+
+  l.insert(0, 5, "\n");
+  ASSERT_EQ("0:1[hello][]"s, l.debug_to_string());
 }
 
 int main() {
@@ -122,6 +138,8 @@ int main() {
 
   test_insert();
   test_insert_new_lines();
+  test_insert_with_split();
+  test_insert_empty_new_line();
 
   printf("\nCompleted\n");
 
