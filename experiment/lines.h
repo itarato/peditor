@@ -56,6 +56,12 @@ struct LinesIntermediateNode {
   unique_ptr<Lines> &child(bool is_left) {
     return is_left ? lhs : rhs;
   }
+
+  bool which_child(const Lines *child) const {
+    if (lhs.get() == child) return LEFT;
+    if (rhs.get() == child) return RIGHT;
+    exit(EXIT_FAILURE);
+  }
 };
 
 struct LinesLeaf {
@@ -142,8 +148,7 @@ struct Lines {
 
   ~Lines() {
     if (type == LinesNodeType::Intermediate) {
-      delete intermediateNode.lhs.release();
-      delete intermediateNode.rhs.release();
+      intermediateNode.LinesIntermediateNode::~LinesIntermediateNode();
     } else {
       leafNode.LinesLeaf::~LinesLeaf();
     }
@@ -262,7 +267,7 @@ struct Lines {
         });
 
         size_t line_count_diff = leafNode.lines.size() - old_line_count;
-        adjust_line_count_and_line_start_up_and_right(line_count_diff);
+        adjust_line_count_and_line_start_up_and_right(line_count_diff, false);
       }
 
       return true;
@@ -279,14 +284,16 @@ struct Lines {
     return true;
   }
 
-  void adjust_line_count_and_line_start_up_and_right(int diff) {
+  void adjust_line_count_and_line_start_up_and_right(int diff, bool is_called_by_left_child) {
     line_count += diff;
 
-    if (type == LinesNodeType::Intermediate) {
+    if (type == LinesNodeType::Intermediate && is_called_by_left_child) {
       intermediateNode.rhs->adjust_line_start_down(diff);
     }
 
-    if (parent) parent->adjust_line_count_and_line_start_up_and_right(diff);
+    if (parent) {
+      parent->adjust_line_count_and_line_start_up_and_right(diff, parent->intermediateNode.which_child(this) == LEFT);
+    }
   }
 
   void adjust_line_start_down(int diff) {
@@ -320,11 +327,18 @@ struct Lines {
         auto it = leafNode.lines.begin();
         advance(it, relative_line_pos);
         leafNode.lines.erase(it);
-        adjust_line_count_and_line_start_up_and_right(-1);
+        adjust_line_count_and_line_start_up_and_right(-1, false);
         return true;
       } else {
-        // TODO
-        return false;
+        if (!leafNode.left) return false;
+
+        leafNode.left->leafNode.lines.back().append(leafNode.lines.front());
+        auto it = leafNode.lines.begin();
+        leafNode.lines.erase(it);
+        adjust_line_count_and_line_start_up_and_right(-1, false);
+
+        if (line_count == 0 && parent) parent->merge_up(this);
+        return true;
       }
     }
   }
@@ -405,7 +419,9 @@ struct Lines {
   //   }
   // }
 
-  void merge_up(bool empty_node) {
+  void merge_up(Lines *empty_child) {
+    bool empty_node = intermediateNode.which_child(empty_child);
+
     if (intermediateNode.child(!empty_node)->type == LinesNodeType::Intermediate) {
       // Adjust sibling pointers.
       Lines *old_left = intermediateNode.child(empty_node)->leafNode.left;

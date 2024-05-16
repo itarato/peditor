@@ -153,6 +153,21 @@ void test_backspace_merge_in_node_lines() {
   ASSERT_EQ("0:0[aabbcc]"s, l.debug_to_string());
 }
 
+void test_backspace_merge_between_subtrees() {
+  Lines l{{"aa", "bb", "cc", "dd"}};
+
+  l.split(2);
+  l.split(1);
+  l.split(3);
+  ASSERT_EQ("((0:0[aa])(1:1[bb]))((2:2[cc])(3:3[dd]))"s, l.debug_to_string());
+
+  ASSERT_EQ(true, l.backspace(2, 0));
+  ASSERT_EQ("((0:0[aa])(1:1[bbcc]))(2:2[dd])"s, l.debug_to_string());
+
+  // ASSERT_EQ(true, l.backspace(2, 0));
+  // ASSERT_EQ("(0:0[aa])(1:1[bbccdd])"s, l.debug_to_string());
+}
+
 int main() {
   test_basic_empty();
   test_basic_leaf();
@@ -167,6 +182,7 @@ int main() {
 
   test_backspace_basic();
   test_backspace_merge_in_node_lines();
+  test_backspace_merge_between_subtrees();
 
   printf("\nCompleted\n");
 
