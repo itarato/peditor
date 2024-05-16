@@ -262,8 +262,7 @@ struct Lines {
         });
 
         size_t line_count_diff = leafNode.lines.size() - old_line_count;
-        line_count += line_count_diff;
-        if (parent) parent->adjust_line_count_and_line_start_up_and_right(line_count_diff);
+        adjust_line_count_and_line_start_up_and_right(line_count_diff);
       }
 
       return true;
@@ -281,8 +280,6 @@ struct Lines {
   }
 
   void adjust_line_count_and_line_start_up_and_right(int diff) {
-    assert(type == LinesNodeType::Intermediate);
-
     line_count += diff;
 
     if (type == LinesNodeType::Intermediate) {
@@ -301,24 +298,55 @@ struct Lines {
     }
   }
 
-  bool remove_char(size_t line_idx, size_t pos) {
-    if (!in_range_lines(line_idx)) return false;
-
+  bool backspace(size_t line_idx, size_t pos) {
     if (type == LinesNodeType::Intermediate) {
-      bool is_left_adjusted = !intermediateNode.lhs->empty() && intermediateNode.lhs->line_end() >= line_idx;
+      Lines *leaf = node_at(line_idx);
+      if (!leaf) return false;
+      return leaf->backspace(line_idx, pos);
+    }
 
-      return intermediateNode.child(is_left_adjusted)->remove_char(line_idx, pos);
-    } else {
-      size_t line_relative_idx = line_idx - line_start;
+    assert(type == LinesNodeType::Leaf);
+    assert(line_start <= line_idx && line_idx <= line_end());
 
-      // Line pos out of bounds.
-      if (leafNode.lines[line_relative_idx].size() < pos) return false;
+    size_t relative_line_pos = line_idx - line_start;
+    if (pos > leafNode.lines[relative_line_pos].size()) return false;
 
-      leafNode.lines[line_relative_idx].erase(pos, 1);
-
+    if (pos > 0) {
+      leafNode.lines[relative_line_pos].erase(pos - 1, 1);
       return true;
+    } else {
+      if (relative_line_pos > 0) {
+        leafNode.lines[relative_line_pos - 1].append(leafNode.lines[relative_line_pos]);
+        auto it = leafNode.lines.begin();
+        advance(it, relative_line_pos);
+        leafNode.lines.erase(it);
+        adjust_line_count_and_line_start_up_and_right(-1);
+        return true;
+      } else {
+        // TODO
+        return false;
+      }
     }
   }
+
+  // bool remove_char(size_t line_idx, size_t pos) {
+  //   if (!in_range_lines(line_idx)) return false;
+
+  //   if (type == LinesNodeType::Intermediate) {
+  //     bool is_left_adjusted = !intermediateNode.lhs->empty() && intermediateNode.lhs->line_end() >= line_idx;
+
+  //     return intermediateNode.child(is_left_adjusted)->remove_char(line_idx, pos);
+  //   } else {
+  //     size_t line_relative_idx = line_idx - line_start;
+
+  //     // Line pos out of bounds.
+  //     if (leafNode.lines[line_relative_idx].size() < pos) return false;
+
+  //     leafNode.lines[line_relative_idx].erase(pos, 1);
+
+  //     return true;
+  //   }
+  // }
 
   // LinesRemoveResult remove_range(size_t from_line, size_t from_pos,
   //                                size_t to_line, size_t to_pos) {

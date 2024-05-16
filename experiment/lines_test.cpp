@@ -129,6 +129,26 @@ void test_insert_empty_new_line() {
   ASSERT_EQ("0:1[hello][]"s, l.debug_to_string());
 }
 
+void test_backspace_basic() {
+  Lines l{{"abcd", "efgh", "ijkl"}};
+
+  ASSERT_EQ(true, l.backspace(0, 1));
+  ASSERT_EQ(true, l.backspace(2, 4));
+  ASSERT_EQ(true, l.backspace(1, 2));
+
+  ASSERT_EQ("0:2[bcd][egh][ijk]"s, l.debug_to_string());
+}
+
+void test_backspace_merge_in_node_lines() {
+  Lines l{{"aa", "bb", "cc"}};
+
+  ASSERT_EQ(true, l.backspace(1, 0));
+  ASSERT_EQ("0:1[aabb][cc]"s, l.debug_to_string());
+
+  ASSERT_EQ(true, l.backspace(1, 0));
+  ASSERT_EQ("0:0[aabbcc]"s, l.debug_to_string());
+}
+
 int main() {
   test_basic_empty();
   test_basic_leaf();
@@ -140,6 +160,9 @@ int main() {
   test_insert_new_lines();
   test_insert_with_split();
   test_insert_empty_new_line();
+
+  test_backspace_basic();
+  test_backspace_merge_in_node_lines();
 
   printf("\nCompleted\n");
 
