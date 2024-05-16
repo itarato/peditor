@@ -137,6 +137,10 @@ void test_backspace_basic() {
   ASSERT_EQ(true, l.backspace(1, 2));
 
   ASSERT_EQ("0:2[bcd][egh][ijk]"s, l.debug_to_string());
+
+  ASSERT_EQ(false, l.backspace(20, 1));
+  ASSERT_EQ(false, l.backspace(1, 20));
+  ASSERT_EQ("0:2[bcd][egh][ijk]"s, l.debug_to_string());
 }
 
 void test_backspace_merge_in_node_lines() {

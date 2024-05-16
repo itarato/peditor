@@ -299,6 +299,8 @@ struct Lines {
   }
 
   bool backspace(size_t line_idx, size_t pos) {
+    if (!in_range_lines(line_idx)) return false;
+
     if (type == LinesNodeType::Intermediate) {
       Lines *leaf = node_at(line_idx);
       if (!leaf) return false;
@@ -306,8 +308,6 @@ struct Lines {
     }
 
     assert(type == LinesNodeType::Leaf);
-    assert(line_start <= line_idx && line_idx <= line_end());
-
     size_t relative_line_pos = line_idx - line_start;
     if (pos > leafNode.lines[relative_line_pos].size()) return false;
 
