@@ -362,25 +362,6 @@ struct Lines {
     }
   }
 
-  // bool remove_char(size_t line_idx, size_t pos) {
-  //   if (!in_range_lines(line_idx)) return false;
-
-  //   if (type == LinesNodeType::Intermediate) {
-  //     bool is_left_adjusted = !intermediateNode.lhs->empty() && intermediateNode.lhs->line_end() >= line_idx;
-
-  //     return intermediateNode.child(is_left_adjusted)->remove_char(line_idx, pos);
-  //   } else {
-  //     size_t line_relative_idx = line_idx - line_start;
-
-  //     // Line pos out of bounds.
-  //     if (leafNode.lines[line_relative_idx].size() < pos) return false;
-
-  //     leafNode.lines[line_relative_idx].erase(pos, 1);
-
-  //     return true;
-  //   }
-  // }
-
   // LinesRemoveResult remove_range(size_t from_line, size_t from_pos,
   //                                size_t to_line, size_t to_pos) {
   //   if (!in_range_chars(from) || !in_range_chars(to)) {
@@ -600,29 +581,3 @@ struct Lines {
     return LinesIter(nullptr, line_count);
   }
 };
-
-// namespace LinesUtil {
-// int find_str(Lines &rope, string const &pattern, size_t pos) {
-//   Lines::LinesIter it = Lines::LinesIter(rope.node_at(pos), pos);
-//   Lines::LinesIter it_end = rope.end();
-
-//   while (it != it_end) {
-//     if (*it == pattern[0]) {
-//       auto it_current = it;
-//       bool has_found{true};
-//       for (int i = 0; i < pattern.size() && it_current != it_end; i++) {
-//         if (*it_current != pattern[i]) {
-//           has_found = false;
-//           break;
-//         }
-//       }
-
-//       if (has_found) {
-//         return it.at_ptr;
-//       }
-//     }
-//   }
-
-//   return -1;
-// }
-// };  // namespace LinesUtil
