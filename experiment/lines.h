@@ -79,10 +79,6 @@ struct LinesIntermediateNode {
     if (lhs.get() == child) return LEFT;
     if (rhs.get() == child) return RIGHT;
 
-    cout << "LHS" << (lhs.get()) << endl;
-    cout << "RHS" << (rhs.get()) << endl;
-    cout << "CHI" << child << endl;
-
     printf("ERROR: unknown child\n");
     exit(EXIT_FAILURE);
   }
