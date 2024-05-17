@@ -164,8 +164,11 @@ void test_backspace_merge_between_subtrees() {
   ASSERT_EQ(true, l.backspace(2, 0));
   ASSERT_EQ("((0:0[aa])(1:1[bbcc]))(2:2[dd])"s, l.debug_to_string());
 
-  // ASSERT_EQ(true, l.backspace(2, 0));
-  // ASSERT_EQ("(0:0[aa])(1:1[bbccdd])"s, l.debug_to_string());
+  ASSERT_EQ(true, l.backspace(2, 0));
+  ASSERT_EQ("(0:0[aa])(1:1[bbccdd])"s, l.debug_to_string());
+
+  ASSERT_EQ(true, l.backspace(1, 0));
+  ASSERT_EQ("0:0[aabbccdd]"s, l.debug_to_string());
 }
 
 int main() {

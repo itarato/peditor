@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <new>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -36,6 +37,16 @@ using namespace std;
 #define LEFT true
 #define RIGHT !LEFT
 
+#ifdef DEBUG
+#define LOG_RETURN(val, msg)           \
+  {                                    \
+    printf("%d: %s\n", __LINE__, msg); \
+    return val;                        \
+  }
+#else
+#define LOG_RETURN(val, msg) return val;
+#endif
+
 enum class LinesNodeType {
   Intermediate,
   Leaf,
@@ -53,6 +64,13 @@ struct LinesIntermediateNode {
   unique_ptr<Lines> lhs;
   unique_ptr<Lines> rhs;
 
+  LinesIntermediateNode(unique_ptr<Lines> &&lhs, unique_ptr<Lines> &&rhs)
+      : lhs(std::forward<unique_ptr<Lines>>(lhs)), rhs(std::forward<unique_ptr<Lines>>(rhs)) {
+  }
+
+  LinesIntermediateNode(LinesIntermediateNode &other) = delete;
+  LinesIntermediateNode(LinesIntermediateNode &&other) = delete;
+
   unique_ptr<Lines> &child(bool is_left) {
     return is_left ? lhs : rhs;
   }
@@ -60,6 +78,12 @@ struct LinesIntermediateNode {
   bool which_child(const Lines *child) const {
     if (lhs.get() == child) return LEFT;
     if (rhs.get() == child) return RIGHT;
+
+    cout << "LHS" << (lhs.get()) << endl;
+    cout << "RHS" << (rhs.get()) << endl;
+    cout << "CHI" << child << endl;
+
+    printf("ERROR: unknown child\n");
     exit(EXIT_FAILURE);
   }
 };
@@ -68,6 +92,13 @@ struct LinesLeaf {
   vector<string> lines{};
   Lines *left{nullptr};
   Lines *right{nullptr};
+
+  LinesLeaf() {
+  }
+  LinesLeaf(vector<string> &&lines) : lines(std::forward<vector<string>>(lines)) {
+  }
+  LinesLeaf(LinesLeaf &other) = delete;
+  LinesLeaf(LinesLeaf &&other) = delete;
 };
 
 struct LinesConfig {
@@ -115,8 +146,8 @@ struct Lines {
         line_count(0),
         type(LinesNodeType::Leaf),
         config(std::make_shared<LinesConfig>(LINES_UNIT_BREAK_THRESHOLD)),
-        parent(nullptr),
-        leafNode({}) {
+        parent(nullptr) {
+    new (&leafNode) LinesLeaf{};
   }
 
   Lines(vector<string> &&lines)
@@ -124,27 +155,22 @@ struct Lines {
         line_count(lines.size()),
         type(LinesNodeType::Leaf),
         config(std::make_shared<LinesConfig>(LINES_UNIT_BREAK_THRESHOLD)),
-        parent(nullptr),
-        leafNode({std::forward<vector<string>>(lines)}) {
+        parent(nullptr) {
+    new (&leafNode) LinesLeaf{std::forward<vector<string>>(lines)};
   }
 
   Lines(shared_ptr<LinesConfig> config, vector<string> &&lines)
-      : line_start(0),
-        line_count(lines.size()),
-        type(LinesNodeType::Leaf),
-        config(config),
-        parent(nullptr),
-        leafNode({std::forward<vector<string>>(lines)}) {
+      : line_start(0), line_count(lines.size()), type(LinesNodeType::Leaf), config(config), parent(nullptr) {
+    new (&leafNode) LinesLeaf{std::forward<vector<string>>(lines)};
   }
 
   Lines(shared_ptr<LinesConfig> config, size_t start, Lines *parent, vector<string> &&lines)
-      : line_start(start),
-        line_count(lines.size()),
-        type(LinesNodeType::Leaf),
-        config(config),
-        parent(parent),
-        leafNode({std::forward<vector<string>>(lines)}) {
+      : line_start(start), line_count(lines.size()), type(LinesNodeType::Leaf), config(config), parent(parent) {
+    new (&leafNode) LinesLeaf{std::forward<vector<string>>(lines)};
   }
+
+  Lines(Lines &other) = delete;
+  Lines(Lines &&other) = delete;
 
   ~Lines() {
     if (type == LinesNodeType::Intermediate) {
@@ -200,7 +226,7 @@ struct Lines {
         return intermediateNode.lhs->split(line_idx);
       }
     } else {
-      if (!in_range(line_idx)) return false;
+      if (!in_range(line_idx)) LOG_RETURN(false, "ERR: split not in range");
 
       if (line_idx == line_start || line_end() + 1 == line_idx) return false;
 
@@ -222,19 +248,16 @@ struct Lines {
       if (old_right_sib) old_right_sib->leafNode.left = rhs.get();
 
       leafNode.LinesLeaf::~LinesLeaf();
-
       type = LinesNodeType::Intermediate;
-      intermediateNode.lhs.release();
-      intermediateNode.rhs.release();
-      intermediateNode.lhs.reset(lhs.release());
-      intermediateNode.rhs.reset(rhs.release());
+      new (&intermediateNode)
+          LinesIntermediateNode(std::forward<unique_ptr<Lines>>(lhs), std::forward<unique_ptr<Lines>>(rhs));
 
       return true;
     }
   }
 
   bool insert(size_t line_idx, size_t pos, string &&snippet) {
-    if (!in_range_lines(line_idx)) return false;
+    if (!in_range_lines(line_idx)) LOG_RETURN(false, "ERR: insert not in range");
 
     if (type == LinesNodeType::Intermediate) {
       if (intermediateNode.rhs->line_start <= line_idx) {
@@ -306,17 +329,17 @@ struct Lines {
   }
 
   bool backspace(size_t line_idx, size_t pos) {
-    if (!in_range_lines(line_idx)) return false;
+    if (!in_range_lines(line_idx)) LOG_RETURN(false, "ERR: backspace not in range");
 
     if (type == LinesNodeType::Intermediate) {
       Lines *leaf = node_at(line_idx);
-      if (!leaf) return false;
+      if (!leaf) LOG_RETURN(false, "ERR: backspace missing leaf");
       return leaf->backspace(line_idx, pos);
     }
 
     assert(type == LinesNodeType::Leaf);
     size_t relative_line_pos = line_idx - line_start;
-    if (pos > leafNode.lines[relative_line_pos].size()) return false;
+    if (pos > leafNode.lines[relative_line_pos].size()) LOG_RETURN(false, "ERR: backspace pos out of range");
 
     if (pos > 0) {
       leafNode.lines[relative_line_pos].erase(pos - 1, 1);
@@ -434,6 +457,9 @@ struct Lines {
 
       auto grandchild = intermediateNode.child(!empty_node)->intermediateNode.child(!empty_node).release();
       intermediateNode.child(!empty_node).reset(grandchild);
+
+      intermediateNode.lhs->parent = this;
+      intermediateNode.rhs->parent = this;
     } else {
       assert(type == LinesNodeType::Intermediate);
 
@@ -445,7 +471,8 @@ struct Lines {
       intermediateNode.LinesIntermediateNode::~LinesIntermediateNode();
 
       type = LinesNodeType::Leaf;
-      leafNode.lines.swap(old_lines);
+      new (&leafNode) LinesLeaf(std::forward<vector<string>>(old_lines));
+
       leafNode.left = old_left_sib;
       leafNode.right = old_right_sib;
       if (old_left_sib) old_left_sib->leafNode.right = this;
