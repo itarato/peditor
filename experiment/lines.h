@@ -371,6 +371,23 @@ struct Lines {
 
     assert(type == LinesNodeType::Leaf);
     assert(from_line <= to_line);
+
+    // [line1, line2, line3, ...]
+    size_t current_line_idx = from_line >= line_start ? (from_line - line_start) : 0;
+    size_t to_line_rel = min(to_line - line_start, line_count);
+    size_t to_line_pos = to_line >= (line_start + line_count) ? leafNode.lines[to_line_rel].size() - 1 : to_pos;
+    size_t current_line_from_pos = from_line >= line_start ? from_pos : 0;
+    size_t current_line_to_pos =
+        current_line_idx == to_line_rel ? to_line_pos : leafNode.lines[current_line_idx].size() - 1;
+
+    while (current_line_idx <= to_line_rel) {
+      size_t diff_len = current_line_to_pos - current_line_from_pos + 1;
+      leafNode.lines[current_line_idx].erase(current_line_from_pos, diff_len);
+
+      current_line_idx++;
+      current_line_from_pos = 0;
+      current_line_to_pos = current_line_idx == to_line_rel ? to_line_pos : leafNode.lines[current_line_idx].size() - 1;
+    }
   }
 
   // LinesRemoveResult remove_range(size_t from_line, size_t from_pos,
