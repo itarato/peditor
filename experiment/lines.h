@@ -362,6 +362,17 @@ struct Lines {
     }
   }
 
+  bool remove_range(size_t from_line, size_t from_pos, size_t to_line, size_t to_pos) {
+    if (type == LinesNodeType::Intermediate) {
+      Lines *last_node = node_at(to_line);
+      if (!last_node) LOG_RETURN(false, "ERR: remove range start node not found");
+      return last_node->remove_range(from_line, from_pos, to_line, to_pos);
+    }
+
+    assert(type == LinesNodeType::Leaf);
+    assert(from_line <= to_line);
+  }
+
   // LinesRemoveResult remove_range(size_t from_line, size_t from_pos,
   //                                size_t to_line, size_t to_pos) {
   //   if (!in_range_chars(from) || !in_range_chars(to)) {
