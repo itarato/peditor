@@ -373,21 +373,34 @@ struct Lines {
     assert(from_line <= to_line);
 
     // [line1, line2, line3, ...]
-    size_t current_line_idx = from_line >= line_start ? (from_line - line_start) : 0;
-    size_t to_line_rel = min(to_line - line_start, line_count);
-    size_t to_line_pos = to_line >= (line_start + line_count) ? leafNode.lines[to_line_rel].size() - 1 : to_pos;
-    size_t current_line_from_pos = from_line >= line_start ? from_pos : 0;
-    size_t current_line_to_pos =
-        current_line_idx == to_line_rel ? to_line_pos : leafNode.lines[current_line_idx].size() - 1;
+    size_t lhs_line_idx = from_line >= line_start ? (from_line - line_start) : 0;
+    size_t lhs_from_pos = from_line >= line_start ? from_pos : 0;
 
-    while (current_line_idx <= to_line_rel) {
-      size_t diff_len = current_line_to_pos - current_line_from_pos + 1;
-      leafNode.lines[current_line_idx].erase(current_line_from_pos, diff_len);
+    size_t rhs_line_idx = min(to_line - line_start, line_count - 1);
+    size_t rhs_to_pos = to_line >= (line_start + line_count) ? leafNode.lines[rhs_line_idx].size() - 1 : to_pos;
 
-      current_line_idx++;
-      current_line_from_pos = 0;
-      current_line_to_pos = current_line_idx == to_line_rel ? to_line_pos : leafNode.lines[current_line_idx].size() - 1;
+    // Delete from only one line.
+    if (lhs_line_idx == rhs_line_idx) {
+      leafNode.lines[lhs_line_idx].erase(lhs_from_pos, rhs_to_pos - lhs_from_pos + 1);
+    } else {  // Delete from multiple lines.
+      // Erase left and right ends.
+      leafNode.lines[lhs_line_idx].erase(lhs_from_pos);
+      leafNode.lines[rhs_line_idx].erase(0, rhs_to_pos + 1);
+      // Merge right end into left end.
+      leafNode.lines[lhs_line_idx].append(leafNode.lines[rhs_line_idx]);
+      // Erase mid section.
+      int line_deletions = rhs_line_idx - lhs_line_idx - 1;
+      auto it_start = leafNode.lines.begin();
+      advance(it_start, lhs_line_idx + 1);
+      auto it_end = it_start + (line_deletions + 1);
+      leafNode.lines.erase(it_start, it_end);
+
+      if (line_deletions > 0) {
+        adjust_line_count_and_line_start_up_and_right(-line_deletions, false);
+      }
     }
+
+    return true;
   }
 
   // LinesRemoveResult remove_range(size_t from_line, size_t from_pos,

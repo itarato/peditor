@@ -171,6 +171,42 @@ void test_backspace_merge_between_subtrees() {
   ASSERT_EQ("0:0[aabbccdd]"s, l.debug_to_string());
 }
 
+void test_remove_range_one_line() {
+  Lines l{{"hello", "world of anger", "bye"}};
+
+  l.remove_range(1, 1, 1, 5);
+  ASSERT_EQ("0:2[hello][wof anger][bye]"s, l.debug_to_string());
+
+  l.remove_range(1, 0, 1, 1);
+  ASSERT_EQ("0:2[hello][f anger][bye]"s, l.debug_to_string());
+
+  l.remove_range(1, 4, 1, 100);
+  ASSERT_EQ("0:2[hello][f an][bye]"s, l.debug_to_string());
+
+  l.remove_range(1, 0, 1, 3);
+  ASSERT_EQ("0:2[hello][][bye]"s, l.debug_to_string());
+}
+
+void test_remove_range_two_line() {
+  Lines l1{{"hello", "world"}};
+  l1.remove_range(0, 0, 1, 4);
+  ASSERT_EQ("0:1[]"s, l1.debug_to_string());
+
+  Lines l2{{"hello", "world"}};
+  l2.remove_range(0, 2, 1, 2);
+  ASSERT_EQ("0:1[held]"s, l2.debug_to_string());
+
+  Lines l3{{"hello", "world"}};
+  l3.remove_range(0, 2, 10, 1);
+  ASSERT_EQ("0:1[he]"s, l3.debug_to_string());
+}
+
+void test_remove_range_multiple_lines() {
+  Lines l{{"hello", "anger", "lust", "world"}};
+  l.remove_range(0, 2, 3, 2);
+  ASSERT_EQ("0:1[held]"s, l.debug_to_string());
+}
+
 int main() {
   test_basic_empty();
   test_basic_leaf();
@@ -186,6 +222,10 @@ int main() {
   test_backspace_basic();
   test_backspace_merge_in_node_lines();
   test_backspace_merge_between_subtrees();
+
+  test_remove_range_one_line();
+  test_remove_range_two_line();
+  test_remove_range_multiple_lines();
 
   printf("\nCompleted\n");
 
