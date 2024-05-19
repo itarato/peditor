@@ -40,7 +40,7 @@ void assert_nullptr(T ptr, int lineNo) {
 void test_basic_empty() {
   Lines l{};
   ASSERT_EQ(""s, l.to_string());
-  ASSERT_EQ("0[]"s, l.debug_to_string());
+  ASSERT_EQ("0-"s, l.debug_to_string());
 }
 
 void test_basic_leaf() {
@@ -243,6 +243,14 @@ void test_remove_range_many_nodes_no_merge() {
 }
 
 // TODO: test remove range making node empty (left and right).
+void test_remove_range_with_empty_node() {
+  Lines l1{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
+  l1.split(2);
+  l1.split(4);
+
+  LinesUtil::remove_range(l1, 0, 2, 5, 1);
+  ASSERT_EQ(""s, l1.debug_to_string());
+}
 
 int main() {
   test_basic_empty();
@@ -266,6 +274,7 @@ int main() {
   test_remove_range_two_nodes();
   test_remove_range_many_nodes();
   test_remove_range_many_nodes_no_merge();
+  test_remove_range_with_empty_node();
 
   printf("\nCompleted\n");
 

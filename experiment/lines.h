@@ -206,7 +206,7 @@ struct Lines {
       ss << "(" << intermediateNode.lhs->debug_to_string() << ")(" << intermediateNode.rhs->debug_to_string() << ")";
     } else {
       if (empty()) {
-        ss << std::to_string(line_start) << "[]";
+        ss << std::to_string(line_start) << "-";
       } else {
         ss << std::to_string(line_start) << ":" << std::to_string(line_end());
         for (auto &line : leafNode.lines) ss << "[" << line << "]";
@@ -575,7 +575,9 @@ bool remove_range(Lines &root, size_t from_line, size_t from_pos, size_t to_line
   // Left end.
   Lines *lhs_node = root.node_at(from_line);
   // Only one node truncation.
-  if (lhs_node == rhs_node) return true;
+  if (lhs_node == rhs_node) {
+    return true;
+  }
 
   if (!lhs_node) LOG_RETURN(false, "ERR: remove range left node not found");
   assert(lhs_node->type == LinesNodeType::Leaf);
@@ -589,6 +591,9 @@ bool remove_range(Lines &root, size_t from_line, size_t from_pos, size_t to_line
   rhs_node->adjust_line_count_and_line_start_up_and_right(-1, false);
 
   lhs_node->leafNode.lines.back().append(right_line);
+
+  // TODO: CHECK EMPTY RIGHT NODE
+  // if (rhs_node->empty()) rhs_node
 
   // Erase mid section.
   Lines *current_node = lhs_node->leafNode.right;
