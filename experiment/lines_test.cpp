@@ -213,8 +213,36 @@ void test_remove_range_two_nodes() {
   ASSERT_EQ("(0:2[hello][world][dark])(3:5[chaos][rabbit][long])"s, l.debug_to_string());
 
   LinesUtil::remove_range(l, 1, 2, 4, 3);
-  ASSERT_EQ(""s, l.debug_to_string());
+  ASSERT_EQ("(0:1[hello][woit])(2:2[long])"s, l.debug_to_string());
 }
+
+void test_remove_range_many_nodes() {
+  Lines l{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
+  l.split(2);
+  l.split(4);
+  ASSERT_EQ("(0:1[hello][world])((2:3[dark][chaos])(4:5[rabbit][long]))"s, l.debug_to_string());
+
+  LinesUtil::remove_range(l, 1, 2, 4, 3);
+  ASSERT_EQ("(0:1[hello][woit])(2:2[long])"s, l.debug_to_string());
+}
+
+void test_remove_range_many_nodes_no_merge() {
+  Lines l1{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
+  l1.split(2);
+  l1.split(4);
+
+  LinesUtil::remove_range(l1, 1, 0, 4, 3);
+  ASSERT_EQ("(0:1[hello][it])(2:2[long])"s, l1.debug_to_string());
+
+  Lines l2{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
+  l2.split(2);
+  l2.split(4);
+
+  LinesUtil::remove_range(l2, 1, 2, 4, 5);
+  ASSERT_EQ("(0:1[hello][wo])(2:2[long])"s, l2.debug_to_string());
+}
+
+// TODO: test remove range making node empty (left and right).
 
 int main() {
   test_basic_empty();
@@ -236,6 +264,8 @@ int main() {
   test_remove_range_two_line();
   test_remove_range_multiple_lines();
   test_remove_range_two_nodes();
+  test_remove_range_many_nodes();
+  test_remove_range_many_nodes_no_merge();
 
   printf("\nCompleted\n");
 

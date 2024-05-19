@@ -36,6 +36,8 @@ using namespace std;
 #define LINES_UNIT_BREAK_THRESHOLD 8
 #define LEFT true
 #define RIGHT !LEFT
+#define LINES_MASK_FROM_AT_START 0b1
+#define LINES_MASK_TO_AT_END 0b10
 
 #ifdef DEBUG
 #define LOG_RETURN(val, msg)           \
@@ -388,9 +390,7 @@ struct Lines {
       auto it_end = it_start + (line_deletions);
       leafNode.lines.erase(it_start, it_end);
 
-      if (line_deletions > 0) {
-        adjust_line_count_and_line_start_up_and_right(-line_deletions, false);
-      }
+      if (line_deletions > 0) adjust_line_count_and_line_start_up_and_right(-line_deletions, false);
     }
   }
 
@@ -583,6 +583,27 @@ bool remove_range(Lines &root, size_t from_line, size_t from_pos, size_t to_line
 
   lhs_node->remove_range_from_single_leaf(from_line, from_pos, to_line, to_pos);
 
-    return true;
+  // Merge ends.
+  string right_line = rhs_node->leafNode.lines.front();
+  rhs_node->leafNode.lines.erase(rhs_node->leafNode.lines.begin());
+  rhs_node->adjust_line_count_and_line_start_up_and_right(-1, false);
+
+  lhs_node->leafNode.lines.back().append(right_line);
+
+  // Erase mid section.
+  Lines *current_node = lhs_node->leafNode.right;
+  while (current_node != rhs_node) {
+    assert(current_node);
+    assert(current_node->type == LinesNodeType::Leaf);
+    assert(current_node->parent);
+
+    Lines *node_to_remove = current_node;
+    current_node = current_node->leafNode.right;
+
+    node_to_remove->adjust_line_count_and_line_start_up_and_right(-node_to_remove->leafNode.lines.size(), false);
+    node_to_remove->parent->merge_up(node_to_remove);
+  }
+
+  return true;
 }
 };  // namespace LinesUtil
