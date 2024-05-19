@@ -95,6 +95,10 @@ struct LinesLeaf {
   }
   LinesLeaf(LinesLeaf &other) = delete;
   LinesLeaf(LinesLeaf &&other) = delete;
+
+  bool is_one_empty_line() const {
+    return lines.size() == 1 && lines[0].size() == 0;
+  }
 };
 
 struct LinesConfig {
@@ -362,23 +366,7 @@ struct Lines {
     }
   }
 
-  bool remove_range(size_t from_line, size_t from_pos, size_t to_line, size_t to_pos) {
-    if (type == LinesNodeType::Intermediate) {
-      Lines *last_node = node_at(to_line);
-      if (!last_node) LOG_RETURN(false, "ERR: remove range start node not found");
-      return last_node->remove_range(from_line, from_pos, to_line, to_pos);
-    }
-
-    assert(type == LinesNodeType::Leaf);
-    assert(from_line <= to_line);
-
-    // [line1, line2, line3, ...]
-    size_t lhs_line_idx = from_line >= line_start ? (from_line - line_start) : 0;
-    size_t lhs_from_pos = from_line >= line_start ? from_pos : 0;
-
-    size_t rhs_line_idx = min(to_line - line_start, line_count - 1);
-    size_t rhs_to_pos = to_line >= (line_start + line_count) ? leafNode.lines[rhs_line_idx].size() - 1 : to_pos;
-
+  void remove_range_from_single_leaf(size_t lhs_line_idx, size_t lhs_from_pos, size_t rhs_line_idx, size_t rhs_to_pos) {
     // Delete from only one line.
     if (lhs_line_idx == rhs_line_idx) {
       leafNode.lines[lhs_line_idx].erase(lhs_from_pos, rhs_to_pos - lhs_from_pos + 1);
@@ -389,80 +377,17 @@ struct Lines {
       // Merge right end into left end.
       leafNode.lines[lhs_line_idx].append(leafNode.lines[rhs_line_idx]);
       // Erase mid section.
-      int line_deletions = rhs_line_idx - lhs_line_idx - 1;
+      int line_deletions = rhs_line_idx - lhs_line_idx;
       auto it_start = leafNode.lines.begin();
       advance(it_start, lhs_line_idx + 1);
-      auto it_end = it_start + (line_deletions + 1);
+      auto it_end = it_start + (line_deletions);
       leafNode.lines.erase(it_start, it_end);
 
       if (line_deletions > 0) {
         adjust_line_count_and_line_start_up_and_right(-line_deletions, false);
       }
     }
-
-    if (from_line < lhs_line_idx) {  // Need merge up + call left sibling.
-      assert(leafNode.left);
-        }
-
-    return true;
   }
-
-  // LinesRemoveResult remove_range(size_t from_line, size_t from_pos,
-  //                                size_t to_line, size_t to_pos) {
-  //   if (!in_range_chars(from) || !in_range_chars(to)) {
-  //     return LinesRemoveResult::RangeError;
-  //   }
-
-  //   if (type == LinesNodeType::Intermediate) {
-  //     size_t rhs_from = max(intermediateNode.rhs->start, from);
-  //     size_t lhs_to = min(intermediateNode.lhs->endpos(), to);
-
-  //     if (rhs_from <= to) {
-  //       size -= to - rhs_from + 1;
-  //       LinesRemoveResult result =
-  //           intermediateNode.rhs->remove_range(rhs_from, to);
-  //       if (result == LinesRemoveResult::NeedMergeUp) {
-  //         merge_up(RIGHT);
-  //       } else if (result == LinesRemoveResult::RangeError) {
-  //         return result;
-  //       }
-
-  //       if (from <= lhs_to) {
-  //         return remove_range(from, lhs_to);
-  //       } else {
-  //         return LinesRemoveResult::Success;
-  //       }
-  //     }
-
-  //     if (from <= lhs_to) {
-  //       size -= lhs_to - from + 1;
-  //       intermediateNode.rhs->adjust_start(-(lhs_to - from + 1));
-
-  //       LinesRemoveResult result =
-  //           intermediateNode.lhs->remove_range(from, lhs_to);
-  //       if (result == LinesRemoveResult::NeedMergeUp) {
-  //         merge_up(LEFT);
-  //       } else if (result == LinesRemoveResult::RangeError) {
-  //         return result;
-  //       }
-
-  //       return LinesRemoveResult::Success;
-  //     }
-
-  //     return LinesRemoveResult::RangeError;
-  //   } else {
-  //     size -= to - from + 1;
-
-  //     size_t pos = from - start;
-  //     leafNode.s.erase(pos, to - from + 1);
-
-  //     if (empty()) {
-  //       return LinesRemoveResult::NeedMergeUp;
-  //     } else {
-  //       return LinesRemoveResult::Success;
-  //     }
-  //   }
-  // }
 
   void merge_up(Lines *empty_child) {
     bool empty_node = intermediateNode.which_child(empty_child);
@@ -626,3 +551,43 @@ struct Lines {
     return LinesIter(nullptr, line_count);
   }
 };
+
+namespace LinesUtil {
+bool remove_range(Lines &root, size_t from_line, size_t from_pos, size_t to_line, size_t to_pos) {
+  // Find right side;
+  Lines *rhs_node = root.node_at(to_line);
+  if (!rhs_node) LOG_RETURN(false, "ERR: remove range start node not found");
+
+  assert(rhs_node->type == LinesNodeType::Leaf);
+  assert(from_line <= to_line);
+  if (from_line == to_line) assert(from_pos <= to_pos);
+
+  // [line1, line2, line3, ...]
+  size_t lhs_line_idx = from_line >= rhs_node->line_start ? (from_line - rhs_node->line_start) : 0;
+  size_t lhs_from_pos = from_line >= rhs_node->line_start ? from_pos : 0;
+
+  size_t rhs_line_idx = min(to_line - rhs_node->line_start, rhs_node->line_count - 1);
+  size_t rhs_to_pos = to_line >= (rhs_node->line_start + rhs_node->line_count)
+                          ? rhs_node->leafNode.lines[rhs_line_idx].size() - 1
+                          : to_pos;
+
+  rhs_node->remove_range_from_single_leaf(lhs_line_idx, lhs_from_pos, rhs_line_idx, rhs_to_pos);
+
+  // if (from_line < lhs_line_idx) {  // Need merge up + call left sibling.
+  //   assert(leafNode.left);
+
+  //   // TODO: How to merge when the 2 ends are mid line sections?
+
+  //   if (leafNode.is_one_empty_line()) {
+  //     assert(parent);
+  //     Lines *sibling = leafNode.left;
+  //     assert(sibling);
+  //     parent->merge_up(this);
+
+  //     return sibling->remove_range(from_line, from_pos, to_line, to_pos);
+  //   }
+  // }
+
+  return true;
+}
+};  // namespace LinesUtil
