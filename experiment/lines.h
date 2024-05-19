@@ -400,6 +400,10 @@ struct Lines {
       }
     }
 
+    if (from_line < lhs_line_idx) {  // Need merge up + call left sibling.
+      assert(leafNode.left);
+        }
+
     return true;
   }
 
