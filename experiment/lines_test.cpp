@@ -197,14 +197,23 @@ void test_remove_range_two_line() {
   ASSERT_EQ("0:0[held]"s, l2.debug_to_string());
 
   Lines l3{{"hello", "world"}};
-  LinesUtil::remove_range(l3, 0, 2, 10, 1);
-  ASSERT_EQ("0:0[he]"s, l3.debug_to_string());
+  LinesUtil::remove_range(l3, 0, 2, 1, 1);
+  ASSERT_EQ("0:0[herld]"s, l3.debug_to_string());
 }
 
 void test_remove_range_multiple_lines() {
   Lines l{{"hello", "anger", "lust", "world"}};
   LinesUtil::remove_range(l, 0, 2, 3, 2);
   ASSERT_EQ("0:0[held]"s, l.debug_to_string());
+}
+
+void test_remove_range_two_nodes() {
+  Lines l{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
+  l.split(3);
+  ASSERT_EQ("(0:2[hello][world][dark])(3:5[chaos][rabbit][long])"s, l.debug_to_string());
+
+  LinesUtil::remove_range(l, 1, 2, 4, 3);
+  ASSERT_EQ(""s, l.debug_to_string());
 }
 
 int main() {
@@ -226,6 +235,7 @@ int main() {
   test_remove_range_one_line();
   test_remove_range_two_line();
   test_remove_range_multiple_lines();
+  test_remove_range_two_nodes();
 
   printf("\nCompleted\n");
 

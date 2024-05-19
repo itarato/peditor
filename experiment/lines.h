@@ -366,7 +366,12 @@ struct Lines {
     }
   }
 
-  void remove_range_from_single_leaf(size_t lhs_line_idx, size_t lhs_from_pos, size_t rhs_line_idx, size_t rhs_to_pos) {
+  void remove_range_from_single_leaf(size_t from_line, size_t from_pos, size_t to_line, size_t to_pos) {
+    size_t lhs_line_idx = from_line >= line_start ? (from_line - line_start) : 0;
+    size_t lhs_from_pos = from_line >= line_start ? from_pos : 0;
+    size_t rhs_line_idx = min(to_line - line_start, line_count - 1);
+    size_t rhs_to_pos = to_line >= (line_start + line_count) ? leafNode.lines[rhs_line_idx].size() - 1 : to_pos;
+
     // Delete from only one line.
     if (lhs_line_idx == rhs_line_idx) {
       leafNode.lines[lhs_line_idx].erase(lhs_from_pos, rhs_to_pos - lhs_from_pos + 1);
@@ -554,40 +559,30 @@ struct Lines {
 
 namespace LinesUtil {
 bool remove_range(Lines &root, size_t from_line, size_t from_pos, size_t to_line, size_t to_pos) {
-  // Find right side;
-  Lines *rhs_node = root.node_at(to_line);
-  if (!rhs_node) LOG_RETURN(false, "ERR: remove range start node not found");
+  if (root.empty()) return false;
 
-  assert(rhs_node->type == LinesNodeType::Leaf);
   assert(from_line <= to_line);
   if (from_line == to_line) assert(from_pos <= to_pos);
 
-  // [line1, line2, line3, ...]
-  size_t lhs_line_idx = from_line >= rhs_node->line_start ? (from_line - rhs_node->line_start) : 0;
-  size_t lhs_from_pos = from_line >= rhs_node->line_start ? from_pos : 0;
+  // Right end.
+  Lines *rhs_node = root.node_at(to_line);
+  if (!rhs_node) LOG_RETURN(false, "ERR: remove range left node not found");
+  assert(rhs_node->type == LinesNodeType::Leaf);
+  assert(!rhs_node->leafNode.is_one_empty_line());
 
-  size_t rhs_line_idx = min(to_line - rhs_node->line_start, rhs_node->line_count - 1);
-  size_t rhs_to_pos = to_line >= (rhs_node->line_start + rhs_node->line_count)
-                          ? rhs_node->leafNode.lines[rhs_line_idx].size() - 1
-                          : to_pos;
+  rhs_node->remove_range_from_single_leaf(from_line, from_pos, to_line, to_pos);
 
-  rhs_node->remove_range_from_single_leaf(lhs_line_idx, lhs_from_pos, rhs_line_idx, rhs_to_pos);
+  // Left end.
+  Lines *lhs_node = root.node_at(from_line);
+  // Only one node truncation.
+  if (lhs_node == rhs_node) return true;
 
-  // if (from_line < lhs_line_idx) {  // Need merge up + call left sibling.
-  //   assert(leafNode.left);
+  if (!lhs_node) LOG_RETURN(false, "ERR: remove range left node not found");
+  assert(lhs_node->type == LinesNodeType::Leaf);
+  assert(!lhs_node->leafNode.is_one_empty_line());
 
-  //   // TODO: How to merge when the 2 ends are mid line sections?
+  lhs_node->remove_range_from_single_leaf(from_line, from_pos, to_line, to_pos);
 
-  //   if (leafNode.is_one_empty_line()) {
-  //     assert(parent);
-  //     Lines *sibling = leafNode.left;
-  //     assert(sibling);
-  //     parent->merge_up(this);
-
-  //     return sibling->remove_range(from_line, from_pos, to_line, to_pos);
-  //   }
-  // }
-
-  return true;
+    return true;
 }
 };  // namespace LinesUtil
