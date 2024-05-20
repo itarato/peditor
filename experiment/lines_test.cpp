@@ -248,31 +248,31 @@ void test_remove_range_with_empty_node() {
   l1.split(4);
 
   LinesUtil::remove_range(l1, 0, 2, 5, 1);
-  ASSERT_EQ(""s, l1.debug_to_string());
+  ASSERT_EQ("0:0[heng]"s, l1.debug_to_string());
 }
 
 int main() {
-  // test_basic_empty();
-  // test_basic_leaf();
+  test_basic_empty();
+  test_basic_leaf();
 
-  // test_split();
-  // test_split_deep();
+  test_split();
+  test_split_deep();
 
-  // test_insert();
-  // test_insert_new_lines();
-  // test_insert_with_split();
-  // test_insert_empty_new_line();
+  test_insert();
+  test_insert_new_lines();
+  test_insert_with_split();
+  test_insert_empty_new_line();
 
-  // test_backspace_basic();
-  // test_backspace_merge_in_node_lines();
-  // test_backspace_merge_between_subtrees();
+  test_backspace_basic();
+  test_backspace_merge_in_node_lines();
+  test_backspace_merge_between_subtrees();
 
-  // test_remove_range_one_line();
-  // test_remove_range_two_line();
-  // test_remove_range_multiple_lines();
-  // test_remove_range_two_nodes();
-  // test_remove_range_many_nodes();
-  // test_remove_range_many_nodes_no_merge();
+  test_remove_range_one_line();
+  test_remove_range_two_line();
+  test_remove_range_multiple_lines();
+  test_remove_range_two_nodes();
+  test_remove_range_many_nodes();
+  test_remove_range_many_nodes_no_merge();
   test_remove_range_with_empty_node();
 
   printf("\nCompleted\n");

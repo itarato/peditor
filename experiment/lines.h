@@ -311,7 +311,6 @@ struct Lines {
 
   void adjust_line_count_and_line_start_up_and_right(int diff, bool is_called_by_left_child) {
     line_count += diff;
-    cout << "Node " << this << " line count was " << line_count - diff << " now " << line_count << endl;
 
     if (type == LinesNodeType::Intermediate && is_called_by_left_child) {
       intermediateNode.rhs->adjust_line_start_down(diff);
@@ -567,7 +566,6 @@ bool remove_range(Lines &root, size_t from_line, size_t from_pos, size_t to_line
 
   // Right end.
   Lines *rhs_node = root.node_at(to_line);
-  cout << "FIRST RHS NODE " << rhs_node << endl;
   if (!rhs_node) LOG_RETURN(false, "ERR: remove range left node not found");
   assert(rhs_node->type == LinesNodeType::Leaf);
   assert(!rhs_node->leafNode.is_one_empty_line());
@@ -594,35 +592,30 @@ bool remove_range(Lines &root, size_t from_line, size_t from_pos, size_t to_line
 
   lhs_node->leafNode.lines.back().append(right_line);
 
-  cout << "RHS LINE COUNT: " << rhs_node->line_count << endl;
-
   // Erase mid section.
-  Lines *current_node = lhs_node->leafNode.right;
   // BUG: rhs_node is not stable after merge-up.
-  while (current_node != rhs_node) {
+  int del_line_count = rhs_node->line_start - lhs_node->line_end() - 1;
+  size_t del_line_idx = lhs_node->line_end() + 1;
+
+  // DO NOT USE `lhs_node` or `rhs_node` below this point!!!
+
+  while (del_line_count > 0) {
+    Lines *current_node = root.node_at(del_line_idx);
     assert(current_node);
     assert(current_node->type == LinesNodeType::Leaf);
     assert(current_node->parent);
 
-    Lines *node_to_remove = current_node;
-    current_node = current_node->leafNode.right;
+    del_line_count -= current_node->leafNode.lines.size();
 
-    node_to_remove->adjust_line_count_and_line_start_up_and_right(-node_to_remove->leafNode.lines.size(), false);
-    node_to_remove->parent->merge_up(node_to_remove);
-
-    cout << "RHS LINE COUNT: " << rhs_node->line_count << endl;
+    current_node->adjust_line_count_and_line_start_up_and_right(-current_node->leafNode.lines.size(), false);
+    current_node->parent->merge_up(current_node);
   }
 
-  // TODO: CHECK EMPTY RIGHT NODE
-  cout << "LAST RHS " << rhs_node << endl;
-  if (rhs_node->empty()) {
-    rhs_node->parent->merge_up(rhs_node);
-  } else {
-    printf("NOT EMPTY\n");
-    cout << (rhs_node->type == LinesNodeType::Leaf ? "leaf" : "int") << endl;
-    cout << rhs_node->leafNode.lines.size() << endl;
-    cout << "RHS LINE COUNT: " << rhs_node->line_count << endl;
-  }
+  Lines *lhs_reloaded = root.node_at(del_line_idx - 1);
+  assert(lhs_reloaded);
+  Lines *rhs_reloaded = lhs_reloaded->leafNode.right;
+  assert(rhs_reloaded);
+  if (rhs_reloaded->empty()) rhs_reloaded->parent->merge_up(rhs_reloaded);
 
   return true;
 }
