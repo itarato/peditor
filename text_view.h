@@ -339,13 +339,13 @@ struct TextView : ITextViewState {
   }
 
   inline string& currentLine() {
-    return lines.nth_line(currentRow());
+    return lines[currentRow()];
   }
   inline string& previousLine() {
-    return lines.nth_line(previousRow());
+    return lines[previousRow()];
   }
   inline string& nextLine() {
-    return lines.nth_line(nextRow());
+    return lines[nextRow()];
   }
   inline int currentLineSize() {
     return currentLine().size();
@@ -389,11 +389,11 @@ struct TextView : ITextViewState {
 
     for (auto& lineSelection : lineSelections) {
       if (lineSelection.isFullLine()) {
-        sharedClipboard.push_back(lines.nth_line(lineSelection.lineNo));
+        sharedClipboard.push_back(lines[lineSelection.lineNo]);
       } else {
         int start = lineSelection.isLeftBounded() ? lineSelection.startCol : 0;
-        int end = lineSelection.isRightBounded() ? lineSelection.endCol : lines.nth_line(lineSelection.lineNo).size();
-        sharedClipboard.push_back(lines.nth_line(lineSelection.lineNo).substr(start, end - start));
+        int end = lineSelection.isRightBounded() ? lineSelection.endCol : lines[lineSelection.lineNo].size();
+        sharedClipboard.push_back(lines[lineSelection.lineNo].substr(start, end - start));
       }
     }
 
