@@ -12,6 +12,7 @@
 
 #include "command.h"
 #include "debug.h"
+#include "experiment/lines.h"
 #include "file_watcher.h"
 #include "history.h"
 #include "terminal_util.h"
@@ -34,7 +35,7 @@ struct TextView : ITextViewState {
 
   optional<string> filePath{nullopt};
 
-  vector<string> lines{};
+  Lines lines{};
 
   optional<SelectionEdge> selectionStart{nullopt};
   optional<SelectionEdge> selectionEnd{nullopt};
@@ -118,7 +119,7 @@ struct TextView : ITextViewState {
   }
 
   bool onLineRow() {
-    return currentRow() >= 0 && currentRow() < (int)lines.size();
+    return currentRow() >= 0 && currentRow() < (int)lines.line_count;
   }
 
   void undo() {
@@ -274,8 +275,8 @@ struct TextView : ITextViewState {
     // Decide which line (row) we should be on.
     if (currentRow() < 0) {
       cursor.y -= currentRow();
-    } else if (currentRow() >= (int)lines.size()) {
-      cursor.y -= currentRow() - (int)lines.size() + 1;
+    } else if (currentRow() >= (int)lines.line_count) {
+      cursor.y -= currentRow() - (int)lines.line_count + 1;
     }
 
     // Decide which char (col).
@@ -419,7 +420,7 @@ struct TextView : ITextViewState {
 
   void jumpToPrevSearchHit(string& searchTerm) {
     auto lineIt = lines.rbegin();
-    advance(lineIt, lines.size() - currentRow() - 1);
+    advance(lineIt, lines.line_count - currentRow() - 1);
     size_t from;
 
     if (currentCol() == 0) {
@@ -436,7 +437,7 @@ struct TextView : ITextViewState {
         lineIt++;
         from = lineIt->size();
       } else {
-        cursorTo(lines.size() - distance(lines.rbegin(), lineIt) - 1, pos);
+        cursorTo(lines.line_count - distance(lines.rbegin(), lineIt) - 1, pos);
         return;
       }
     }
@@ -468,7 +469,7 @@ struct TextView : ITextViewState {
   void insertCharacter(char c) {
     if (hasActiveSelection()) insertBackspace();
 
-    if (currentRow() < (int)lines.size() && currentCol() <= currentLineSize()) {
+    if (currentRow() < (int)lines.line_count && currentCol() <= currentLineSize()) {
       history.newBlock(this);
 
       execCommand(Command::makeInsertChar(currentRow(), currentCol(), c));
@@ -558,7 +559,7 @@ struct TextView : ITextViewState {
       history.newBlock(this);
       execCommand(Command::makeDeleteChar(currentRow(), currentCol(), currentLine()[currentCol()]));
       history.closeBlock(this);
-    } else if (currentRow() < (int)lines.size() - 1) {
+    } else if (currentRow() < (int)lines.line_count - 1) {
       history.newBlock(this);
       execCommand(Command::makeMergeLine(currentRow(), currentCol()));
       history.closeBlock(this);
@@ -607,13 +608,13 @@ struct TextView : ITextViewState {
   void deleteLine() {
     history.newBlock(this);
 
-    if (lines.size() == 1) {
+    if (lines.line_count == 1) {
       execCommand(Command::makeDeleteSlice(0, 0, lines[0]));
     } else {
       execCommand(Command::makeDeleteLine(currentRow(), currentLine()));
     }
 
-    if (currentRow() >= (int)lines.size()) {
+    if (currentRow() >= (int)lines.line_count) {
       cursorUp();
     } else {
       setCol(currentCol());
@@ -628,7 +629,7 @@ struct TextView : ITextViewState {
     if (hasActiveSelection()) {
       SelectionRange selection{selectionStart.value(), selectionEnd.value()};
 
-      if (selection.endRow >= (int)lines.size() - 1) {
+      if (selection.endRow >= (int)lines.line_count - 1) {
         history.closeBlock(this);
         return;
       }
@@ -640,7 +641,7 @@ struct TextView : ITextViewState {
       selectionStart = {selectionStart.value().row + 1, selectionStart.value().col};
       selectionEnd = {selectionEnd.value().row + 1, selectionEnd.value().col};
     } else {
-      if (currentRow() >= (int)lines.size() - 1) {
+      if (currentRow() >= (int)lines.line_count - 1) {
         history.closeBlock(this);
         return;
       }
@@ -808,10 +809,10 @@ struct TextView : ITextViewState {
     DLOG("Save file: %s", filePath.value().c_str());
     ofstream f(filePath.value(), ios::out | ios::trunc);
 
-    for (int i = 0; i < (int)lines.size(); i++) {
+    for (int i = 0; i < (int)lines.line_count; i++) {
       f << lines[i];
 
-      if (i < (int)lines.size()) {
+      if (i < (int)lines.line_count) {
         f << endl;
       }
     }
@@ -909,7 +910,7 @@ struct TextView : ITextViewState {
 
     int lineNo = lineIdx + verticalScroll;
 
-    if (size_t(lineNo) < lines.size()) {
+    if (size_t(lineNo) < lines.line_count) {
       string& line = lines[lineNo];
       string decoratedLine = decorateLine(line, lineNo, searchTerm);
 
@@ -989,6 +990,6 @@ struct TextView : ITextViewState {
     cols = newCols;
     rows = newRows;
 
-    leftMargin = max(1, (int)ceil(log10(lines.size()))) + 1;
+    leftMargin = max(1, (int)ceil(log10(lines.line_count))) + 1;
   }
 };
