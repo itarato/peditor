@@ -38,6 +38,8 @@ using namespace std;
 #define RIGHT !LEFT
 #define LINES_MASK_FROM_AT_START 0b1
 #define LINES_MASK_TO_AT_END 0b10
+#define LINES_IT_FWD 1
+#define LINES_IT_BWD -1
 
 #ifdef DEBUG
 #define LOG_RETURN(val, msg)           \
@@ -100,6 +102,12 @@ struct LinesLeaf {
 
   bool is_one_empty_line() const {
     return lines.size() == 1 && lines[0].size() == 0;
+  }
+
+  void debug_dump() const {
+    printf("Leaf: size=%lu left=%p right=%p", lines.size(), left, right);
+    for (const auto e : lines) printf(" %s", e.c_str());
+    printf("\n");
   }
 };
 
@@ -516,9 +524,10 @@ struct Lines {
     using pointer = string *;
     using reference = string &;
 
-    size_t line_ptr;
+    int line_ptr;
+    int direction;
 
-    LinesIter(Lines *lines, size_t line_ptr) : line_ptr(line_ptr), lines(lines) {
+    LinesIter(Lines *lines, int line_ptr, int direction) : line_ptr(line_ptr), lines(lines), direction(direction) {
     }
 
     reference operator*() const {
@@ -531,8 +540,14 @@ struct Lines {
 
     LinesIter operator++() {
       if (lines) {
-        line_ptr++;
-        if (line_ptr > lines->line_end()) lines = lines->leafNode.right;
+        line_ptr += direction;
+
+        if (direction == LINES_IT_FWD) {
+          if (line_ptr > lines->line_end()) lines = lines->leafNode.right;
+        }
+        if (direction == LINES_IT_BWD) {
+          if (line_ptr < lines->line_start) lines = lines->leafNode.left;
+        }
       }
 
       return *this;
@@ -557,10 +572,16 @@ struct Lines {
   };
 
   LinesIter begin() {
-    return LinesIter(leftmost(), 0);
+    return LinesIter(leftmost(), 0, LINES_IT_FWD);
   }
   LinesIter end() {
-    return LinesIter(nullptr, line_count);
+    return LinesIter(nullptr, line_count, 0);
+  }
+  LinesIter rbegin() {
+    return LinesIter(rightmost(), line_count - 1, LINES_IT_BWD);
+  }
+  LinesIter rend() {
+    return LinesIter(nullptr, -1, 0);
   }
 };
 

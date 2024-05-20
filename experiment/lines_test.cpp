@@ -264,6 +264,22 @@ void test_iterator() {
   }
 }
 
+void test_iterator_backward() {
+  Lines l{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
+  l.split(2);
+  l.split(4);
+
+  vector<string> expected{{"long", "rabbit", "chaos", "dark", "world", "hello"}};
+
+  int i = 0;
+  auto it = l.rbegin();
+  auto it_end = l.rend();
+  while (it != it_end) {
+    ASSERT_EQ(expected[i++], *it);
+    it++;
+  }
+}
+
 void test_nth_line() {
   Lines l{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
   l.split(2);
@@ -299,6 +315,7 @@ int main() {
   test_remove_range_with_empty_node();
 
   test_iterator();
+  test_iterator_backward();
 
   test_nth_line();
 
