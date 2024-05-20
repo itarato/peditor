@@ -285,9 +285,9 @@ void test_nth_line() {
   l.split(2);
   l.split(4);
 
-  ASSERT_EQ("hello"s, l.nth_line(0));
-  ASSERT_EQ("dark"s, l.nth_line(2));
-  ASSERT_EQ("long"s, l.nth_line(5));
+  ASSERT_EQ("hello"s, l[0]);
+  ASSERT_EQ("dark"s, l[2]);
+  ASSERT_EQ("long"s, l[5]);
 }
 
 int main() {

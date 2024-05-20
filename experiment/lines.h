@@ -224,7 +224,7 @@ struct Lines {
     return ss.str();
   }
 
-  string &nth_line(size_t line_idx) const {
+  string &operator[](size_t line_idx) const {
     Lines *node = node_at(line_idx);
     assert(node);
 
