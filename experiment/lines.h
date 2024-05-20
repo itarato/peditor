@@ -311,6 +311,7 @@ struct Lines {
 
   void adjust_line_count_and_line_start_up_and_right(int diff, bool is_called_by_left_child) {
     line_count += diff;
+    cout << "Node " << this << " line count was " << line_count - diff << " now " << line_count << endl;
 
     if (type == LinesNodeType::Intermediate && is_called_by_left_child) {
       intermediateNode.rhs->adjust_line_start_down(diff);
@@ -566,6 +567,7 @@ bool remove_range(Lines &root, size_t from_line, size_t from_pos, size_t to_line
 
   // Right end.
   Lines *rhs_node = root.node_at(to_line);
+  cout << "FIRST RHS NODE " << rhs_node << endl;
   if (!rhs_node) LOG_RETURN(false, "ERR: remove range left node not found");
   assert(rhs_node->type == LinesNodeType::Leaf);
   assert(!rhs_node->leafNode.is_one_empty_line());
@@ -592,11 +594,11 @@ bool remove_range(Lines &root, size_t from_line, size_t from_pos, size_t to_line
 
   lhs_node->leafNode.lines.back().append(right_line);
 
-  // TODO: CHECK EMPTY RIGHT NODE
-  // if (rhs_node->empty()) rhs_node
+  cout << "RHS LINE COUNT: " << rhs_node->line_count << endl;
 
   // Erase mid section.
   Lines *current_node = lhs_node->leafNode.right;
+  // BUG: rhs_node is not stable after merge-up.
   while (current_node != rhs_node) {
     assert(current_node);
     assert(current_node->type == LinesNodeType::Leaf);
@@ -607,6 +609,19 @@ bool remove_range(Lines &root, size_t from_line, size_t from_pos, size_t to_line
 
     node_to_remove->adjust_line_count_and_line_start_up_and_right(-node_to_remove->leafNode.lines.size(), false);
     node_to_remove->parent->merge_up(node_to_remove);
+
+    cout << "RHS LINE COUNT: " << rhs_node->line_count << endl;
+  }
+
+  // TODO: CHECK EMPTY RIGHT NODE
+  cout << "LAST RHS " << rhs_node << endl;
+  if (rhs_node->empty()) {
+    rhs_node->parent->merge_up(rhs_node);
+  } else {
+    printf("NOT EMPTY\n");
+    cout << (rhs_node->type == LinesNodeType::Leaf ? "leaf" : "int") << endl;
+    cout << rhs_node->leafNode.lines.size() << endl;
+    cout << "RHS LINE COUNT: " << rhs_node->line_count << endl;
   }
 
   return true;

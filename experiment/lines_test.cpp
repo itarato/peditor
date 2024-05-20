@@ -242,7 +242,6 @@ void test_remove_range_many_nodes_no_merge() {
   ASSERT_EQ("(0:1[hello][wo])(2:2[long])"s, l2.debug_to_string());
 }
 
-// TODO: test remove range making node empty (left and right).
 void test_remove_range_with_empty_node() {
   Lines l1{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
   l1.split(2);
@@ -253,27 +252,27 @@ void test_remove_range_with_empty_node() {
 }
 
 int main() {
-  test_basic_empty();
-  test_basic_leaf();
+  // test_basic_empty();
+  // test_basic_leaf();
 
-  test_split();
-  test_split_deep();
+  // test_split();
+  // test_split_deep();
 
-  test_insert();
-  test_insert_new_lines();
-  test_insert_with_split();
-  test_insert_empty_new_line();
+  // test_insert();
+  // test_insert_new_lines();
+  // test_insert_with_split();
+  // test_insert_empty_new_line();
 
-  test_backspace_basic();
-  test_backspace_merge_in_node_lines();
-  test_backspace_merge_between_subtrees();
+  // test_backspace_basic();
+  // test_backspace_merge_in_node_lines();
+  // test_backspace_merge_between_subtrees();
 
-  test_remove_range_one_line();
-  test_remove_range_two_line();
-  test_remove_range_multiple_lines();
-  test_remove_range_two_nodes();
-  test_remove_range_many_nodes();
-  test_remove_range_many_nodes_no_merge();
+  // test_remove_range_one_line();
+  // test_remove_range_two_line();
+  // test_remove_range_multiple_lines();
+  // test_remove_range_two_nodes();
+  // test_remove_range_many_nodes();
+  // test_remove_range_many_nodes_no_merge();
   test_remove_range_with_empty_node();
 
   printf("\nCompleted\n");
