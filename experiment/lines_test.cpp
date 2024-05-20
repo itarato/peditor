@@ -251,6 +251,29 @@ void test_remove_range_with_empty_node() {
   ASSERT_EQ("0:0[heng]"s, l1.debug_to_string());
 }
 
+void test_iterator() {
+  Lines l{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
+  l.split(2);
+  l.split(4);
+
+  vector<string> expected{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
+
+  int i = 0;
+  for (const auto line : l) {
+    ASSERT_EQ(expected[i++], line);
+  }
+}
+
+void test_nth_line() {
+  Lines l{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
+  l.split(2);
+  l.split(4);
+
+  ASSERT_EQ("hello"s, l.nth_line(0));
+  ASSERT_EQ("dark"s, l.nth_line(2));
+  ASSERT_EQ("long"s, l.nth_line(5));
+}
+
 int main() {
   test_basic_empty();
   test_basic_leaf();
@@ -274,6 +297,10 @@ int main() {
   test_remove_range_many_nodes();
   test_remove_range_many_nodes_no_merge();
   test_remove_range_with_empty_node();
+
+  test_iterator();
+
+  test_nth_line();
 
   printf("\nCompleted\n");
 
