@@ -259,7 +259,7 @@ void test_iterator() {
   vector<string> expected{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
 
   int i = 0;
-  for (const auto line : l) {
+  for (const auto& line : l) {
     ASSERT_EQ(expected[i++], line);
   }
 }

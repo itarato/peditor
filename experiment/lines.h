@@ -105,8 +105,8 @@ struct LinesLeaf {
   }
 
   void debug_dump() const {
-    printf("Leaf: size=%lu left=%p right=%p", lines.size(), left, right);
-    for (const auto e : lines) printf(" %s", e.c_str());
+    printf("Leaf: size=%lu left=%p right=%p", lines.size(), (void *)left, (void *)right);
+    for (const auto &e : lines) printf(" %s", e.c_str());
     printf("\n");
   }
 };
@@ -527,7 +527,7 @@ struct Lines {
     int line_ptr;
     int direction;
 
-    LinesIter(Lines *lines, int line_ptr, int direction) : line_ptr(line_ptr), lines(lines), direction(direction) {
+    LinesIter(Lines *lines, int line_ptr, int direction) : line_ptr(line_ptr), direction(direction), lines(lines) {
     }
 
     reference operator*() const {
