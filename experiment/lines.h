@@ -235,6 +235,18 @@ struct Lines {
    * OPERATIONS
    */
 
+  void clear() {
+    if (type == LinesNodeType::Intermediate) {
+      intermediateNode.~LinesIntermediateNode();
+      type = LinesNodeType::Leaf;
+    } else {
+      leafNode.~LinesLeaf();
+    }
+
+    new (&leafNode) LinesLeaf();
+    line_count = 0;
+  }
+
   bool split(size_t line_idx) {
     if (type == LinesNodeType::Intermediate) {
       if (intermediateNode.rhs->line_start <= line_idx) {
@@ -272,6 +284,11 @@ struct Lines {
       return true;
     }
   }
+
+  // void emplace_back(string s) {
+  //   Lines *node = rightmost();
+  //   rightmost();
+  // }
 
   bool insert(size_t line_idx, size_t pos, string &&snippet) {
     if (!in_range_lines(line_idx)) LOG_RETURN(false, "ERR: insert not in range");

@@ -290,6 +290,24 @@ void test_nth_line() {
   ASSERT_EQ("long"s, l[5]);
 }
 
+void test_clear() {
+  Lines l1{{"hello", "world"}};
+
+  l1.clear();
+  ASSERT_EQ((size_t)0, l1.line_start);
+  ASSERT_EQ((size_t)0, l1.line_count);
+  ASSERT_EQ(true, l1.empty());
+
+  Lines l2{{"hello", "world", "dark", "chaos", "rabbit", "long"}};
+  l2.split(2);
+  l2.split(4);
+
+  l2.clear();
+  ASSERT_EQ((size_t)0, l2.line_start);
+  ASSERT_EQ((size_t)0, l2.line_count);
+  ASSERT_EQ(true, l2.empty());
+}
+
 int main() {
   test_basic_empty();
   test_basic_leaf();
@@ -318,6 +336,8 @@ int main() {
   test_iterator_backward();
 
   test_nth_line();
+
+  test_clear();
 
   printf("\nCompleted\n");
 
