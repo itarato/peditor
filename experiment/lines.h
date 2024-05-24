@@ -464,6 +464,33 @@ struct Lines {
     }
   }
 
+  bool rot_left() {
+    if (type != LinesNodeType::Intermediate) LOG_RETURN(false, "RotLeft must start on intermediate node");
+    if (intermediateNode.rhs->type != LinesNodeType::Intermediate)
+      LOG_RETURN(false, "RotLeft must have an intermediate node right child");
+
+    auto old_lhs = intermediateNode.lhs.release();
+    auto old_rhs = intermediateNode.rhs.release();
+    auto old_rhs_lhs = intermediateNode.rhs->intermediateNode.lhs.release();
+    auto old_rhs_rhs = intermediateNode.rhs->intermediateNode.rhs.release();
+
+    intermediateNode.lhs.reset(old_rhs);
+    intermediateNode.rhs.reset(old_rhs_rhs);
+    intermediateNode.lhs->intermediateNode.lhs.reset(old_lhs);
+    intermediateNode.lhs->intermediateNode.rhs.reset(old_rhs_lhs);
+
+    // Fix attributes;
+    intermediateNode.lhs->line_start = line_start;
+    intermediateNode.lhs->line_count =
+        intermediateNode.lhs->intermediateNode.lhs->line_count + intermediateNode.lhs->intermediateNode.rhs->line_count;
+
+    intermediateNode.lhs->intermediateNode.lhs->parent = intermediateNode.lhs.get();
+    intermediateNode.lhs->intermediateNode.rhs->parent = intermediateNode.lhs.get();
+    intermediateNode.rhs->parent = this;
+
+    return true;
+  }
+
   /**
    * BOUNDS
    */

@@ -308,6 +308,9 @@ void test_clear() {
   ASSERT_EQ(true, l2.empty());
 }
 
+void test_rot_left() {
+}
+
 int main() {
   test_basic_empty();
   test_basic_leaf();
