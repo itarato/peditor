@@ -531,6 +531,35 @@ struct Lines {
     return true;
   }
 
+  bool rot_right() {
+    if (type != LinesNodeType::Intermediate) LOG_RETURN(false, "RotRight must start on intermediate node");
+    if (intermediateNode.lhs->type != LinesNodeType::Intermediate)
+      LOG_RETURN(false, "RotRight must have an intermediate node left child");
+
+    // Release all connections.
+    auto old_lhs_lhs = intermediateNode.lhs->intermediateNode.lhs.release();
+    auto old_lhs_rhs = intermediateNode.lhs->intermediateNode.rhs.release();
+    auto old_lhs = intermediateNode.lhs.release();
+    auto old_rhs = intermediateNode.rhs.release();
+
+    // Re-connect nodes.
+    intermediateNode.lhs.reset(old_lhs_lhs);
+    intermediateNode.rhs.reset(old_lhs);
+    intermediateNode.rhs->intermediateNode.lhs.reset(old_lhs_rhs);
+    intermediateNode.rhs->intermediateNode.rhs.reset(old_rhs);
+
+    // Fix attributes.
+    intermediateNode.rhs->line_start = intermediateNode.rhs->intermediateNode.lhs->line_start;
+    intermediateNode.rhs->line_count =
+        intermediateNode.rhs->intermediateNode.lhs->line_count + intermediateNode.rhs->intermediateNode.rhs->line_count;
+
+    intermediateNode.rhs->intermediateNode.lhs->parent = intermediateNode.rhs.get();
+    intermediateNode.rhs->intermediateNode.rhs->parent = intermediateNode.rhs.get();
+    intermediateNode.lhs->parent = this;
+
+    return true;
+  }
+
   /**
    * BOUNDS
    */

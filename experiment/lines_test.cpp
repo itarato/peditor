@@ -365,6 +365,20 @@ void test_rot_left() {
   ASSERT_EQ("(0:0[hello])((1:1[you])(2:2[fool]))"s, l.debug_to_string());
 
   ASSERT_EQ(true, l.rot_left());
+  ASSERT_EQ("((0:0[hello])(1:1[you]))(2:2[fool])"s, l.debug_to_string());
+
+  ASSERT_IC(l);
+}
+
+void test_rot_right() {
+  Lines l{{"hello", "you", "fool"}};
+  l.split(2);
+  l.split(1);
+
+  ASSERT_EQ("((0:0[hello])(1:1[you]))(2:2[fool])"s, l.debug_to_string());
+
+  ASSERT_EQ(true, l.rot_right());
+  ASSERT_EQ("(0:0[hello])((1:1[you])(2:2[fool]))"s, l.debug_to_string());
 
   ASSERT_IC(l);
 }
@@ -408,6 +422,7 @@ int main() {
   test_clear();
 
   test_rot_left();
+  test_rot_right();
 
   test_integrity_check();
 
