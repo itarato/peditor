@@ -9,6 +9,7 @@
 #define ASSERT_EQ(v1, v2) assert_eq(v1, v2, __LINE__)
 #define ASSERT_NOT_NULLPTR(ptr) assert_not_nullptr(ptr, __LINE__)
 #define ASSERT_NULLPTR(ptr) assert_nullptr(ptr, __LINE__)
+#define ASSERT_IC(root) ASSERT_EQ(true, root.integrity_check())
 
 template <typename T>
 void assert_eq(T v1, T v2, int lineNo) {
@@ -41,12 +42,16 @@ void test_basic_empty() {
   Lines l{};
   ASSERT_EQ(""s, l.to_string());
   ASSERT_EQ("0-"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_basic_leaf() {
   Lines l{{"hello", "world", "!"}};
   ASSERT_EQ("hello\nworld\n!\n"s, l.to_string());
   ASSERT_EQ("0:2[hello][world][!]"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_split() {
@@ -65,6 +70,8 @@ void test_split() {
   ASSERT_EQ(false, l.split(10));
 
   ASSERT_EQ("hello\nworld\n!\n"s, l.to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_split_deep() {
@@ -77,6 +84,8 @@ void test_split_deep() {
   ASSERT_EQ(true, l.split(5));
 
   ASSERT_EQ("(((0:0[0])(1:1[1]))(2:3[2][3]))(((4:4[4])(5:5[5]))(6:7[6][7]))"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_insert() {
@@ -98,6 +107,8 @@ void test_insert() {
   ASSERT_EQ(false, l.insert(10, 0, ""));
 
   ASSERT_EQ("0:7[0][(pre-1)++1(post-1)][2][3][4][5][6][7(end)]"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_insert_new_lines() {
@@ -111,6 +122,8 @@ void test_insert_new_lines() {
 
   l.insert(3, 5, "\nhi\n");
   ASSERT_EQ("0:5[abc][def][hello][world][hi][]"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_insert_with_split() {
@@ -120,6 +133,8 @@ void test_insert_with_split() {
 
   l.insert(2, 1, "x");
   ASSERT_EQ("((0:1[0][1])(2:3[2x][3]))(4:7[4][5][6][7])"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_insert_empty_new_line() {
@@ -127,6 +142,8 @@ void test_insert_empty_new_line() {
 
   l.insert(0, 5, "\n");
   ASSERT_EQ("0:1[hello][]"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_backspace_basic() {
@@ -141,6 +158,8 @@ void test_backspace_basic() {
   ASSERT_EQ(false, l.backspace(20, 1));
   ASSERT_EQ(false, l.backspace(1, 20));
   ASSERT_EQ("0:2[bcd][egh][ijk]"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_backspace_merge_in_node_lines() {
@@ -151,6 +170,8 @@ void test_backspace_merge_in_node_lines() {
 
   ASSERT_EQ(true, l.backspace(1, 0));
   ASSERT_EQ("0:0[aabbcc]"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_backspace_merge_between_subtrees() {
@@ -169,6 +190,8 @@ void test_backspace_merge_between_subtrees() {
 
   ASSERT_EQ(true, l.backspace(1, 0));
   ASSERT_EQ("0:0[aabbccdd]"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_remove_range_one_line() {
@@ -185,6 +208,8 @@ void test_remove_range_one_line() {
 
   LinesUtil::remove_range(l, 1, 0, 1, 3);
   ASSERT_EQ("0:2[hello][][bye]"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_remove_range_two_line() {
@@ -199,12 +224,18 @@ void test_remove_range_two_line() {
   Lines l3{{"hello", "world"}};
   LinesUtil::remove_range(l3, 0, 2, 1, 1);
   ASSERT_EQ("0:0[herld]"s, l3.debug_to_string());
+
+  ASSERT_IC(l1);
+  ASSERT_IC(l2);
+  ASSERT_IC(l3);
 }
 
 void test_remove_range_multiple_lines() {
   Lines l{{"hello", "anger", "lust", "world"}};
   LinesUtil::remove_range(l, 0, 2, 3, 2);
   ASSERT_EQ("0:0[held]"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_remove_range_two_nodes() {
@@ -214,6 +245,8 @@ void test_remove_range_two_nodes() {
 
   LinesUtil::remove_range(l, 1, 2, 4, 3);
   ASSERT_EQ("(0:1[hello][woit])(2:2[long])"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_remove_range_many_nodes() {
@@ -224,6 +257,8 @@ void test_remove_range_many_nodes() {
 
   LinesUtil::remove_range(l, 1, 2, 4, 3);
   ASSERT_EQ("(0:1[hello][woit])(2:2[long])"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 void test_remove_range_many_nodes_no_merge() {
@@ -240,6 +275,9 @@ void test_remove_range_many_nodes_no_merge() {
 
   LinesUtil::remove_range(l2, 1, 2, 4, 5);
   ASSERT_EQ("(0:1[hello][wo])(2:2[long])"s, l2.debug_to_string());
+
+  ASSERT_IC(l1);
+  ASSERT_IC(l2);
 }
 
 void test_remove_range_with_empty_node() {
@@ -249,6 +287,8 @@ void test_remove_range_with_empty_node() {
 
   LinesUtil::remove_range(l1, 0, 2, 5, 1);
   ASSERT_EQ("0:0[heng]"s, l1.debug_to_string());
+
+  ASSERT_IC(l1);
 }
 
 void test_iterator() {
@@ -262,6 +302,8 @@ void test_iterator() {
   for (const auto& line : l) {
     ASSERT_EQ(expected[i++], line);
   }
+
+  ASSERT_IC(l);
 }
 
 void test_iterator_backward() {
@@ -278,6 +320,8 @@ void test_iterator_backward() {
     ASSERT_EQ(expected[i++], *it);
     it++;
   }
+
+  ASSERT_IC(l);
 }
 
 void test_nth_line() {
@@ -288,6 +332,8 @@ void test_nth_line() {
   ASSERT_EQ("hello"s, l[0]);
   ASSERT_EQ("dark"s, l[2]);
   ASSERT_EQ("long"s, l[5]);
+
+  ASSERT_IC(l);
 }
 
 void test_clear() {
@@ -306,6 +352,9 @@ void test_clear() {
   ASSERT_EQ((size_t)0, l2.line_start);
   ASSERT_EQ((size_t)0, l2.line_count);
   ASSERT_EQ(true, l2.empty());
+
+  ASSERT_IC(l1);
+  ASSERT_IC(l2);
 }
 
 void test_rot_left() {
@@ -316,6 +365,8 @@ void test_rot_left() {
   ASSERT_EQ("(0:0[hello])((1:1[you])(2:2[fool]))"s, l.debug_to_string());
 
   ASSERT_EQ(true, l.rot_left());
+
+  ASSERT_IC(l);
 }
 
 int main() {

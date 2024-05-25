@@ -231,6 +231,44 @@ struct Lines {
     return node->leafNode.lines[line_idx - node->line_start];
   }
 
+  bool integrity_check() const {
+    if (type == LinesNodeType::Intermediate) {
+      // Child's parent is this.
+      if (intermediateNode.lhs->parent != this) LOG_RETURN(false, "ICERR: left node parent mismatch");
+      if (intermediateNode.rhs->parent != this) LOG_RETURN(false, "ICERR: right node parent mismatch");
+      // Start is same as left child.
+      if (intermediateNode.lhs->line_start != line_start) LOG_RETURN(false, "ICERR: line start mismatch");
+      // Len is same as sum of children len.
+      if (line_count != intermediateNode.lhs->line_count + intermediateNode.rhs->line_count)
+        LOG_RETURN(false, "ICERR: children line count sum mismatch");
+
+      // Children is also valid.
+      return intermediateNode.lhs->integrity_check() && intermediateNode.rhs->integrity_check();
+    } else {
+      // Line count memoized is same as line count.
+      if (line_count != leafNode.lines.size()) LOG_RETURN(false, "ICERR: line count mismatch");
+
+      // Sibling type is leaf.
+      if (leafNode.left && leafNode.left->type != LinesNodeType::Leaf)
+        LOG_RETURN(false, "ICERR: left sibling type mismatch");
+      if (leafNode.right && leafNode.right->type != LinesNodeType::Leaf)
+        LOG_RETURN(false, "ICERR: right sibling type mismatch");
+
+      // Sibling's sibling is this.
+      if (leafNode.left && leafNode.left->leafNode.right != this)
+        LOG_RETURN(false, "ICERR: left sibling backlink mismatch");
+      if (leafNode.right && leafNode.right->leafNode.left != this)
+        LOG_RETURN(false, "ICERR: right sibling backlink mismatch");
+
+      // Either root or non empty.
+      if (parent && line_count == 0) LOG_RETURN(false, "ICERR: non parent size mismatch");
+
+      return true;
+    }
+
+    return false;
+  }
+
   /**
    * OPERATIONS
    */
