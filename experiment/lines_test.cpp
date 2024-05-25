@@ -369,6 +369,13 @@ void test_rot_left() {
   ASSERT_IC(l);
 }
 
+void test_integrity_check() {
+  Lines l{{"hello"}};
+  ASSERT_EQ(true, l.integrity_check());
+  l.line_count = 10;
+  ASSERT_EQ(false, l.integrity_check());
+}
+
 int main() {
   test_basic_empty();
   test_basic_leaf();
@@ -401,6 +408,8 @@ int main() {
   test_clear();
 
   test_rot_left();
+
+  test_integrity_check();
 
   printf("\nCompleted\n");
 
