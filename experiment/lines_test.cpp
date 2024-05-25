@@ -309,6 +309,13 @@ void test_clear() {
 }
 
 void test_rot_left() {
+  Lines l{{"hello", "you", "fool"}};
+  l.split(1);
+  l.split(2);
+
+  ASSERT_EQ("(0:0[hello])((1:1[you])(2:2[fool]))"s, l.debug_to_string());
+
+  ASSERT_EQ(true, l.rot_left());
 }
 
 int main() {
@@ -341,6 +348,8 @@ int main() {
   test_nth_line();
 
   test_clear();
+
+  test_rot_left();
 
   printf("\nCompleted\n");
 
