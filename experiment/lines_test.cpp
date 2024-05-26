@@ -399,6 +399,22 @@ void test_height() {
   auto height = l.height();
   ASSERT_EQ(1, height.first);
   ASSERT_EQ(3, height.second);
+
+  ASSERT_IC(l);
+}
+
+void test_balance() {
+  Lines l{{"a", "b", "c", "d"}};
+  l.split(3);
+  l.split(2);
+  l.split(1);
+
+  ASSERT_EQ("(((0:0[a])(1:1[b]))(2:2[c]))(3:3[d])"s, l.debug_to_string());
+
+  l.balance();
+  ASSERT_EQ("((0:0[a])(1:1[b]))((2:2[c])(3:3[d]))"s, l.debug_to_string());
+
+  ASSERT_IC(l);
 }
 
 int main() {
@@ -438,6 +454,8 @@ int main() {
   test_integrity_check();
 
   test_height();
+
+  test_balance();
 
   printf("\nCompleted\n");
 
