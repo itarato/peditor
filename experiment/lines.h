@@ -582,6 +582,16 @@ struct Lines {
     return !empty() && line_start <= at && at <= line_end();
   }
 
+  pair<int, int> height() const {
+    if (type == LinesNodeType::Intermediate) {
+      auto lhs = intermediateNode.lhs->height();
+      auto rhs = intermediateNode.rhs->height();
+      return {max(lhs.first, lhs.second) + 1, max(rhs.first, rhs.second) + 1};
+    } else {
+      return {0, 0};
+    }
+  }
+
   /**
    * NAVIGATION
    */

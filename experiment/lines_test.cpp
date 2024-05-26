@@ -390,6 +390,17 @@ void test_integrity_check() {
   ASSERT_EQ(false, l.integrity_check());
 }
 
+void test_height() {
+  Lines l{{"a", "b", "c", "d"}};
+  l.split(1);
+  l.split(2);
+  l.split(3);
+
+  auto height = l.height();
+  ASSERT_EQ(1, height.first);
+  ASSERT_EQ(3, height.second);
+}
+
 int main() {
   test_basic_empty();
   test_basic_leaf();
@@ -425,6 +436,8 @@ int main() {
   test_rot_right();
 
   test_integrity_check();
+
+  test_height();
 
   printf("\nCompleted\n");
 
