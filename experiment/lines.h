@@ -227,6 +227,22 @@ struct Lines {
     return ss.str();
   }
 
+  void debug_to_dot(int id) const {
+    if (type == LinesNodeType::Intermediate) {
+      cout << "\t" << id << " -> " << id * 2 + 1 << endl;
+      intermediateNode.lhs->debug_to_dot(id * 2 + 1);
+      cout << "\t" << id << " -> " << id * 2 + 2 << endl;
+      intermediateNode.rhs->debug_to_dot(id * 2 + 2);
+    } else {
+      string out{};
+      for (int i = 0; i < leafNode.lines.size(); i++) {
+        out += leafNode.lines[i];
+        if (i < leafNode.lines.size() - 1) out += "+";
+      }
+      cout << "\t" << id << "[label=\"" << out << "\"]" << endl;
+    }
+  }
+
   string &operator[](size_t line_idx) const {
     Lines *node = node_at(line_idx);
     assert(node);
@@ -807,5 +823,11 @@ bool remove_range(Lines &root, size_t from_line, size_t from_pos, size_t to_line
   if (rhs_reloaded->empty()) rhs_reloaded->parent->merge_up(rhs_reloaded);
 
   return true;
+}
+
+void to_dot(Lines &root) {
+  cout << "digraph Lines {\n";
+  root.debug_to_dot(0);
+  cout << "}\n";
 }
 };  // namespace LinesUtil

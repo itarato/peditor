@@ -417,6 +417,18 @@ void test_balance() {
   ASSERT_IC(l);
 }
 
+void test_balance_auto() {
+  Lines l{make_shared<LinesConfig>(true), {"a", "b", "c", "d"}};
+  l.split(3);
+  l.split(2);
+  l.split(1);
+
+  ASSERT_EQ("((0:0[a])(1:1[b]))((2:2[c])(3:3[d]))"s, l.debug_to_string());
+  ASSERT_IC(l);
+}
+
+// void
+
 int main() {
   test_basic_empty();
   test_basic_leaf();
@@ -456,6 +468,7 @@ int main() {
   test_height();
 
   test_balance();
+  test_balance_auto();
 
   printf("\nCompleted\n");
 
