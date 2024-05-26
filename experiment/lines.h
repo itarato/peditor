@@ -344,10 +344,14 @@ struct Lines {
     }
   }
 
-  // void emplace_back(string s) {
-  //   Lines *node = rightmost();
-  //   rightmost();
-  // }
+  void emplace_back(string s) {
+    Lines *node = rightmost();
+    assert(node);
+
+    node->leafNode.lines.emplace_back(s);
+    node->adjust_line_count_and_line_start_up_and_right(1, false);
+    node->split_if_too_large();
+  }
 
   bool insert(size_t line_idx, size_t pos, string &&snippet) {
     if (!in_range_lines(line_idx)) LOG_RETURN(false, "ERR: insert not in range");
