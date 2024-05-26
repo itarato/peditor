@@ -560,6 +560,39 @@ struct Lines {
     return true;
   }
 
+  void balance() {
+    // Just a leaf.
+    if (type == LinesNodeType::Leaf) {
+      if (parent) return parent->balance();
+      return;
+    }
+
+    pair<int, int> h = height();
+
+    // No imbalance.
+    if (abs(h.first - h.second) <= 1) {
+      if (parent) return parent->balance();
+      return;
+    }
+
+    // Left heavy.
+    if (h.first > h.second) {
+      assert(intermediateNode.lhs->type == LinesNodeType::Intermediate);
+      auto left_child_height = intermediateNode.lhs->height();
+      // Make left child left heavy too.
+      if (left_child_height.second > left_child_height.first) intermediateNode.lhs->rot_left();
+      assert(rot_right());
+      return;
+    } else {  // Right heavy.
+      assert(intermediateNode.rhs->type == LinesNodeType::Intermediate);
+      auto right_child_height = intermediateNode.rhs->height();
+      // Make right child right heavy too.
+      if (right_child_height.first > right_child_height.second) intermediateNode.rhs->rot_right();
+      assert(rot_left());
+      return;
+    }
+  }
+
   /**
    * BOUNDS
    */
