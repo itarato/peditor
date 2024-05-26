@@ -127,7 +127,7 @@ void test_insert_new_lines() {
 }
 
 void test_insert_with_split() {
-  Lines l{make_shared<LinesConfig>(2), {"0", "1", "2", "3", "4", "5", "6", "7"}};
+  Lines l{make_shared<LinesConfig>((size_t)2), {"0", "1", "2", "3", "4", "5", "6", "7"}};
 
   ASSERT_EQ("0:7[0][1][2][3][4][5][6][7]"s, l.debug_to_string());
 
@@ -391,7 +391,7 @@ void test_integrity_check() {
 }
 
 void test_height() {
-  Lines l{{"a", "b", "c", "d"}};
+  Lines l{make_shared<LinesConfig>(false), {"a", "b", "c", "d"}};
   l.split(1);
   l.split(2);
   l.split(3);
@@ -404,7 +404,7 @@ void test_height() {
 }
 
 void test_balance() {
-  Lines l{{"a", "b", "c", "d"}};
+  Lines l{make_shared<LinesConfig>(false), {"a", "b", "c", "d"}};
   l.split(3);
   l.split(2);
   l.split(1);

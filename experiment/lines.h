@@ -113,8 +113,11 @@ struct LinesLeaf {
 
 struct LinesConfig {
   size_t unit_break_threshold;
+  bool autobalance{true};
 
   LinesConfig(size_t unit_break_threshold) : unit_break_threshold(unit_break_threshold) {
+  }
+  LinesConfig(bool autobalance) : unit_break_threshold(LINES_UNIT_BREAK_THRESHOLD), autobalance(autobalance) {
   }
 };
 
@@ -155,7 +158,7 @@ struct Lines {
       : line_start(0),
         line_count(0),
         type(LinesNodeType::Leaf),
-        config(std::make_shared<LinesConfig>(LINES_UNIT_BREAK_THRESHOLD)),
+        config(std::make_shared<LinesConfig>((size_t)LINES_UNIT_BREAK_THRESHOLD)),
         parent(nullptr) {
     new (&leafNode) LinesLeaf{};
   }
@@ -164,7 +167,7 @@ struct Lines {
       : line_start(0),
         line_count(lines.size()),
         type(LinesNodeType::Leaf),
-        config(std::make_shared<LinesConfig>(LINES_UNIT_BREAK_THRESHOLD)),
+        config(std::make_shared<LinesConfig>((size_t)LINES_UNIT_BREAK_THRESHOLD)),
         parent(nullptr) {
     new (&leafNode) LinesLeaf{std::forward<vector<string>>(lines)};
   }
@@ -318,6 +321,8 @@ struct Lines {
       type = LinesNodeType::Intermediate;
       new (&intermediateNode)
           LinesIntermediateNode(std::forward<unique_ptr<Lines>>(lhs), std::forward<unique_ptr<Lines>>(rhs));
+
+      if (config->autobalance) balance();
 
       return true;
     }
