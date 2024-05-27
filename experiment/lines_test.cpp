@@ -132,7 +132,7 @@ void test_insert_with_split() {
   ASSERT_EQ("0:7[0][1][2][3][4][5][6][7]"s, l.debug_to_string());
 
   l.insert(2, 1, "x");
-  ASSERT_EQ("((0:1[0][1])(2:3[2x][3]))(4:7[4][5][6][7])"s, l.debug_to_string());
+  ASSERT_EQ("((0:1[0][1])(2:3[2x][3]))((4:5[4][5])(6:7[6][7]))"s, l.debug_to_string());
 
   ASSERT_IC(l);
 }

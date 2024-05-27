@@ -363,8 +363,6 @@ struct Lines {
         return intermediateNode.lhs->insert(line_idx, pos, std::forward<string>(snippet));
       }
     } else {
-      if (split_if_too_large()) return insert(line_idx, pos, std::forward<string>(snippet));
-
       size_t line_relative_idx = line_idx - line_start;
 
       // Line pos out of bounds.
@@ -390,6 +388,8 @@ struct Lines {
         adjust_line_count_and_line_start_up_and_right(line_count_diff, false);
       }
 
+      split_if_too_large();
+
       return true;
     }
   }
@@ -399,7 +399,13 @@ struct Lines {
     if (leafNode.lines.size() <= config->unit_break_threshold) return false;
 
     size_t mid_line_idx = line_start + line_count / 2;
-    split(mid_line_idx);
+    bool did_split = split(mid_line_idx);
+
+    if (did_split) {
+      assert(type == LinesNodeType::Intermediate);
+      intermediateNode.lhs->split_if_too_large();
+      intermediateNode.rhs->split_if_too_large();
+    }
 
     return true;
   }
