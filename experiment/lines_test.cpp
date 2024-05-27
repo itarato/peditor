@@ -427,6 +427,19 @@ void test_balance_auto() {
   ASSERT_IC(l);
 }
 
+void test_remove_line() {
+  Lines l{{"a", "b", "c", "d"}};
+
+  l.split(2);
+  l.split(3);
+  ASSERT_EQ("(0:1[a][b])((2:2[c])(3:3[d]))"s, l.debug_to_string());
+
+  l.remove_line(2);
+  ASSERT_EQ("(0:1[a][b])(2:2[d])"s, l.debug_to_string());
+
+  ASSERT_IC(l);
+}
+
 // void
 
 int main() {
@@ -469,6 +482,8 @@ int main() {
 
   test_balance();
   test_balance_auto();
+
+  test_remove_line();
 
   printf("\nCompleted\n");
 

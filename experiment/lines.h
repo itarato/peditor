@@ -489,6 +489,22 @@ struct Lines {
     }
   }
 
+  void remove_line(size_t line_idx) {
+    if (type == LinesNodeType::Intermediate) {
+      auto node = node_at(line_idx);
+      assert(node);
+      return node->remove_line(line_idx);
+    }
+
+    assert(in_range_lines(line_idx));
+    auto it = leafNode.lines.begin();
+    advance(it, line_idx - line_start);
+    leafNode.lines.erase(it);
+
+    adjust_line_count_and_line_start_up_and_right(-1, false);
+    if (empty()) parent->merge_up(this);
+  }
+
   void merge_up(Lines *empty_child) {
     bool empty_node = intermediateNode.which_child(empty_child);
 
@@ -525,6 +541,8 @@ struct Lines {
       if (old_left_sib) old_left_sib->leafNode.right = this;
       if (old_right_sib) old_right_sib->leafNode.left = this;
     }
+
+    if (config->autobalance) balance();
   }
 
   bool rot_left() {
