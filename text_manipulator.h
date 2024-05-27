@@ -19,11 +19,9 @@ void execute(Command *cmd, Lines &lines) {
   } else if (cmd->type == CommandType::MergeLine) {
     lines.backspace(cmd->row + 1, 0);
   } else if (cmd->type == CommandType::DeleteLine) {
-    auto lineIt = lines->begin();
-    advance(lineIt, cmd->row);
-    lines->erase(lineIt);
+    lines.remove_line(cmd->row);
   } else if (cmd->type == CommandType::DeleteSlice) {
-    lines->at(cmd->row).erase(cmd->col, cmd->memoryStr.size());
+    lines[cmd->row].erase(cmd->col, cmd->memoryStr.size());
   } else if (cmd->type == CommandType::SplitLine) {
     auto rowIt = lines->at(cmd->row).begin();
     advance(rowIt, cmd->col);
