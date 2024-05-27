@@ -4,23 +4,20 @@
 #include <vector>
 
 #include "command.h"
+#include "experiment/lines.h"
 #include "utility.h"
 
 using namespace std;
 
 namespace TextManipulator {
 
-void execute(Command *cmd, vector<string> *lines) {
+void execute(Command *cmd, Lines &lines) {
   if (cmd->type == CommandType::InsertChar) {
-    lines->at(cmd->row).insert(cmd->col, 1, cmd->memoryChr);
+    lines[cmd->row].insert(cmd->col, 1, cmd->memoryChr);
   } else if (cmd->type == CommandType::DeleteChar) {
-    lines->at(cmd->row).erase(cmd->col, 1);
+    lines[cmd->row].erase(cmd->col, 1);
   } else if (cmd->type == CommandType::MergeLine) {
-    lines->at(cmd->row).append(lines->at(cmd->row + 1));
-
-    auto lineIt = lines->begin();
-    advance(lineIt, cmd->row + 1);
-    lines->erase(lineIt);
+    lines.backspace(cmd->row + 1, 0);
   } else if (cmd->type == CommandType::DeleteLine) {
     auto lineIt = lines->begin();
     advance(lineIt, cmd->row);
@@ -50,7 +47,7 @@ void execute(Command *cmd, vector<string> *lines) {
   }
 }
 
-void reverse(Command *cmd, vector<string> *lines) {
+void reverse(Command *cmd, Lines *lines) {
   if (cmd->type == CommandType::InsertChar) {
     lines->at(cmd->row).erase(cmd->col, 1);
   } else if (cmd->type == CommandType::DeleteChar) {
