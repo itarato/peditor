@@ -20,7 +20,7 @@ tests: test_executable
 runtests: tests
 	./$(TEST_BIN)
 
-debug: CXXFLAGS += -DDEBUG -g
+debug: CXXFLAGS += -DDEBUG -g3
 debug: executable
 
 executable: $(OBJ)

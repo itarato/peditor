@@ -235,7 +235,7 @@ struct Lines {
       intermediateNode.rhs->debug_to_dot(id * 2 + 2);
     } else {
       string out{};
-      for (int i = 0; i < leafNode.lines.size(); i++) {
+      for (size_t i = 0; i < leafNode.lines.size(); i++) {
         out += leafNode.lines[i];
         if (i < leafNode.lines.size() - 1) out += "+";
       }
@@ -769,10 +769,10 @@ struct Lines {
         line_ptr += direction;
 
         if (direction == LINES_IT_FWD) {
-          if (line_ptr > lines->line_end()) lines = lines->leafNode.right;
+          if (line_ptr > (int)lines->line_end()) lines = lines->leafNode.right;
         }
         if (direction == LINES_IT_BWD) {
-          if (line_ptr < lines->line_start) lines = lines->leafNode.left;
+          if (line_ptr < (int)lines->line_start) lines = lines->leafNode.left;
         }
       }
 
