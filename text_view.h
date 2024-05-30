@@ -59,18 +59,30 @@ struct TextView : ITextViewState {
     reloadContent();
   }
   TextView(int cols, int rows)
-      : cols(cols),
-        rows(rows),
-        tokenAnalyzer(TokenAnalyzer(SyntaxHighlightConfig(&keywords))) {
+      : cols(cols), rows(rows), tokenAnalyzer(TokenAnalyzer(SyntaxHighlightConfig(&keywords))) {
     reloadContent();
   }
 
-  Point getCursor() { return cursor; }
-  optional<SelectionEdge> getSelectionStart() { return selectionStart; }
-  optional<SelectionEdge> getSelectionEnd() { return selectionEnd; }
+  TextView(TextView&& other) = default;
+  TextView& operator=(TextView&&) = default;
+  TextView(TextView& other) = delete;
 
-  inline int textAreaCols() const { return cols - leftMargin; }
-  inline int textAreaRows() const { return rows; }
+  Point getCursor() {
+    return cursor;
+  }
+  optional<SelectionEdge> getSelectionStart() {
+    return selectionStart;
+  }
+  optional<SelectionEdge> getSelectionEnd() {
+    return selectionEnd;
+  }
+
+  inline int textAreaCols() const {
+    return cols - leftMargin;
+  }
+  inline int textAreaRows() const {
+    return rows;
+  }
 
   void reloadKeywordList() {
     keywords.clear();
@@ -81,9 +93,8 @@ struct TextView : ITextViewState {
     }
 
     auto ext = filesystem::path(filePath.value()).extension();
-    auto it =
-        find_if(fileTypeAssociationMap.begin(), fileTypeAssociationMap.end(),
-                [&](auto& kv) { return kv.first == ext; });
+    auto it = find_if(fileTypeAssociationMap.begin(), fileTypeAssociationMap.end(),
+                      [&](auto& kv) { return kv.first == ext; });
 
     if (it == fileTypeAssociationMap.end()) {
       DLOG("Cannot find keyword file for extension: %s", ext.c_str());
@@ -118,8 +129,7 @@ struct TextView : ITextViewState {
 
     HistoryUnit historyUnit = history.useUndo();
 
-    for (auto cmdIt = historyUnit.commands.rbegin();
-         cmdIt != historyUnit.commands.rend(); cmdIt++) {
+    for (auto cmdIt = historyUnit.commands.rbegin(); cmdIt != historyUnit.commands.rend(); cmdIt++) {
       TextManipulator::reverse(&*cmdIt, &lines);
     }
 
@@ -297,12 +307,20 @@ struct TextView : ITextViewState {
     }
   }
 
-  inline int currentRow() { return verticalScroll + cursor.y; }
-  inline int previousRow() { return verticalScroll + cursor.y - 1; }
-  inline int nextRow() { return verticalScroll + cursor.y + 1; }
+  inline int currentRow() {
+    return verticalScroll + cursor.y;
+  }
+  inline int previousRow() {
+    return verticalScroll + cursor.y - 1;
+  }
+  inline int nextRow() {
+    return verticalScroll + cursor.y + 1;
+  }
 
   // Text area related -> TODO: rename
-  inline int currentCol() { return horizontalScroll + cursor.x; }
+  inline int currentCol() {
+    return horizontalScroll + cursor.x;
+  }
 
   void setCol(int newCol) {
     // Fix line position first.
@@ -322,16 +340,32 @@ struct TextView : ITextViewState {
     cursor.x = newCol - horizontalScroll;
   }
 
-  inline string& currentLine() { return lines[currentRow()]; }
-  inline string& previousLine() { return lines[previousRow()]; }
-  inline string& nextLine() { return lines[nextRow()]; }
-  inline int currentLineSize() { return currentLine().size(); }
+  inline string& currentLine() {
+    return lines[currentRow()];
+  }
+  inline string& previousLine() {
+    return lines[previousRow()];
+  }
+  inline string& nextLine() {
+    return lines[nextRow()];
+  }
+  inline int currentLineSize() {
+    return currentLine().size();
+  }
 
-  inline void restoreXMemory() { cursor.x = xMemory; }
-  inline void saveXMemory() { xMemory = cursor.x; }
+  inline void restoreXMemory() {
+    cursor.x = xMemory;
+  }
+  inline void saveXMemory() {
+    xMemory = cursor.x;
+  }
 
-  inline bool isEndOfCurrentLine() { return currentCol() >= currentLineSize(); }
-  inline bool isBeginningOfCurrentLine() { return currentCol() <= 0; }
+  inline bool isEndOfCurrentLine() {
+    return currentCol() >= currentLineSize();
+  }
+  inline bool isBeginningOfCurrentLine() {
+    return currentCol() <= 0;
+  }
 
   void execCommand(Command&& cmd) {
     TextManipulator::execute(&cmd, &lines);
@@ -360,11 +394,8 @@ struct TextView : ITextViewState {
         sharedClipboard.push_back(lines[lineSelection.lineNo]);
       } else {
         int start = lineSelection.isLeftBounded() ? lineSelection.startCol : 0;
-        int end = lineSelection.isRightBounded()
-                      ? lineSelection.endCol
-                      : lines[lineSelection.lineNo].size();
-        sharedClipboard.push_back(
-            lines[lineSelection.lineNo].substr(start, end - start));
+        int end = lineSelection.isRightBounded() ? lineSelection.endCol : lines[lineSelection.lineNo].size();
+        sharedClipboard.push_back(lines[lineSelection.lineNo].substr(start, end - start));
       }
     }
 
@@ -465,25 +496,19 @@ struct TextView : ITextViewState {
       for (auto& lineSelection : lineSelections) {
         if (lineSelection.isFullLine()) {
           lineAdjustmentOffset++;
-          execCommand(Command::makeDeleteLine(selection.startRow + 1,
-                                              lines[selection.startRow + 1]));
+          execCommand(Command::makeDeleteLine(selection.startRow + 1, lines[selection.startRow + 1]));
         } else {
-          int start =
-              lineSelection.isLeftBounded() ? lineSelection.startCol : 0;
-          int end =
-              lineSelection.isRightBounded()
-                  ? lineSelection.endCol
-                  : lines[lineSelection.lineNo - lineAdjustmentOffset].size();
-          execCommand(Command::makeDeleteSlice(
-              lineSelection.lineNo - lineAdjustmentOffset, start,
-              lines[lineSelection.lineNo - lineAdjustmentOffset].substr(
-                  start, end - start)));
+          int start = lineSelection.isLeftBounded() ? lineSelection.startCol : 0;
+          int end = lineSelection.isRightBounded() ? lineSelection.endCol
+                                                   : lines[lineSelection.lineNo - lineAdjustmentOffset].size();
+          execCommand(
+              Command::makeDeleteSlice(lineSelection.lineNo - lineAdjustmentOffset, start,
+                                       lines[lineSelection.lineNo - lineAdjustmentOffset].substr(start, end - start)));
         }
       }
 
       if (selection.isMultiline()) {
-        execCommand(Command::makeMergeLine(selection.startRow,
-                                           lines[selection.startRow].size()));
+        execCommand(Command::makeMergeLine(selection.startRow, lines[selection.startRow].size()));
       }
 
       // Put cursor to beginning
@@ -493,8 +518,7 @@ struct TextView : ITextViewState {
       history.closeBlock(this);
     } else if (currentCol() <= currentLineSize() && currentCol() > 0) {
       history.newBlock(this);
-      execCommand(Command::makeDeleteChar(currentRow(), currentCol() - 1,
-                                          currentLine()[currentCol() - 1]));
+      execCommand(Command::makeDeleteChar(currentRow(), currentCol() - 1, currentLine()[currentCol() - 1]));
       cursorLeft();
       history.closeBlock(this);
     } else if (currentCol() == 0 && currentRow() > 0) {
@@ -516,9 +540,8 @@ struct TextView : ITextViewState {
 
       int colStart = prevWordJumpLocation(currentLine(), currentCol()) + 1;
       if (currentCol() - colStart >= 0) {
-        execCommand(Command::makeDeleteSlice(
-            currentRow(), colStart,
-            currentLine().substr(colStart, currentCol() - colStart)));
+        execCommand(
+            Command::makeDeleteSlice(currentRow(), colStart, currentLine().substr(colStart, currentCol() - colStart)));
 
         setCol(colStart);
       }
@@ -536,8 +559,7 @@ struct TextView : ITextViewState {
       insertBackspace();
     } else if (currentCol() < currentLineSize()) {
       history.newBlock(this);
-      execCommand(Command::makeDeleteChar(currentRow(), currentCol(),
-                                          currentLine()[currentCol()]));
+      execCommand(Command::makeDeleteChar(currentRow(), currentCol(), currentLine()[currentCol()]));
       history.closeBlock(this);
     } else if (currentRow() < (int)lines.size() - 1) {
       history.newBlock(this);
@@ -618,8 +640,7 @@ struct TextView : ITextViewState {
 
       lineMoveForward(selection.startRow, selectionLen);
 
-      selectionStart = {selectionStart.value().row + 1,
-                        selectionStart.value().col};
+      selectionStart = {selectionStart.value().row + 1, selectionStart.value().col};
       selectionEnd = {selectionEnd.value().row + 1, selectionEnd.value().col};
     } else {
       if (currentRow() >= (int)lines.size() - 1) {
@@ -655,8 +676,7 @@ struct TextView : ITextViewState {
 
       lineMoveBackward(selection.startRow, selectionLen);
 
-      selectionStart = {selectionStart.value().row - 1,
-                        selectionStart.value().col};
+      selectionStart = {selectionStart.value().row - 1, selectionStart.value().col};
       selectionEnd = {selectionEnd.value().row - 1, selectionEnd.value().col};
     } else {
       if (currentRow() <= 0) {
@@ -688,10 +708,8 @@ struct TextView : ITextViewState {
         __lineIndentRight(sel.lineNo, tabSize);
       }
 
-      selectionStart = {selectionStart.value().row,
-                        selectionStart.value().col + tabSize};
-      selectionEnd = {selectionEnd.value().row,
-                      selectionEnd.value().col + tabSize};
+      selectionStart = {selectionStart.value().row, selectionStart.value().col + tabSize};
+      selectionEnd = {selectionEnd.value().row, selectionEnd.value().col + tabSize};
     } else {
       __lineIndentRight(currentRow(), tabSize);
     }
@@ -719,13 +737,11 @@ struct TextView : ITextViewState {
         if (sel.lineNo == currentRow()) setCol(currentCol() - tabsRemoved);
 
         if (sel.lineNo == selectionStart.value().row) {
-          selectionStart = {selectionStart.value().row,
-                            selectionStart.value().col - tabsRemoved};
+          selectionStart = {selectionStart.value().row, selectionStart.value().col - tabsRemoved};
         }
 
         if (sel.lineNo == selectionEnd.value().row) {
-          selectionEnd = {selectionEnd.value().row,
-                          selectionEnd.value().col - tabsRemoved};
+          selectionEnd = {selectionEnd.value().row, selectionEnd.value().col - tabsRemoved};
         }
       }
 
@@ -741,8 +757,7 @@ struct TextView : ITextViewState {
 
   int __lineIndentLeft(int lineNo, int tabSize) {
     auto& line = lines[lineNo];
-    auto it =
-        find_if(line.begin(), line.end(), [](auto& c) { return !isspace(c); });
+    auto it = find_if(line.begin(), line.end(), [](auto& c) { return !isspace(c); });
     int leadingTabLen = distance(line.begin(), it);
     int tabsRemoved = min(leadingTabLen, tabSize);
 
@@ -769,8 +784,7 @@ struct TextView : ITextViewState {
       ifstream f(filePath.value());
 
       if (!f.is_open()) {
-        DLOG("File %s does not exists. Creating one.",
-             filePath.value().c_str());
+        DLOG("File %s does not exists. Creating one.", filePath.value().c_str());
         f.open("a");
       } else {
         for (string line; getline(f, line);) {
@@ -855,10 +869,8 @@ struct TextView : ITextViewState {
     if (!hasActiveSelection()) return false;
 
     if (row < selectionStart.value().row) return false;
-    if (row == selectionStart.value().row && col < selectionStart.value().col)
-      return false;
-    if (row == selectionEnd.value().row && col > selectionEnd.value().col)
-      return false;
+    if (row == selectionStart.value().row && col < selectionStart.value().col) return false;
+    if (row == selectionEnd.value().row && col > selectionEnd.value().col) return false;
     if (row > selectionEnd.value().row) return false;
 
     return true;
@@ -912,8 +924,7 @@ struct TextView : ITextViewState {
 
       lineStr.append(marginBuf);
 
-      string finalLine{
-          visibleSubstr(decoratedLine, horizontalScroll, textAreaCols())};
+      string finalLine{visibleSubstr(decoratedLine, horizontalScroll, textAreaCols())};
       if (horizontalScroll > 0 && visibleCharCount(finalLine) == 0) {
         lineStr.append("\x1b[90m<\x1b[0m");
       } else {
@@ -930,8 +941,7 @@ struct TextView : ITextViewState {
       string paddingSpaces(paddingSize, ' ');
       lineStr.append(paddingSpaces);
     } else if (paddingSize < 0) {
-      DLOG("ERROR - line overflow. Cols: %d Line len: %d", cols,
-           visibleCharCount(lineStr));
+      DLOG("ERROR - line overflow. Cols: %d Line len: %d", cols, visibleCharCount(lineStr));
     }
 
     out.append(lineStr);
@@ -956,14 +966,10 @@ struct TextView : ITextViewState {
 
     if (searchTerm.has_value()) {
       auto _searchTermMarkers = searchTermMarkers(line, searchTerm.value());
-      copy(_searchTermMarkers.begin(), _searchTermMarkers.end(),
-           back_inserter(markers));
+      copy(_searchTermMarkers.begin(), _searchTermMarkers.end(), back_inserter(markers));
     }
 
-    sort(markers.begin(), markers.end(),
-         [](SyntaxColorInfo& lhs, SyntaxColorInfo& rhs) {
-           return lhs.pos < rhs.pos;
-         });
+    sort(markers.begin(), markers.end(), [](SyntaxColorInfo& lhs, SyntaxColorInfo& rhs) { return lhs.pos < rhs.pos; });
 
     for (auto& color : markers) {
       string prefix = "\x1b[";

@@ -15,9 +15,13 @@ struct SplitUnit {
   int cols{0};
   int rows{0};
 
-  SplitUnit() { textViews.emplace_back(); }
+  SplitUnit() {
+    textViews.emplace_back();
+  }
 
-  inline TextView* activeTextView() { return &(textViews[activeTextViewIdx]); }
+  inline TextView* activeTextView() {
+    return &(textViews[activeTextViewIdx]);
+  }
 
   void newTextView() {
     textViews.emplace_back(textViewCols(), textViewRows());
@@ -38,7 +42,9 @@ struct SplitUnit {
     activeTextViewIdx = (newValue + textViews.size()) % textViews.size();
   }
 
-  inline bool hasMultipleTabs() const { return textViews.size() > 1; }
+  inline bool hasMultipleTabs() const {
+    return textViews.size() > 1;
+  }
 
   void drawLine(string& out, int lineIdx, optional<string>& searchTerm) {
     if (lineIdx == 0 && needTabBar()) {
@@ -63,8 +69,7 @@ struct SplitUnit {
 
     if (maxTitleSize < 5) {
       tabsLine.append("\x1b[39m ");
-      tabsLine.append(
-          activeTextView()->fileName().value_or("<no file>").substr(0, cols));
+      tabsLine.append(activeTextView()->fileName().value_or("<no file>").substr(0, cols));
     } else {
       for (int i = 0; i < (int)textViews.size(); i++) {
         if (i == activeTextViewIdx) {
@@ -73,13 +78,9 @@ struct SplitUnit {
           tabsLine.append("\x1b[90m ");
         }
 
-        if (textViews[i].isDirty)
-          tabsLine.append("\x1b[1m\x1b[41m*\x1b[49m\x1b[21m");
+        if (textViews[i].isDirty) tabsLine.append("\x1b[1m\x1b[41m*\x1b[49m\x1b[21m");
 
-        tabsLine.append(textViews[i]
-                            .fileName()
-                            .value_or("<no file>")
-                            .substr(0, maxTitleSize - 3));
+        tabsLine.append(textViews[i].fileName().value_or("<no file>").substr(0, maxTitleSize - 3));
 
         if (i < (int)textViews.size() - 1) {
           tabsLine.append(" \x1b[90m:");
@@ -99,8 +100,12 @@ struct SplitUnit {
     out.append(tabsLine);
   }
 
-  inline int textViewCols() const { return cols; }
-  inline int textViewRows() const { return rows - topMargin; }
+  inline int textViewCols() const {
+    return cols;
+  }
+  inline int textViewRows() const {
+    return rows - topMargin;
+  }
 
   void updateInternalDimensions() {
     updateTopMargin();
@@ -110,8 +115,7 @@ struct SplitUnit {
     }
   }
 
-  void updateDimensions(int newCols, int newRows,
-                        bool newHasMultipleSplitUnits) {
+  void updateDimensions(int newCols, int newRows, bool newHasMultipleSplitUnits) {
     cols = newCols;
     rows = newRows;
     hasMultipleSplitUnits = newHasMultipleSplitUnits;
@@ -119,5 +123,7 @@ struct SplitUnit {
     updateInternalDimensions();
   }
 
-  inline void updateTopMargin() { topMargin = needTabBar() ? 1 : 0; }
+  inline void updateTopMargin() {
+    topMargin = needTabBar() ? 1 : 0;
+  }
 };
