@@ -14,6 +14,7 @@
 #include <vector>
 
 #include "debug.h"
+#include "experiment/lines.h"
 
 #define TYPED_CHAR_SIMPLE 0
 #define TYPED_CHAR_ESCAPE 1
@@ -498,11 +499,11 @@ struct TokenAnalyzer {
   TokenAnalyzer(SyntaxHighlightConfig config) : config(config) {
   }
 
-  vector<vector<SyntaxColorInfo>> colorizeTokens(vector<string> &inputLines) {
+  vector<vector<SyntaxColorInfo>> colorizeTokens(Lines &inputLines) {
     string current{};
     vector<vector<SyntaxColorInfo>> out{};
 
-    for (int i = 0; i < (int)inputLines.size(); i++) out.emplace_back();
+    for (int i = 0; i < (int)inputLines.line_count; i++) out.emplace_back();
 
     for (MultiLineCharIterator it{inputLines}; !it.isEnded();) {
       current.clear();

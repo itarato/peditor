@@ -144,7 +144,7 @@ struct TextView : ITextViewState {
     HistoryUnit historyUnit = history.useRedo();
 
     for (auto& cmd : historyUnit.commands) {
-      TextManipulator::execute(&cmd, &lines);
+      TextManipulator::execute(&cmd, lines);
     }
 
     selectionStart = historyUnit.afterSelectionStart;
@@ -366,7 +366,7 @@ struct TextView : ITextViewState {
   }
 
   void execCommand(Command&& cmd) {
-    TextManipulator::execute(&cmd, &lines);
+    TextManipulator::execute(&cmd, lines);
 
     history.record(move(cmd));
 
