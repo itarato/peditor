@@ -128,7 +128,7 @@ struct TextView : ITextViewState {
     HistoryUnit historyUnit = history.useUndo();
 
     for (auto cmdIt = historyUnit.commands.rbegin(); cmdIt != historyUnit.commands.rend(); cmdIt++) {
-      TextManipulator::reverse(&*cmdIt, &lines);
+      TextManipulator::reverse(&*cmdIt, lines);
     }
 
     selectionStart = historyUnit.beforeSelectionStart;

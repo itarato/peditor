@@ -41,9 +41,7 @@ void reverse(Command *cmd, Lines &lines) {
   } else if (cmd->type == CommandType::MergeLine) {
     lines.insert(cmd->row, cmd->col, "\n");
   } else if (cmd->type == CommandType::DeleteLine) {
-    auto lineIt = lines->begin();
-    advance(lineIt, cmd->row);
-    lines->insert(lineIt, cmd->memoryStr);
+    lines.insert_line(cmd->row, cmd->memoryStr);
   } else if (cmd->type == CommandType::DeleteSlice) {
     lines[cmd->row].insert(cmd->col, cmd->memoryStr);
   } else if (cmd->type == CommandType::SplitLine) {

@@ -30,8 +30,7 @@ struct Prompt {
     isAutoCompleteOn = false;
   }
 
-  void reset(string newPrefix, PromptCommand newCommand,
-             vector<string>&& newMessageOptions) {
+  void reset(string newPrefix, PromptCommand newCommand, vector<string>&& newMessageOptions) {
     reset(newPrefix, newCommand);
 
     isAutoCompleteOn = true;

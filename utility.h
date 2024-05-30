@@ -388,14 +388,14 @@ enum class MultiLineCharIteratorState {
 };
 
 struct MultiLineCharIterator {
-  vector<string> &lines;
+  Lines &lines;
   const char end{'\0'};
   const char newline{'\n'};
   Point idx{-1, -1};
 
   MultiLineCharIteratorState state{MultiLineCharIteratorState::OnNewLine};
 
-  MultiLineCharIterator(vector<string> &lines) : lines(lines) {
+  MultiLineCharIterator(Lines &lines) : lines(lines) {
     next();
   }
 
@@ -411,7 +411,7 @@ struct MultiLineCharIterator {
       reportAndExit("Unhandled MultiLineCharIteratorState");
     }
 
-    if (idx.y >= (int)lines.size()) {
+    if (idx.y >= (int)lines.line_count) {
       state = MultiLineCharIteratorState::OnEnd;
       return true;
     }

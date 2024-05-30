@@ -420,7 +420,7 @@ struct Editor {
   string generateStatusLine() {
     string out{};
 
-    int rowPosPercentage = 100 * activeTextView()->currentRow() / activeTextView()->lines.size();
+    int rowPosPercentage = 100 * activeTextView()->currentRow() / activeTextView()->lines.line_count;
 
     char buf[2048];
     sprintf(buf, " pEditor v0 | File: %s%s | Textarea: %dx%d | Cursor: %dx %dy | %d%%",
