@@ -353,7 +353,7 @@ struct Lines {
     node->split_if_too_large();
   }
 
-  bool insert(size_t line_idx, size_t pos, string &&snippet) {
+  bool insert(size_t line_idx, size_t pos, string snippet) {
     if (!in_range_lines(line_idx)) LOG_RETURN(false, "ERR: insert not in range");
 
     if (type == LinesNodeType::Intermediate) {
