@@ -394,6 +394,27 @@ struct Lines {
     }
   }
 
+  bool insert_line(size_t at, string snippet) {
+    if (!in_range(at)) LOG_RETURN(false, "ERR: insert line bad range");
+
+    if (type == LinesNodeType::Intermediate) {
+      auto node = node_at(at);
+      assert(node);
+      return node->insert_line(at, std::forward<string>(snippet));
+    }
+
+    size_t rel_pos = at - line_start;
+    auto it = leafNode.lines.begin();
+    advance(it, rel_pos);
+    leafNode.lines.insert(it, snippet);
+
+    adjust_line_count_and_line_start_up_and_right(1, false);
+
+    split_if_too_large();
+
+    return true;
+  }
+
   bool split_if_too_large() {
     assert(type == LinesNodeType::Leaf);
     if (leafNode.lines.size() <= config->unit_break_threshold) return false;
@@ -705,7 +726,7 @@ struct Lines {
   }
 
   Lines *node_at(size_t at) const {
-    if (!in_range_lines(at)) return nullptr;
+    if (!in_range(at)) return nullptr;
 
     if (type == LinesNodeType::Intermediate) {
       if (intermediateNode.rhs->line_start <= at) {

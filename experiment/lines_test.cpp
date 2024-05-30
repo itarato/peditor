@@ -146,6 +146,24 @@ void test_insert_empty_new_line() {
   ASSERT_IC(l);
 }
 
+void test_insert_line() {
+  Lines l{{"a", "b", "c"}};
+  l.split(1);
+  l.split(2);
+
+  l.insert_line(0, "pre-a");
+  ASSERT_EQ("(0:1[pre-a][a])((2:2[b])(3:3[c]))"s, l.debug_to_string());
+
+  l.insert_line(2, "post-a");
+  ASSERT_EQ("(0:1[pre-a][a])((2:3[post-a][b])(4:4[c]))"s, l.debug_to_string());
+
+  l.insert_line(5, "end");
+  ASSERT_EQ("(0:1[pre-a][a])((2:3[post-a][b])(4:5[c][end]))"s, l.debug_to_string());
+
+  ASSERT_EQ(false, l.insert_line(10, ""));
+  ASSERT_IC(l);
+}
+
 void test_backspace_basic() {
   Lines l{{"abcd", "efgh", "ijkl"}};
 
@@ -451,6 +469,7 @@ int main() {
   test_insert_new_lines();
   test_insert_with_split();
   test_insert_empty_new_line();
+  test_insert_line();
 
   test_backspace_basic();
   test_backspace_merge_in_node_lines();
