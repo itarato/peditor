@@ -440,8 +440,6 @@ void test_remove_line() {
   ASSERT_IC(l);
 }
 
-// void
-
 int main() {
   test_basic_empty();
   test_basic_leaf();
