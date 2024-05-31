@@ -35,7 +35,7 @@ struct TextView : ITextViewState {
 
   optional<string> filePath{nullopt};
 
-  Lines lines{};
+  Lines lines{make_shared<LinesConfig>((size_t)1024)};
 
   optional<SelectionEdge> selectionStart{nullopt};
   optional<SelectionEdge> selectionEnd{nullopt};
