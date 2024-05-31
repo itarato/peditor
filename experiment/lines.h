@@ -191,7 +191,6 @@ struct Lines {
 
   Lines(Lines &) = delete;
   Lines &operator=(Lines &) = delete;
-  Lines &operator=(Lines &&) = delete;
 
   Lines(Lines &&other) {
     if (other.type == LinesNodeType::Intermediate) {
@@ -199,6 +198,18 @@ struct Lines {
     } else {
       new (&leafNode) LinesLeaf(std::move(other.leafNode));
     }
+  }
+
+  Lines &operator=(Lines &&other) {
+    if (this != &other) {
+      if (other.type == LinesNodeType::Intermediate) {
+        new (&intermediateNode) LinesIntermediateNode(std::move(other.intermediateNode));
+      } else {
+        new (&leafNode) LinesLeaf(std::move(other.leafNode));
+      }
+    }
+
+    return *this;
   }
 
   ~Lines() {
