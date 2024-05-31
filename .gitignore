@@ -17,3 +17,6 @@ experiment/lines
 experiment/lines_test
 experiment/*.png
 experiment/lines_to_dot
+experiment/perf*
+experiment/out*
+experiment/lines_benchmark

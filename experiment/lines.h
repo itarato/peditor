@@ -18,19 +18,8 @@
 using namespace std;
 
 /**
- * Needs:
- * - navigation by line: up, down
- * - edit line: delete line
- * - insert/remove section (from..to)
- */
-
-/**
- * - [done] line count (how many lines)
- * - [done] get Nth line
- * - [done] get Nth line length
- * - search for substring
- * - jump to next/pref substring match
- * - clear all
+ * Performance:
+ * - idea: don't record line count/start - always calculate realtime
  */
 
 #define LINES_UNIT_BREAK_THRESHOLD 8
@@ -82,13 +71,13 @@ struct LinesIntermediateNode {
     return is_left ? lhs : rhs;
   }
 
-  bool which_child(const Lines *child) const {
-    if (lhs.get() == child) return LEFT;
-    if (rhs.get() == child) return RIGHT;
+  // bool which_child(const Lines *child) const {
+  //   if (lhs.get() == child) return LEFT;
+  //   if (rhs.get() == child) return RIGHT;
 
-    printf("ERROR: unknown child\n");
-    exit(EXIT_FAILURE);
-  }
+  //   printf("ERROR: unknown child\n");
+  //   exit(EXIT_FAILURE);
+  // }
 };
 
 struct LinesLeaf {
@@ -471,8 +460,13 @@ struct Lines {
     }
 
     if (parent) {
-      parent->adjust_line_count_and_line_start_up_and_right(diff, parent->intermediateNode.which_child(this) == LEFT);
+      parent->adjust_line_count_and_line_start_up_and_right(diff, which_child());
     }
+  }
+
+  bool which_child() const {
+    if (!parent || parent->line_start == line_start) return LEFT;
+    return RIGHT;
   }
 
   void adjust_line_start_down(int diff) {
@@ -565,7 +559,7 @@ struct Lines {
   }
 
   void merge_up(Lines *empty_child) {
-    bool empty_node = intermediateNode.which_child(empty_child);
+    bool empty_node = empty_child->which_child();
 
     if (intermediateNode.child(!empty_node)->type == LinesNodeType::Intermediate) {
       // Adjust sibling pointers.
