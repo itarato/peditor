@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <cassert>
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
@@ -58,7 +59,8 @@ struct Editor {
 
   optional<string> searchTerm{nullopt};
 
-  Editor(Config config) : config(config) {}
+  Editor(Config config) : config(config) {
+  }
 
   void init() {
     preserveTermiosOriginalState();
@@ -105,8 +107,7 @@ struct Editor {
       refreshScreen();
 
       if (activeTextView()->fileWatcher.hasBeenModified()) {
-        openPrompt("File change detected, press (r) for reload > ",
-                   PromptCommand::FileHasBeenModified);
+        openPrompt("File change detected, press (r) for reload > ", PromptCommand::FileHasBeenModified);
         continue;
       }
 
@@ -299,8 +300,7 @@ struct Editor {
           finalizeAndClosePrompt();
           return;
         }
-        if (tc.simple() == BACKSPACE && !prompt.rawMessage.empty())
-          prompt.rawMessage.pop_back();
+        if (tc.simple() == BACKSPACE && !prompt.rawMessage.empty()) prompt.rawMessage.pop_back();
       } else {
         prompt.rawMessage.push_back(tc.simple());
       }
@@ -309,20 +309,24 @@ struct Editor {
     cursor.x = prompt.prefix.size() + prompt.messageVisibleSize() + 1;
   }
 
-  inline void requestQuit() { quitRequested = true; }
+  inline void requestQuit() {
+    quitRequested = true;
+  }
 
   void jumpToNextSearchHit() {
-    if (searchTerm.has_value())
-      activeTextView()->jumpToNextSearchHit(searchTerm.value());
+    if (searchTerm.has_value()) activeTextView()->jumpToNextSearchHit(searchTerm.value());
   }
 
   void jumpToPrevSearchHit() {
-    if (searchTerm.has_value())
-      activeTextView()->jumpToPrevSearchHit(searchTerm.value());
+    if (searchTerm.has_value()) activeTextView()->jumpToPrevSearchHit(searchTerm.value());
   }
 
-  inline int terminalRows() const { return terminalDimension.first; }
-  inline int terminalCols() const { return terminalDimension.second; }
+  inline int terminalRows() const {
+    return terminalDimension.first;
+  }
+  inline int terminalCols() const {
+    return terminalDimension.second;
+  }
 
   void drawLines(string& out) {
     for (int lineIdx = 0; lineIdx < textViewRows(); lineIdx++) {
@@ -342,9 +346,7 @@ struct Editor {
         out.append("\x1b[97m ");
         out.append(prompt.prefix);
         out.append(prompt.message(true));
-        out.append(string(terminalCols() - prompt.prefix.size() -
-                              prompt.messageVisibleSize() - 1,
-                          ' '));
+        out.append(string(terminalCols() - prompt.prefix.size() - prompt.messageVisibleSize() - 1, ' '));
         out.append("\x1b[0m");
         break;
       case EditorMode::TextEdit:
@@ -364,10 +366,8 @@ struct Editor {
         splitUnitXOffset += textViewCols(currentSplitUnitIdx++) + 1;
       }
 
-      cursor.x = splitUnitXOffset + activeTextView()->cursor.x + leftMargin +
-                 activeTextView()->leftMargin;
-      cursor.y =
-          activeTextView()->cursor.y + activeSplitUnit()->topMargin + topMargin;
+      cursor.x = splitUnitXOffset + activeTextView()->cursor.x + leftMargin + activeTextView()->leftMargin;
+      cursor.y = activeTextView()->cursor.y + activeSplitUnit()->topMargin + topMargin;
     } else if (mode == EditorMode::Prompt) {
       // Keep as is.
     } else {
@@ -406,8 +406,7 @@ struct Editor {
     int nonLastSplitUnitCols = splitAreaCols() / splitUnits.size() - 1;
 
     if (idx == (int)splitUnits.size() - 1) {
-      return splitAreaCols() -
-             ((nonLastSplitUnitCols + 1) * (splitUnits.size() - 1));
+      return splitAreaCols() - ((nonLastSplitUnitCols + 1) * (splitUnits.size() - 1));
     } else {
       return nonLastSplitUnitCols;
     }
@@ -421,17 +420,13 @@ struct Editor {
   string generateStatusLine() {
     string out{};
 
-    int rowPosPercentage =
-        100 * activeTextView()->currentRow() / activeTextView()->lines.size();
+    int rowPosPercentage = 100 * activeTextView()->currentRow() / activeTextView()->lines.size();
 
     char buf[2048];
-    sprintf(
-        buf,
-        " pEditor v0 | File: %s%s | Textarea: %dx%d | Cursor: %dx %dy | %d%%",
-        activeTextView()->filePath.value_or("<no file>").c_str(),
-        (activeTextView()->isDirty ? " \x1b[94m(edited)\x1b[39m" : ""),
-        splitAreaCols(), textViewRows(), activeTextView()->cursor.x,
-        activeTextView()->cursor.y, rowPosPercentage);
+    sprintf(buf, " pEditor v0 | File: %s%s | Textarea: %dx%d | Cursor: %dx %dy | %d%%",
+            activeTextView()->filePath.value_or("<no file>").c_str(),
+            (activeTextView()->isDirty ? " \x1b[94m(edited)\x1b[39m" : ""), splitAreaCols(), textViewRows(),
+            activeTextView()->cursor.x, activeTextView()->cursor.y, rowPosPercentage);
 
     out.append(buf);
 
@@ -456,8 +451,7 @@ struct Editor {
     cursor.y = terminalRows() - 1;
   }
 
-  void openPrompt(string prefix, PromptCommand command,
-                  vector<string>&& messageOptions) {
+  void openPrompt(string prefix, PromptCommand command, vector<string>&& messageOptions) {
     mode = EditorMode::Prompt;
     prompt.reset(prefix, command, move(messageOptions));
     cursor.x = prompt.prefix.size() + prompt.messageVisibleSize() + 1;
@@ -487,7 +481,9 @@ struct Editor {
     }
   }
 
-  inline void closePrompt() { mode = EditorMode::TextEdit; }
+  inline void closePrompt() {
+    mode = EditorMode::TextEdit;
+  }
 
   void executeOpenFile() {
     openPrompt("Open file > ", PromptCommand::OpenFile, directoryFiles());
@@ -551,14 +547,17 @@ struct Editor {
     bottomMargin = 1;
 
     for (int i = 0; i < (int)splitUnits.size(); i++) {
-      splitUnits[i].updateDimensions(textViewCols(i), textViewRows(),
-                                     hasMultipleSplitUnits());
+      splitUnits[i].updateDimensions(textViewCols(i), textViewRows(), hasMultipleSplitUnits());
     }
   }
 
-  inline bool hasMultipleSplitUnits() { return splitUnits.size() > 1; }
+  inline bool hasMultipleSplitUnits() {
+    return splitUnits.size() > 1;
+  }
 
-  inline void newTextView() { activeSplitUnit()->newTextView(); }
+  inline void newTextView() {
+    activeSplitUnit()->newTextView();
+  }
 
   void closeTextView() {
     if (activeSplitUnit()->hasMultipleTabs()) {

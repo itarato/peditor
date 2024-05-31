@@ -4,6 +4,7 @@
 #include <termios.h>
 #include <unistd.h>
 
+#include <cassert>
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
