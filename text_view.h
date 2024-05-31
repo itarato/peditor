@@ -63,10 +63,10 @@ struct TextView : ITextViewState {
     reloadContent();
   }
 
-  TextView(TextView&& other) = default;
+  TextView(TextView&&) = default;
   TextView& operator=(TextView&&) = default;
 
-  TextView(TextView& other) = delete;
+  TextView(TextView&) = delete;
   TextView& operator=(TextView&) = delete;
 
   Point getCursor() {

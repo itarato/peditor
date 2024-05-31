@@ -72,8 +72,11 @@ struct LinesIntermediateNode {
       : lhs(std::forward<unique_ptr<Lines>>(lhs)), rhs(std::forward<unique_ptr<Lines>>(rhs)) {
   }
 
-  LinesIntermediateNode(LinesIntermediateNode &other) = delete;
-  LinesIntermediateNode(LinesIntermediateNode &&other) = delete;
+  LinesIntermediateNode(LinesIntermediateNode &&) = default;
+  LinesIntermediateNode &operator=(LinesIntermediateNode &&) = default;
+
+  LinesIntermediateNode(LinesIntermediateNode &) = delete;
+  LinesIntermediateNode &operator=(LinesIntermediateNode &) = delete;
 
   unique_ptr<Lines> &child(bool is_left) {
     return is_left ? lhs : rhs;
@@ -97,8 +100,12 @@ struct LinesLeaf {
   }
   LinesLeaf(vector<string> &&lines) : lines(std::forward<vector<string>>(lines)) {
   }
-  LinesLeaf(LinesLeaf &other) = delete;
-  LinesLeaf(LinesLeaf &&other) = delete;
+
+  LinesLeaf(LinesLeaf &&) = default;
+  LinesLeaf &operator=(LinesLeaf &&) = default;
+
+  LinesLeaf(LinesLeaf &) = delete;
+  LinesLeaf &operator=(LinesLeaf &) = delete;
 
   bool is_one_empty_line() const {
     return lines.size() == 1 && lines[0].size() == 0;
@@ -182,8 +189,17 @@ struct Lines {
     new (&leafNode) LinesLeaf{std::forward<vector<string>>(lines)};
   }
 
-  Lines(Lines &other) = delete;
-  Lines(Lines &&other) = delete;
+  Lines(Lines &) = delete;
+  Lines &operator=(Lines &) = delete;
+  Lines &operator=(Lines &&) = delete;
+
+  Lines(Lines &&other) {
+    if (other.type == LinesNodeType::Intermediate) {
+      new (&intermediateNode) LinesIntermediateNode(std::move(other.intermediateNode));
+    } else {
+      new (&leafNode) LinesLeaf(std::move(other.leafNode));
+    }
+  }
 
   ~Lines() {
     if (type == LinesNodeType::Intermediate) {
