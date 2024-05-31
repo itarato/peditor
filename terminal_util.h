@@ -86,8 +86,13 @@ void preserveTermiosOriginalState() {
   atexit(disableRawMode);
 }
 
-void resetCursorLocation() { write(STDOUT_FILENO, "\x1b[H", 3); }
-void resetCursorLocation(string &out) { out.append("\x1b[H"); }
+void resetCursorLocation() {
+  ssize_t out = write(STDOUT_FILENO, "\x1b[H", 3);
+  assert(out >= 0);
+}
+void resetCursorLocation(string &out) {
+  out.append("\x1b[H");
+}
 
 void setCursorLocation(string &out, int row, int col) {
   char buf[32];
@@ -96,7 +101,10 @@ void setCursorLocation(string &out, int row, int col) {
   out.append(buf, strlen(buf));
 }
 
-void clearScreen() { write(STDOUT_FILENO, "\x1b[2J", 4); }
+void clearScreen() {
+  ssize_t out = write(STDOUT_FILENO, "\x1b[2J", 4);
+  assert(out >= -1);
+}
 
 int getCursorPosition(int *rows, int *cols) {
   char buf[32];
@@ -135,7 +143,9 @@ pair<int, int> getTerminalDimension() {
   return pair<int, int>(ws.ws_row, ws.ws_col);
 }
 
-inline constexpr char ctrlKey(char c) { return c & 0x1f; }
+inline constexpr char ctrlKey(char c) {
+  return c & 0x1f;
+}
 
 TypedChar readKey() {
   char c;
@@ -176,8 +186,14 @@ TypedChar readKey() {
   }
 }
 
-inline void hideCursor(string &out) { out.append("\x1b[?25l"); }
+inline void hideCursor(string &out) {
+  out.append("\x1b[?25l");
+}
 
-inline void showCursor(string &out) { out.append("\x1b[?25h"); }
+inline void showCursor(string &out) {
+  out.append("\x1b[?25h");
+}
 
-inline void clearRestOfLine(string &out) { out.append("\x1b[0K"); }
+inline void clearRestOfLine(string &out) {
+  out.append("\x1b[0K");
+}

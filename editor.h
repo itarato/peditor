@@ -394,7 +394,8 @@ struct Editor {
 
     showCursor(out);
 
-    write(STDOUT_FILENO, out.c_str(), out.size());
+    ssize_t res = write(STDOUT_FILENO, out.c_str(), out.size());
+    assert(res >= 0);
   }
 
   inline int textViewRows() const {

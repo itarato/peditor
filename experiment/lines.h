@@ -170,6 +170,11 @@ struct Lines {
     new (&leafNode) LinesLeaf{};
   }
 
+  Lines(shared_ptr<LinesConfig> config)
+      : line_start(0), line_count(0), type(LinesNodeType::Leaf), config(config), parent(nullptr) {
+    new (&leafNode) LinesLeaf{};
+  }
+
   Lines(vector<string> &&lines)
       : line_start(0),
         line_count(lines.size()),
