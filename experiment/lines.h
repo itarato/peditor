@@ -71,13 +71,13 @@ struct LinesIntermediateNode {
     return is_left ? lhs : rhs;
   }
 
-  // bool which_child(const Lines *child) const {
-  //   if (lhs.get() == child) return LEFT;
-  //   if (rhs.get() == child) return RIGHT;
+  bool which_child(const Lines *child) const {
+    if (lhs.get() == child) return LEFT;
+    if (rhs.get() == child) return RIGHT;
 
-  //   printf("ERROR: unknown child\n");
-  //   exit(EXIT_FAILURE);
-  // }
+    printf("ERROR: unknown child\n");
+    exit(EXIT_FAILURE);
+  }
 };
 
 struct LinesLeaf {
@@ -192,6 +192,12 @@ struct Lines {
     } else {
       new (&leafNode) LinesLeaf(std::move(other.leafNode));
     }
+
+    type = other.type;
+    line_start = other.line_start;
+    line_count = other.line_count;
+    parent = other.parent;
+    config = other.config;
   }
 
   Lines &operator=(Lines &&other) {
@@ -201,6 +207,12 @@ struct Lines {
       } else {
         new (&leafNode) LinesLeaf(std::move(other.leafNode));
       }
+
+      type = other.type;
+      line_start = other.line_start;
+      line_count = other.line_count;
+      parent = other.parent;
+      config = other.config;
     }
 
     return *this;
@@ -460,13 +472,8 @@ struct Lines {
     }
 
     if (parent) {
-      parent->adjust_line_count_and_line_start_up_and_right(diff, which_child());
+      parent->adjust_line_count_and_line_start_up_and_right(diff, parent->intermediateNode.which_child(this));
     }
-  }
-
-  bool which_child() const {
-    if (!parent || parent->line_start == line_start) return LEFT;
-    return RIGHT;
   }
 
   void adjust_line_start_down(int diff) {
@@ -559,7 +566,7 @@ struct Lines {
   }
 
   void merge_up(Lines *empty_child) {
-    bool empty_node = empty_child->which_child();
+    bool empty_node = intermediateNode.which_child(empty_child);
 
     if (intermediateNode.child(!empty_node)->type == LinesNodeType::Intermediate) {
       // Adjust sibling pointers.

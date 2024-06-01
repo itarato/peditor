@@ -458,6 +458,21 @@ void test_remove_line() {
   ASSERT_IC(l);
 }
 
+void test_move_ctor() {
+  vector<Lines> list{};
+
+  for (int i = 0; i < 4; i++) list.emplace_back();
+
+  ASSERT_EQ((size_t)0, list[0].line_count);
+  ASSERT_EQ((size_t)0, list[0].line_start);
+
+  for (int i = 0; i < 4; i++) {
+    ASSERT_IC(list[i]);
+    ASSERT_EQ((size_t)0, list[i].line_count);
+    ASSERT_EQ((size_t)0, list[i].line_start);
+  }
+}
+
 int main() {
   test_basic_empty();
   test_basic_leaf();
@@ -501,6 +516,8 @@ int main() {
   test_balance_auto();
 
   test_remove_line();
+
+  test_move_ctor();
 
   printf("\nCompleted\n");
 
