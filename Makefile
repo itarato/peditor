@@ -1,4 +1,4 @@
-CXXFLAGS=-std=c++2a -O3 -Wall -pedantic -Wformat -Werror $(EXTRA_FLAGS)
+CXXFLAGS=-std=c++2a -Wall -pedantic -Wformat -Werror $(EXTRA_FLAGS)
 
 BIN=pedit
 SRC=$(wildcard ./*.cpp)
@@ -20,8 +20,11 @@ tests: test_executable
 runtests: tests
 	./$(TEST_BIN)
 
-debug: CXXFLAGS += -DDEBUG -g3
+debug: CXXFLAGS += -DDEBUG -g3 -D_GLIBCXX_DEBUG
 debug: executable
+
+release: CXXFLAGS += -O3 -g0
+release: executable
 
 executable: $(OBJ)
 	$(CXX) -o $(BIN) $^ $(CXXFLAGS)

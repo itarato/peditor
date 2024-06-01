@@ -58,14 +58,16 @@ struct SyntaxHighlightConfig {
   unordered_set<string> *keywords;
   CodeComments comments{};
 
-  SyntaxHighlightConfig(unordered_set<string> *keywords) : keywords(keywords) {}
+  SyntaxHighlightConfig(unordered_set<string> *keywords) : keywords(keywords) {
+  }
 };
 
 struct SelectionEdge {
   int row;
   int col;
 
-  SelectionEdge(int row, int col) : row(row), col(col) {}
+  SelectionEdge(int row, int col) : row(row), col(col) {
+  }
 };
 
 struct LineSelection {
@@ -73,13 +75,20 @@ struct LineSelection {
   int startCol{-1};
   int endCol{-1};
 
-  LineSelection(int lineNo) : lineNo(lineNo) {}
-  LineSelection(int lineNo, int startCol, int endCol)
-      : lineNo(lineNo), startCol(startCol), endCol(endCol) {}
+  LineSelection(int lineNo) : lineNo(lineNo) {
+  }
+  LineSelection(int lineNo, int startCol, int endCol) : lineNo(lineNo), startCol(startCol), endCol(endCol) {
+  }
 
-  bool isFullLine() { return startCol == -1 && endCol == -1; }
-  bool isLeftBounded() { return startCol >= 0; }
-  bool isRightBounded() { return endCol >= 0; }
+  bool isFullLine() {
+    return startCol == -1 && endCol == -1;
+  }
+  bool isLeftBounded() {
+    return startCol >= 0;
+  }
+  bool isRightBounded() {
+    return endCol >= 0;
+  }
 };
 
 /**
@@ -111,7 +120,9 @@ struct SelectionRange {
     return true;
   }
 
-  bool isMultiline() { return startRow < endRow; }
+  bool isMultiline() {
+    return startRow < endRow;
+  }
 
   vector<LineSelection> lineSelections() {
     vector<LineSelection> out{};
@@ -132,8 +143,10 @@ struct Point {
   int x{-1};
   int y{-1};
 
-  Point() {}
-  Point(int x, int y) : x(x), y(y) {}
+  Point() {
+  }
+  Point(int x, int y) : x(x), y(y) {
+  }
 
   void set(int newX, int newY) {
     x = newX;
@@ -145,8 +158,12 @@ struct Point {
     y = newPoint.y;
   }
 
-  inline Point dx(int delta) { return Point{x + delta, y}; }
-  inline Point dy(int delta) { return Point{x, y + delta}; }
+  inline Point dx(int delta) {
+    return Point{x + delta, y};
+  }
+  inline Point dy(int delta) {
+    return Point{x, y + delta};
+  }
 };
 
 struct ITextViewState {
@@ -159,7 +176,8 @@ struct SyntaxColorInfo {
   int pos;
   const char *code;
 
-  SyntaxColorInfo(int pos, const char *code) : pos(pos), code(code) {}
+  SyntaxColorInfo(int pos, const char *code) : pos(pos), code(code) {
+  }
 
   // TODO: Make this more stable.
   inline bool isClosingTag() const {
@@ -334,15 +352,25 @@ struct TypedChar {
     type = TYPED_CHAR_ESCAPE;
   }
 
-  bool is_failure() { return c.ch == '\0' && type == TYPED_CHAR_SIMPLE; }
+  bool is_failure() {
+    return c.ch == '\0' && type == TYPED_CHAR_SIMPLE;
+  }
 
-  bool is_simple() { return type == TYPED_CHAR_SIMPLE; }
+  bool is_simple() {
+    return type == TYPED_CHAR_SIMPLE;
+  }
 
-  bool is_escape() { return type == TYPED_CHAR_ESCAPE; }
+  bool is_escape() {
+    return type == TYPED_CHAR_ESCAPE;
+  }
 
-  char simple() { return c.ch; }
+  char simple() {
+    return c.ch;
+  }
 
-  EscapeChar escape() { return c.escapeCh; }
+  EscapeChar escape() {
+    return c.escapeCh;
+  }
 };
 
 #define TYPED_CHAR_FAILURE (TypedChar{'\0'})
@@ -366,7 +394,9 @@ struct MultiLineCharIterator {
 
   MultiLineCharIteratorState state{MultiLineCharIteratorState::OnNewLine};
 
-  MultiLineCharIterator(vector<string> &lines) : lines(lines) { next(); }
+  MultiLineCharIterator(vector<string> &lines) : lines(lines) {
+    next();
+  }
 
   bool next() {
     if (state == MultiLineCharIteratorState::OnEnd) {
@@ -408,14 +438,15 @@ struct MultiLineCharIterator {
     return end;
   }
 
-  inline string peek(int n) const { return lines[idx.y].substr(idx.x, n); }
+  inline string peek(int n) const {
+    return lines[idx.y].substr(idx.x, n);
+  }
 
   bool isPeekMatch(string &s) const {
     if (!isRealChar()) return false;
     if (idx.x + s.size() > lines[idx.y].size()) return false;
 
-    for (int i = 0; i < (int)s.size() && (i + idx.x) < (int)lines[idx.y].size();
-         i++) {
+    for (int i = 0; i < (int)s.size() && (i + idx.x) < (int)lines[idx.y].size(); i++) {
       if (s[i] != lines[idx.y][idx.x + i]) return false;
     }
 
@@ -438,10 +469,18 @@ struct MultiLineCharIterator {
 inline bool isParen(char c) {
   return c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}';
 }
-inline bool isWordStart(char c) { return isalpha(c) || c == '_'; }
-inline bool isWord(char c) { return isalnum(c) || c == '_'; }
-inline bool isNumber(char c) { return isdigit(c); }
-inline bool isQuote(char c) { return c == '"' || c == '\''; }
+inline bool isWordStart(char c) {
+  return isalpha(c) || c == '_';
+}
+inline bool isWord(char c) {
+  return isalnum(c) || c == '_';
+}
+inline bool isNumber(char c) {
+  return isdigit(c);
+}
+inline bool isQuote(char c) {
+  return c == '"' || c == '\'';
+}
 
 enum class TokenState {
   Unknown,
@@ -456,7 +495,8 @@ enum class TokenState {
 struct TokenAnalyzer {
   SyntaxHighlightConfig config;
 
-  TokenAnalyzer(SyntaxHighlightConfig config) : config(config) {}
+  TokenAnalyzer(SyntaxHighlightConfig config) : config(config) {
+  }
 
   vector<vector<SyntaxColorInfo>> colorizeTokens(vector<string> &inputLines) {
     string current{};
@@ -471,13 +511,10 @@ struct TokenAnalyzer {
 
       if (isWordStart(it.current())) {
         while (!it.isEnded() && isWord(it.current())) consume(current, it, end);
-        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Word,
-                           out);
+        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Word, out);
       } else if (isNumber(it.current())) {
-        while (!it.isEnded() && isNumber(it.current()))
-          consume(current, it, end);
-        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Number,
-                           out);
+        while (!it.isEnded() && isNumber(it.current())) consume(current, it, end);
+        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Number, out);
       } else if (isQuote(it.current())) {
         char quoteType{it.current()};
 
@@ -499,10 +536,8 @@ struct TokenAnalyzer {
 
         registerColorMarks(current, start, end, TokenState::QuotedString, out);
       } else if (isParen(it.current())) {
-        while (!it.isEnded() && isParen(it.current()))
-          consume(current, it, end);
-        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Paren,
-                           out);
+        while (!it.isEnded() && isParen(it.current())) consume(current, it, end);
+        registerColorMarks(current, start, it.idx.dx(-1), TokenState::Paren, out);
       } else {
         bool hasMatch{false};
 
@@ -523,16 +558,13 @@ struct TokenAnalyzer {
             hasMatch = true;
 
             // Consume first half of comment boundary.
-            for (int i = 0; i < (int)bounded.first.size(); i++)
-              consume(it, end);
+            for (int i = 0; i < (int)bounded.first.size(); i++) consume(it, end);
 
-            while (!it.isEnded() && !it.isPeekMatch(bounded.second))
-              consume(it, end);
+            while (!it.isEnded() && !it.isPeekMatch(bounded.second)) consume(it, end);
 
             if (it.isPeekMatch(bounded.second)) {
               // Consume first half of comment boundary.
-              for (int i = 0; i < (int)bounded.second.size(); i++)
-                consume(it, end);
+              for (int i = 0; i < (int)bounded.second.size(); i++) consume(it, end);
             }
 
             registerColorMarks(current, start, end, TokenState::Comment, out);
@@ -590,8 +622,7 @@ struct TokenAnalyzer {
     }
   }
 
-  void registerColorMarks(string &word, Point start, Point end,
-                          TokenState state,
+  void registerColorMarks(string &word, Point start, Point end, TokenState state,
                           vector<vector<SyntaxColorInfo>> &out) {
     const char *colorResult = analyzeToken(state, word);
     if (colorResult) {
@@ -664,8 +695,7 @@ int prevWordJumpLocation(string &line, int currentPos) {
 }
 
 int prefixTabOrSpaceLength(string &line) {
-  auto lineIt =
-      find_if(line.begin(), line.end(), [](auto &c) { return !isspace(c); });
+  auto lineIt = find_if(line.begin(), line.end(), [](auto &c) { return !isspace(c); });
   return distance(line.begin(), lineIt);
 }
 
@@ -849,8 +879,7 @@ bool poormansFuzzyMatch(string term, string word) {
   return false;
 }
 
-vector<string> poormansFuzzySearch(string term, vector<string> options,
-                                   int maxResult) {
+vector<string> poormansFuzzySearch(string term, vector<string> options, int maxResult) {
   vector<string> out{};
 
   for (auto &option : options) {
