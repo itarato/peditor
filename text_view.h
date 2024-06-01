@@ -33,9 +33,6 @@ struct TextView : ITextViewState {
   int leftMargin{0};
 
   optional<string> filePath{nullopt};
-  // TODO: This can be redundant if multiple views exist with same file type.
-  // Move to an editor mapped data.
-  unordered_set<string> keywords{};
 
   vector<string> lines{};
 
@@ -55,11 +52,10 @@ struct TextView : ITextViewState {
 
   TokenAnalyzer tokenAnalyzer;
 
-  TextView() : tokenAnalyzer(TokenAnalyzer(SyntaxHighlightConfig(&keywords))) {
+  TextView() : tokenAnalyzer(TokenAnalyzer(SyntaxHighlightConfig({}))) {
     reloadContent();
   }
-  TextView(int cols, int rows)
-      : cols(cols), rows(rows), tokenAnalyzer(TokenAnalyzer(SyntaxHighlightConfig(&keywords))) {
+  TextView(int cols, int rows) : cols(cols), rows(rows), tokenAnalyzer(TokenAnalyzer(SyntaxHighlightConfig({}))) {
     reloadContent();
   }
 
@@ -87,8 +83,6 @@ struct TextView : ITextViewState {
   }
 
   void reloadKeywordList() {
-    keywords.clear();
-
     if (!filePath.has_value()) {
       DLOG("No file, cannot load keyword list.");
       return;
@@ -114,12 +108,13 @@ struct TextView : ITextViewState {
 
     if (!f.is_open()) reportAndExit("Failed opening file");
 
+    unordered_set<string> keywords{};
     for (string line; getline(f, line);) {
       keywords.insert(line);
     }
     f.close();
 
-    tokenAnalyzer = TokenAnalyzer(SyntaxHighlightConfig(&keywords));
+    tokenAnalyzer = TokenAnalyzer(SyntaxHighlightConfig(std::forward<unordered_set<string>>(keywords)));
   }
 
   bool onLineRow() {

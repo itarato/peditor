@@ -55,10 +55,10 @@ struct SyntaxHighlightConfig {
   const char *parenColor{CYAN};
   const char *keywordColor{LIGHTCYAN};
   const char *commentColor{DARKGRAY};
-  unordered_set<string> *keywords;
+  unordered_set<string> keywords{};
   CodeComments comments{};
 
-  SyntaxHighlightConfig(unordered_set<string> *keywords) : keywords(keywords) {
+  SyntaxHighlightConfig(unordered_set<string> &&keywords) : keywords(std::forward<unordered_set<string>>(keywords)) {
   }
 };
 
@@ -605,10 +605,8 @@ struct TokenAnalyzer {
       case TokenState::Number:
         return config.numberColor;
       case TokenState::Word:
-        if (!config.keywords) return nullptr;
-
-        wordIt = find(config.keywords->begin(), config.keywords->end(), token);
-        if (wordIt != config.keywords->end()) return config.keywordColor;
+        wordIt = find(config.keywords.begin(), config.keywords.end(), token);
+        if (wordIt != config.keywords.end()) return config.keywordColor;
 
         return nullptr;
       case TokenState::QuotedString:
